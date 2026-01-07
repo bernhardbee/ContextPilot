@@ -1,0 +1,219 @@
+1. Innovative Software Project
+
+Project Name
+
+ContextPilot
+
+One-line Description
+
+An AI-powered personal context engine that automatically builds and maintains a structured “memory” of a user’s projects, decisions, preferences, and knowledge—then injects the right context into future AI prompts, emails, documents, or code tasks.
+
+Why It’s Innovative
+
+Most AI tools forget context or rely on users to re-explain things. ContextPilot:
+	•	Continuously extracts, organizes, and versions context
+	•	Detects what context is relevant for a new task
+	•	Generates optimized prompts automatically
+	•	Works across tools (ChatGPT, IDEs, email, docs)
+
+This turns AI from “stateless assistant” into a context-aware collaborator.
+
+⸻
+
+2. High-Level Plan (How to Build It)
+
+Phase 1 – Core MVP (2–4 weeks)
+
+Goal: Prove value with minimal surface area.
+
+Features
+	•	Store “context units” (facts, decisions, preferences)
+	•	Tag and version them
+	•	Generate a contextualized prompt from a user task
+	•	Simple UI (web)
+
+Deliverables
+	•	Context storage engine
+	•	Prompt composer
+	•	Web UI
+
+⸻
+
+Phase 2 – Intelligence Layer (4–6 weeks)
+
+Goal: Make it smart, not just stored.
+
+Features
+	•	Automatic context extraction from text
+	•	Relevance scoring (what context matters now)
+	•	Conflict detection (outdated vs current context)
+	•	Context decay (old info fades unless reinforced)
+
+⸻
+
+Phase 3 – Integrations (optional)
+
+Goal: Make it useful daily.
+
+Integrations
+	•	Browser extension
+	•	IDE plugin
+	•	ChatGPT / API prompt injector
+	•	Notion / Markdown import
+
+⸻
+
+3. System Architecture & Structure
+
+3.1 Conceptual Model
+
+User Input
+   ↓
+Context Extractor
+   ↓
+Context Store (Versioned)
+   ↓
+Relevance Engine
+   ↓
+Prompt Composer
+   ↓
+AI Tool (LLM, IDE, Email, etc.)
+
+
+⸻
+
+3.2 Data Model
+
+ContextUnit
+
+{
+  "id": "uuid",
+  "type": "preference | decision | fact | goal",
+  "content": "User prefers concise technical explanations",
+  "confidence": 0.92,
+  "created_at": "timestamp",
+  "last_used": "timestamp",
+  "source": "manual | extracted",
+  "tags": ["communication", "style"],
+  "status": "active | superseded"
+}
+
+
+⸻
+
+3.3 Tech Stack (Recommended)
+
+Frontend
+	•	React + TypeScript
+	•	Tailwind or minimal UI kit
+
+Backend
+	•	FastAPI or Node.js (NestJS)
+	•	REST + optional GraphQL
+
+AI Layer
+	•	LLM API (OpenAI / local)
+	•	Embeddings for similarity search
+
+Storage
+	•	PostgreSQL (structured data)
+	•	Vector DB (pgvector / Pinecone / Weaviate)
+
+⸻
+
+3.4 Repository Structure
+
+contextpilot/
+├── frontend/
+│   ├── src/
+│   └── components/
+├── backend/
+│   ├── api/
+│   ├── services/
+│   │   ├── context_extractor.py
+│   │   ├── relevance_engine.py
+│   │   ├── prompt_composer.py
+│   └── models/
+├── prompts/
+│   ├── extract_context.md
+│   ├── compose_prompt.md
+├── tests/
+└── README.md
+
+
+⸻
+
+4. Prompt for an AI Programming Agent
+
+This is the copy-paste prompt you can use with an AI coding agent (Cursor, Devin-like agent, GPT-based coder, etc.).
+
+⸻
+
+AI Programming Agent Prompt
+
+You are a senior software engineer and AI architect.
+
+Your task is to design and implement an MVP of a software system called "ContextPilot".
+
+Goal:
+ContextPilot is an AI-powered personal context engine that stores structured user context (preferences, decisions, goals, facts) and automatically injects the most relevant context into future AI prompts.
+
+Functional Requirements:
+1. Allow creating, updating, and listing ContextUnits.
+2. ContextUnits must support:
+   - type (preference, decision, fact, goal)
+   - content (natural language)
+   - tags
+   - confidence score
+   - versioning / superseded status
+3. Implement a relevance engine:
+   - Given a user task, rank stored ContextUnits by relevance
+   - Use embeddings or keyword similarity
+4. Implement a prompt composer:
+   - Combine the user task with the top relevant ContextUnits
+   - Output a clean, optimized prompt for an LLM
+5. Provide a minimal web UI:
+   - Add/edit context
+   - Enter a task
+   - View generated prompt
+
+Technical Constraints:
+- Backend: FastAPI or Node.js
+- Frontend: React + TypeScript
+- Use a vector database or embedding-based similarity
+- Write clean, modular, testable code
+- Include a README with setup instructions
+
+Non-Goals:
+- No authentication
+- No billing
+- No heavy UI design
+
+Deliverables:
+- Full source code
+- Clear folder structure
+- Example data
+- Example generated prompt
+
+Think step by step.
+Start with architecture.
+Then implement backend.
+Then frontend.
+Then connect everything.
+
+
+⸻
+
+5. Why This Is a Strong Project
+	•	🔥 Highly relevant to modern AI workflows
+	•	🧠 Shows systems thinking, not just CRUD
+	•	📦 Easy to MVP, powerful to extend
+	•	💼 Excellent portfolio or startup seed
+
+If you want, next I can:
+	•	Simplify this into a weekend hack version
+	•	Adapt it for enterprise use
+	•	Turn it into a browser extension
+	•	Or generate actual code scaffolding for the backend/frontend
+
+Just tell me.
