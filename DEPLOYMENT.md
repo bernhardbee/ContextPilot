@@ -62,6 +62,16 @@ CONTEXTPILOT_API_KEY=<generate-secure-key>
 # Limits
 CONTEXTPILOT_MAX_CONTENT_LENGTH=10000
 CONTEXTPILOT_MAX_CONTEXTS_PER_REQUEST=20
+
+# Prompt Logging (Optional)
+PROMPT_LOG_MAX_SIZE=10000  # Maximum logs to keep in memory
+```
+
+**Important**: Create logs directory and set permissions:
+```bash
+mkdir -p logs
+chmod 700 logs
+chown www-data:www-data logs  # Match your service user
 ```
 
 #### Step 3: Run as System Service
