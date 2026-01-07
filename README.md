@@ -18,8 +18,10 @@ Most AI tools are stateless—they forget context between sessions. ContextPilot
 - ✅ **Confidence scoring** and versioning
 - ✅ **Relevance engine** that ranks contexts by task relevance
 - ✅ **Prompt composer** that generates LLM-ready prompts
+- ✅ **Prompt logging & traceability** - full audit trail of all AI operations
 - ✅ **Clean React UI** for managing context and viewing prompts
 - ✅ **RESTful API** with FastAPI
+- ✅ **Security features** - API key auth, input validation, CORS
 - ✅ **No external dependencies** for embeddings (uses local models)
 
 ## 🏗️ Architecture
@@ -255,6 +257,33 @@ chmod +x demo.sh
   superseded_by: string | null;  // ID of replacing context
 }
 ```
+
+## 📊 Prompt Logging & Traceability
+
+ContextPilot automatically logs every prompt generation for complete auditability. Each log includes:
+
+- Task description
+- Contexts used
+- Generated prompt
+- Timestamps and metadata
+
+**View logs:**
+```bash
+curl http://localhost:8000/prompt-logs?limit=10 \
+  -H "X-API-Key: your-key"
+```
+
+**Export logs:**
+```bash
+curl -X POST http://localhost:8000/prompt-logs/export \
+  -H "X-API-Key: your-key"
+```
+
+See [PROMPT_LOGGING.md](PROMPT_LOGGING.md) for complete documentation on:
+- API endpoints
+- Usage examples
+- Security considerations
+- Configuration options
 
 ## 🎨 Tech Stack
 

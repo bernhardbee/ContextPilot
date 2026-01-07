@@ -17,6 +17,7 @@ from config import settings
 from logger import logger
 from security import verify_api_key
 from validators import validate_content_length, validate_tags, sanitize_string
+from prompt_logger import prompt_logger
 
 
 app = FastAPI(
@@ -215,7 +216,16 @@ def generate_prompt(
         ranked_contexts
     )
     
-    logger.info(f"Generated prompt for task with {len(ranked_contexts)} contexts")
+    # Log the prompt generation for traceability
+    log_id = prompt_logger.log_prompt_generation(
+        task=sanitized_task,
+        ranked_contexts=ranked_contexts,
+        generated=generated,
+        prompt_type="full",
+        max_contexts_requested=task_request.max_context_units
+    )
+    
+    logger.info(f"Generated prompt for task with {len(ranked_contexts)} contexts (log_id: {log_id})")
     return generated
 
 
@@ -253,7 +263,16 @@ def generate_prompt_compact(
         ranked_contexts
     )
     
-    logger.info(f"Generated compact prompt for task with {len(ranked_contexts)} contexts")
+    # Log the prompt generation for traceability
+    log_id = prompt_logger.log_prompt_generation(
+        task=sanitized_task,
+        ranked_contexts=ranked_contexts,
+        generated=generated,
+        prompt_type="compact",
+        max_contexts_requested=task_request.max_context_units
+    )
+    
+    logger.info(f"Generated compact prompt for task with {len(ranked_contexts)} contexts (log_id: {log_id})")
     return generated
 
 
@@ -261,7 +280,7 @@ def generate_prompt_compact(
 
 @app.get("/stats")
 def get_stats(api_key: str = Depends(verify_api_key)):
-    """Get statistics about the context store."""
+    """Get statistics about the context store and prompt generation."""
     all_contexts = context_store.list_all(include_superseded=True)
     active_contexts = context_store.list_all(include_superseded=False)
     
@@ -272,12 +291,113 @@ def get_stats(api_key: str = Depends(verify_api_key)):
             stats_by_type[ctx_type] = 0
         stats_by_type[ctx_type] += 1
     
+    # Get prompt generation stats
+    prompt_stats = prompt_logger.get_stats()
+    
     return {
         "total_contexts": len(all_contexts),
         "active_contexts": len(active_contexts),
         "superseded_contexts": len(all_contexts) - len(active_contexts),
         "contexts_by_type": stats_by_type,
-        "contexts_with_embeddings": len([c for c in active_contexts if context_store.get_embedding(c.id) is not None])
+        "contexts_with_embeddings": len([c for c in active_contexts if context_store.get_embedding(c.id) is not None]),
+        "prompt_generation": prompt_stats
+    }
+
+
+# Prompt logging endpoints
+
+@app.get("/prompt-logs")
+def get_prompt_logs(
+    limit: int = 100,
+    offset: int = 0,
+    prompt_type: Optional[str] = None,
+    api_key: str = Depends(verify_api_key)
+):
+    """
+    Retrieve prompt generation logs for audit/traceability.
+    
+    Args:
+        limit: Maximum number of logs to return (default: 100, max: 1000)
+        offset: Number of logs to skip for pagination
+        prompt_type: Filter by type ("full" or "compact")
+    """
+    # Validate limit
+    if limit > 1000:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Limit cannot exceed 1000"
+        )
+    
+    if limit < 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Limit must be at least 1"
+        )
+    
+    # Validate prompt_type if provided
+    if prompt_type and prompt_type not in ["full", "compact"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="prompt_type must be 'full' or 'compact'"
+        )
+    
+    logs = prompt_logger.get_logs(limit=limit, offset=offset, prompt_type=prompt_type)
+    
+    return {
+        "total_returned": len(logs),
+        "limit": limit,
+        "offset": offset,
+        "prompt_type_filter": prompt_type,
+        "logs": [log.to_dict() for log in logs]
+    }
+
+
+@app.get("/prompt-logs/{log_id}")
+def get_prompt_log_by_id(log_id: str, api_key: str = Depends(verify_api_key)):
+    """Get a specific prompt generation log by ID."""
+    log = prompt_logger.get_log_by_id(log_id)
+    if not log:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Prompt log {log_id} not found"
+        )
+    return log.to_dict()
+
+
+@app.post("/prompt-logs/export")
+def export_prompt_logs(api_key: str = Depends(verify_api_key)):
+    """
+    Export all prompt logs to a timestamped JSON file.
+    Returns the filepath where logs were saved.
+    """
+    from pathlib import Path
+    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    filename = f"prompt_logs_{timestamp}.json"
+    filepath = Path("logs") / filename
+    
+    # Create logs directory if it doesn't exist
+    filepath.parent.mkdir(exist_ok=True)
+    
+    prompt_logger.export_logs(str(filepath))
+    
+    return {
+        "message": "Logs exported successfully",
+        "filepath": str(filepath),
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+
+@app.delete("/prompt-logs")
+def clear_prompt_logs(api_key: str = Depends(verify_api_key)):
+    """
+    Clear all prompt logs (use with caution).
+    Requires authentication.
+    """
+    count = prompt_logger.clear_logs()
+    logger.warning("Prompt logs cleared via API")
+    return {
+        "message": "Logs cleared successfully",
+        "logs_cleared": count
     }
 
 
