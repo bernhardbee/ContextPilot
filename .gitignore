@@ -24,7 +24,7 @@ yarn-error.log*
 /frontend/.env.production.local
 
 # IDE
-.vscode/
+# .vscode/ - keeping for project configuration
 .idea/
 *.swp
 *.swo

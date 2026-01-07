@@ -4,7 +4,7 @@ Data models for ContextPilot.
 from datetime import datetime
 from enum import Enum
 from typing import Optional, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 import uuid
 
 
@@ -24,6 +24,10 @@ class ContextStatus(str, Enum):
 
 class ContextUnit(BaseModel):
     """A single unit of user context."""
+    model_config = ConfigDict(
+        json_encoders={datetime: lambda v: v.isoformat()}
+    )
+    
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     type: ContextType
     content: str
@@ -34,11 +38,6 @@ class ContextUnit(BaseModel):
     tags: List[str] = Field(default_factory=list)
     status: ContextStatus = ContextStatus.ACTIVE
     superseded_by: Optional[str] = None  # ID of the context unit that replaces this one
-    
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
 
 
 class ContextUnitCreate(BaseModel):
@@ -75,11 +74,11 @@ class RankedContextUnit(BaseModel):
 class GeneratedPrompt(BaseModel):
     """Generated prompt with context."""
     original_task: str
+    model_config = ConfigDict(
+        json_encoders={datetime: lambda v: v.isoformat()}
+    )
+    
+    original_task: str
     relevant_context: List[RankedContextUnit]
     generated_prompt: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
-    
-    class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
