@@ -73,7 +73,6 @@ class RankedContextUnit(BaseModel):
 
 class GeneratedPrompt(BaseModel):
     """Generated prompt with context."""
-    original_task: str
     model_config = ConfigDict(
         json_encoders={datetime: lambda v: v.isoformat()}
     )

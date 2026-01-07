@@ -11,7 +11,9 @@ markers = [
     "unit: Unit tests (fast, no external dependencies)",
     "integration: Integration tests (may require running services)",
     "slow: Slow tests (model loading, etc.)",
+    "asyncio: Async IO tests",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning",
 ]
+asyncio_mode = "auto"

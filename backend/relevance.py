@@ -6,23 +6,53 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 from models import ContextUnit, RankedContextUnit
 from storage import ContextStore
+from config import settings
+from logger import logger
 
 
 class RelevanceEngine:
     """Engine for ranking context units by relevance to a task."""
     
-    def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
+    def __init__(self, model_name: str = None):
         """
         Initialize the relevance engine.
         
         Args:
             model_name: Name of the sentence-transformers model to use
         """
-        self.model = SentenceTransformer(model_name)
+        if model_name is None:
+            model_name = settings.embedding_model
+        
+        try:
+            logger.info(f"Loading embedding model: {model_name}")
+            self.model = SentenceTransformer(model_name)
+            logger.info(f"Successfully loaded model: {model_name}")
+        except Exception as e:
+            logger.error(f"Failed to load embedding model: {e}")
+            raise RuntimeError(f"Failed to initialize RelevanceEngine: {e}")
     
     def encode(self, text: str) -> np.ndarray:
-        """Generate embedding for text."""
-        return self.model.encode(text, convert_to_numpy=True)
+        """
+        Generate embedding for text.
+        
+        Args:
+            text: Text to encode
+            
+        Returns:
+            Embedding vector
+            
+        Raises:
+            ValueError: If text is empty
+            RuntimeError: If encoding fails
+        """
+        if not text or not text.strip():
+            raise ValueError("Cannot encode empty text")
+        
+        try:
+            return self.model.encode(text, convert_to_numpy=True)
+        except Exception as e:
+            logger.error(f"Failed to encode text: {e}")
+            raise RuntimeError(f"Encoding failed: {e}")
     
     def compute_similarity(self, embedding1: np.ndarray, embedding2: np.ndarray) -> float:
         """Compute cosine similarity between two embeddings."""
