@@ -9,6 +9,9 @@ import {
   GeneratedPrompt,
   TaskRequest,
   Stats,
+  AIRequest,
+  AIResponse,
+  Conversation,
 } from './types';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
@@ -68,6 +71,22 @@ export const contextAPI = {
   // Health check
   healthCheck: async (): Promise<{ status: string }> => {
     const response = await api.get('/health');
+    return response.data;
+  },
+
+  // AI Integration
+  chatWithAI: async (data: AIRequest): Promise<AIResponse> => {
+    const response = await api.post<AIResponse>('/ai/chat', data);
+    return response.data;
+  },
+
+  listConversations: async (): Promise<Conversation[]> => {
+    const response = await api.get<Conversation[]>('/ai/conversations');
+    return response.data;
+  },
+
+  getConversation: async (id: string): Promise<Conversation> => {
+    const response = await api.get<Conversation>(`/ai/conversations/${id}`);
     return response.data;
   },
 };

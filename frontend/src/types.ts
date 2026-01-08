@@ -67,3 +67,43 @@ export interface Stats {
   contexts_by_type: Record<string, number>;
   contexts_with_embeddings: number;
 }
+
+// AI Integration types
+export interface AIRequest {
+  task: string;
+  max_context_units?: number;
+  provider?: string;
+  model?: string;
+  temperature?: number;
+  max_tokens?: number;
+  use_compact?: boolean;
+}
+
+export interface AIResponse {
+  conversation_id: string;
+  task: string;
+  response: string;
+  provider: string;
+  model: string;
+  context_ids: string[];
+  prompt_used: string;
+  timestamp: string;
+}
+
+export interface ConversationMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: string;
+  tokens?: number;
+  finish_reason?: string;
+}
+
+export interface Conversation {
+  id: string;
+  task: string;
+  provider: string;
+  model: string;
+  created_at: string;
+  message_count?: number;
+  messages?: ConversationMessage[];
+}
