@@ -2,10 +2,10 @@
  * Main App component for ContextPilot.
  */
 import React, { useEffect, useState } from 'react';
-import './App.css';
 import { contextAPI } from './api';
-import { ContextTools } from './ContextTools';
+import './App.css';
 import { ContextTemplates } from './ContextTemplates';
+import { ContextTools } from './ContextTools';
 import {
   AIResponse,
   ContextType,

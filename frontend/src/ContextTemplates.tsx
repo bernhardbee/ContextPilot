@@ -1,7 +1,6 @@
 /**
  * Context Templates component for quick context creation
  */
-import React from 'react';
 import { ContextType, ContextUnitCreate } from './types';
 
 interface ContextTemplatesProps {

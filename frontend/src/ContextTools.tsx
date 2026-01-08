@@ -3,7 +3,7 @@
  */
 import React, { useState } from 'react';
 import { contextAPI } from './api';
-import { ContextType, ContextStatus } from './types';
+import { ContextStatus, ContextType } from './types';
 
 interface ContextToolsProps {
   onFiltersChange: (filters: {
