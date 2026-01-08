@@ -42,6 +42,24 @@ class Settings(BaseSettings):
     enable_auth: bool = Field(default=False, description="Enable authentication")
     api_key: str = Field(default="", description="API key for authentication")
     
+    # Storage Configuration
+    use_database: bool = Field(default=True, description="Use database storage (vs in-memory)")
+    
+    # Database Configuration
+    database_url: str = Field(
+        default="sqlite:///./contextpilot.db",
+        description="Database connection URL"
+    )
+    database_echo: bool = Field(default=False, description="Echo SQL statements")
+    
+    # AI Integration
+    openai_api_key: str = Field(default="", description="OpenAI API key")
+    anthropic_api_key: str = Field(default="", description="Anthropic API key")
+    default_ai_provider: str = Field(default="openai", description="Default AI provider (openai or anthropic)")
+    default_ai_model: str = Field(default="gpt-4-turbo-preview", description="Default AI model")
+    ai_max_tokens: int = Field(default=2000, description="Max tokens for AI responses")
+    ai_temperature: float = Field(default=0.7, description="AI temperature (0-2)")
+    
     class Config:
         env_file = ".env"
         env_prefix = "CONTEXTPILOT_"

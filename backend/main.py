@@ -8,15 +8,25 @@ from datetime import datetime
 
 from models import (
     ContextUnit, ContextUnitCreate, ContextUnitUpdate,
-    TaskRequest, GeneratedPrompt, ContextStatus
+    TaskRequest, GeneratedPrompt, ContextStatus,
+    AIRequest, AIResponse
 )
-from storage import context_store
-from relevance import relevance_engine
-from composer import prompt_composer
 from config import settings
 from logger import logger
 from security import verify_api_key
 from validators import validate_content_length, validate_tags, sanitize_string
+
+# Import storage based on configuration
+if settings.use_database:
+    from db_storage import db_context_store as context_store
+    logger.info("Using database storage")
+else:
+    from storage import context_store
+    logger.info("Using in-memory storage")
+
+from relevance import relevance_engine
+from composer import prompt_composer
+from ai_service import ai_service
 
 
 app = FastAPI(
@@ -279,6 +289,121 @@ def get_stats(api_key: str = Depends(verify_api_key)):
         "contexts_by_type": stats_by_type,
         "contexts_with_embeddings": len([c for c in active_contexts if context_store.get_embedding(c.id) is not None])
     }
+
+
+# AI Integration Endpoints
+
+@app.post("/ai/chat", response_model=AIResponse)
+async def ai_chat(
+    request: AIRequest,
+    api_key: str = Depends(verify_api_key)
+):
+    """
+    Generate an AI response with relevant context.
+    This endpoint:
+    1. Finds relevant contexts for the task
+    2. Generates a contextualized prompt
+    3. Sends it to the AI provider (OpenAI/Anthropic)
+    4. Returns the AI response
+    5. Stores the conversation history
+    """
+    # Validate input
+    validate_content_length(request.task)
+    sanitized_task = sanitize_string(request.task)
+    
+    if request.max_context_units > settings.max_contexts_per_request:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"max_context_units exceeds limit of {settings.max_contexts_per_request}"
+        )
+    
+    # Rank contexts by relevance
+    ranked_contexts = relevance_engine.rank_with_keywords(
+        sanitized_task,
+        context_store,
+        max_results=request.max_context_units
+    )
+    
+    # Update last_used timestamp
+    current_time = datetime.utcnow()
+    for ranked in ranked_contexts:
+        ranked.context_unit.last_used = current_time
+    
+    # Compose prompt (full or compact)
+    if request.use_compact:
+        generated = prompt_composer.compose_compact(sanitized_task, ranked_contexts)
+    else:
+        generated = prompt_composer.compose(sanitized_task, ranked_contexts)
+    
+    # Extract context IDs
+    context_ids = [rc.context_unit.id for rc in ranked_contexts]
+    
+    try:
+        # Generate AI response
+        response_text, conversation = await ai_service.generate_response(
+            task=sanitized_task,
+            generated_prompt=generated,
+            context_ids=context_ids,
+            provider=request.provider,
+            model=request.model,
+            temperature=request.temperature,
+            max_tokens=request.max_tokens
+        )
+        
+        logger.info(f"AI response generated for conversation {conversation.id}")
+        
+        return AIResponse(
+            conversation_id=conversation.id,
+            task=sanitized_task,
+            response=response_text,
+            provider=conversation.provider,
+            model=conversation.model,
+            context_ids=context_ids,
+            prompt_used=generated.generated_prompt
+        )
+        
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"AI generation error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate AI response"
+        )
+
+
+@app.get("/ai/conversations")
+def list_conversations(
+    limit: int = 50,
+    offset: int = 0,
+    api_key: str = Depends(verify_api_key)
+):
+    """List recent AI conversations."""
+    conversations = ai_service.list_conversations(limit=limit, offset=offset)
+    return {
+        "conversations": conversations,
+        "limit": limit,
+        "offset": offset,
+        "count": len(conversations)
+    }
+
+
+@app.get("/ai/conversations/{conversation_id}")
+def get_conversation(
+    conversation_id: str,
+    api_key: str = Depends(verify_api_key)
+):
+    """Get a specific conversation with all messages."""
+    conversation = ai_service.get_conversation(conversation_id)
+    if not conversation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Conversation {conversation_id} not found"
+        )
+    return conversation
 
 
 if __name__ == "__main__":

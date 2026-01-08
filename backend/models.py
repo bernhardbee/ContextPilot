@@ -81,3 +81,30 @@ class GeneratedPrompt(BaseModel):
     relevant_context: List[RankedContextUnit]
     generated_prompt: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+class AIRequest(BaseModel):
+    """Request to generate an AI response."""
+    task: str
+    max_context_units: int = Field(default=5, ge=1, le=20)
+    provider: Optional[str] = None  # "openai" or "anthropic"
+    model: Optional[str] = None
+    temperature: Optional[float] = Field(None, ge=0.0, le=2.0)
+    max_tokens: Optional[int] = Field(None, ge=1, le=4000)
+    use_compact: bool = False  # Use compact prompt format
+
+
+class AIResponse(BaseModel):
+    """AI-generated response with metadata."""
+    model_config = ConfigDict(
+        json_encoders={datetime: lambda v: v.isoformat()}
+    )
+    
+    conversation_id: str
+    task: str
+    response: str
+    provider: str
+    model: str
+    context_ids: List[str]
+    prompt_used: str
+    timestamp: datetime = Field(default_factory=datetime.utcnow)

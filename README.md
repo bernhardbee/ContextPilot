@@ -14,6 +14,9 @@ Most AI tools are stateless—they forget context between sessions. ContextPilot
 ## ✨ Features
 
 - ✅ **CRUD operations** for context units
+- ✅ **Persistent storage** with SQLite or PostgreSQL + pgvector
+- ✅ **AI integration** with OpenAI (GPT-4) and Anthropic (Claude)
+- ✅ **Conversation history** with automatic persistence
 - ✅ **Semantic search** using sentence-transformers embeddings
 - ✅ **Confidence scoring** and versioning
 - ✅ **Relevance engine** that ranks contexts by task relevance
@@ -37,7 +40,8 @@ Most AI tools are stateless—they forget context between sessions. ContextPilot
 │  FastAPI Server │  ← Backend
 │                 │
 │  ┌───────────┐  │
-│  │ Storage   │  │  ← In-memory store
+│  │ Storage   │  │  ← SQLite/PostgreSQL or in-memory
+│  │ (Database)│  │
 │  └───────────┘  │
 │                 │
 │  ┌───────────┐  │
@@ -48,6 +52,10 @@ Most AI tools are stateless—they forget context between sessions. ContextPilot
 │  ┌───────────┐  │
 │  │  Prompt   │  │  ← Context composition
 │  │ Composer  │  │
+│  └───────────┘  │
+│                 │
+│  ┌───────────┐  │
+│  │AI Service │  │  ← OpenAI / Anthropic
 │  └───────────┘  │
 └─────────────────┘
 ```
@@ -108,14 +116,32 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. Run the server with example data:
+4. Configure environment variables:
+```bash
+cp .env.example .env
+# Edit .env with your API keys and database URL
+```
+
+5. Initialize the database:
+```bash
+python init_db.py
+```
+
+6. Run the server with example data (optional):
 ```bash
 python -c "from example_data import load_example_data; load_example_data()" && python main.py
+```
+
+Or run without example data:
+```bash
+python main.py
 ```
 
 The backend will be available at **http://localhost:8000**
 
 API documentation: **http://localhost:8000/docs**
+
+> **Note**: For production deployment with PostgreSQL and pgvector, see [DATABASE.md](backend/docs/DATABASE.md)
 
 ### Frontend Setup
 
@@ -145,6 +171,7 @@ The frontend will be available at **http://localhost:3000**
 3. Enter a task in the "Generate Prompt" section
 4. View the generated prompt with relevant context
 5. Copy the prompt to use with any LLM
+6. **NEW**: Use the AI Chat feature to get instant AI responses with context
 
 ### 2. Using the API
 
@@ -173,6 +200,23 @@ curl -X POST http://localhost:8000/generate-prompt \
     "task": "Write a function to sort a list",
     "max_context_units": 5
   }'
+```
+
+**Ask AI with context (NEW):**
+```bash
+curl -X POST http://localhost:8000/ai/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "task": "Explain the main purpose of this codebase",
+    "max_context_units": 5,
+    "provider": "openai",
+    "model": "gpt-4-turbo-preview"
+  }'
+```
+
+**View conversation history (NEW):**
+```bash
+curl http://localhost:8000/ai/conversations
 ```
 
 ### 3. Example Generated Prompt
@@ -220,6 +264,11 @@ python test_api.py
 
 ### Run Demo Script
 ```bash
+| POST | `/ai/chat` | **NEW**: Generate AI response with context |
+| GET | `/ai/conversations` | **NEW**: List conversation history |
+| GET | `/ai/conversations/{id}` | **NEW**: Get specific conversation |
+
+For detailed API documentation, see the interactive docs at `/docs` when the server is running.
 chmod +x demo.sh
 ./demo.sh
 ```
@@ -256,11 +305,11 @@ chmod +x demo.sh
   superseded_by: string | null;  // ID of replacing context
 }
 ```
-
-## 🎨 Tech Stack
-
-**Backend:**
-- FastAPI (Python web framework)
+SQLAlchemy 2.0 (ORM and database toolkit)
+- PostgreSQL / SQLite (persistent storage)
+- pgvector (vector similarity search)
+- OpenAI API (GPT-4 integration)
+- Anthropic API (Claude integration)
 - sentence-transformers (embeddings)
 - Pydantic (data validation)
 - NumPy (vector operations)
@@ -271,13 +320,26 @@ chmod +x demo.sh
 - Axios (HTTP client)
 - CSS3 (styling)
 
+## 📚 Documentation
+
+- **[Database Setup](backend/docs/DATABASE.md)**: SQLite and PostgreSQL configuration
+- **[AI Integration](backend/docs/AI_INTEGRATION.md)**: OpenAI and Anthropic setup
+- **[API Reference](http://localhost:8000/docs)**: Interactive API documentation (when server is running)
+
 ## 🔮 Future Enhancements
 
-- [ ] Persistent storage (PostgreSQL + pgvector)
+- [x] Persistent storage (PostgreSQL + pgvector) ✅
+- [x] ChatGPT/Claude API integration ✅
 - [ ] Automatic context extraction from documents
 - [ ] Context decay and reinforcement learning
 - [ ] Conflict detection between contexts
 - [ ] Browser extension for automatic context capture
+- [ ] IDE plugin integration
+- [ ] Export/import functionality
+- [ ] Advanced search and filtering
+- [ ] Analytics dashboard
+- [ ] Streaming AI responses
+- [ ] Multi-turn conversationsor automatic context capture
 - [ ] IDE plugin integration
 - [ ] ChatGPT/Claude API integration
 - [ ] Export/import functionality
