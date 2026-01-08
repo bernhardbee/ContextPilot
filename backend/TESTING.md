@@ -72,19 +72,7 @@ python -m pytest -v
 - Rate limiting
 - Sanitization verification
 
-### ✅ Prompt Logger (14 tests)
-- Log initialization and storage
-- Pagination and filtering
-- Statistics and export
-- Context type aggregation
-
-### ✅ API Prompt Logging (11 tests)
-- Log endpoint integration
-- Export functionality
-- Statistics integration
-- Error handling
-
-**Total: 107 tests** (all passing ✓)
+**Total: 82 tests** (all passing ✓)
 
 ## VS Code Integration
 
@@ -110,7 +98,7 @@ The test suite is designed for CI/CD pipelines:
 
 ## Test Results
 
-Last run: **107 passed in 2.40s** ✅
+Last run: **82 passed in 2.23s** ✅
 
 ### Test Breakdown
 - Unit tests (lite): 26 tests
@@ -119,8 +107,6 @@ Last run: **107 passed in 2.40s** ✅
 - Validators: 21 tests
 - Security: 6 tests
 - API Security: 12 tests
-- Prompt Logger: 14 tests
-- API Prompt Logging: 11 tests
 - Legacy tests: 15 tests
 
 ```

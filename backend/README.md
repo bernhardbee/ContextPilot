@@ -28,26 +28,6 @@ Once the server is running, visit:
 - Interactive API docs: http://localhost:8000/docs
 - Alternative docs: http://localhost:8000/redoc
 
-## Prompt Logging
-
-All prompt generations are automatically logged for audit purposes:
-
-```bash
-# View recent logs
-curl http://localhost:8000/prompt-logs?limit=10 \
-  -H "X-API-Key: your-key"
-
-# Export logs
-curl -X POST http://localhost:8000/prompt-logs/export \
-  -H "X-API-Key: your-key"
-
-# Get statistics
-curl http://localhost:8000/stats \
-  -H "X-API-Key: your-key"
-```
-
-See [../PROMPT_LOGGING.md](../PROMPT_LOGGING.md) for complete documentation.
-
 ## Testing
 
 Run all tests:
@@ -59,8 +39,7 @@ Run specific test suites:
 ```bash
 pytest test_validators.py -v
 pytest test_security.py -v
-pytest test_prompt_logger.py -v
-pytest test_api_prompt_logging.py -v
+pytest test_api_security.py -v
 ```
 
 ## Features
@@ -69,8 +48,7 @@ pytest test_api_prompt_logging.py -v
 - **Semantic Search**: Relevance ranking using embeddings
 - **Prompt Generation**: Full and compact prompt composition
 - **Security**: API key authentication, input validation, CORS
-- **Audit Trail**: Complete prompt logging for traceability
-- **Testing**: 107 comprehensive tests
+- **Testing**: 82 comprehensive tests
 
 ## Project Structure
 
@@ -78,6 +56,17 @@ pytest test_api_prompt_logging.py -v
 backend/
 ├── main.py              # FastAPI application
 ├── models.py            # Data models
+├── storage.py           # In-memory storage
+├── relevance.py         # Relevance engine
+├── composer.py          # Prompt composer
+├── config.py            # Configuration management
+├── logger.py            # Logging system
+├── validators.py        # Input validation
+├── security.py          # Authentication
+├── example_data.py      # Example data loader
+├── test_*.py            # Test suites (82 tests)
+└── requirements.txt     # Dependencies
+```
 ├── storage.py           # In-memory storage
 ├── relevance.py         # Relevance engine
 ├── composer.py          # Prompt composer
