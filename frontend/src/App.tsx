@@ -1,17 +1,17 @@
 /**
  * Main App component for ContextPilot.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import './App.css';
 import { contextAPI } from './api';
 import {
+  AIResponse,
+  ContextType,
   ContextUnit,
   ContextUnitCreate,
-  ContextType,
+  Conversation,
   GeneratedPrompt,
   Stats,
-  AIResponse,
-  Conversation,
 } from './types';
 
 function App() {
