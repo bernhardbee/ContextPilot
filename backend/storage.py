@@ -1,14 +1,15 @@
 """
 In-memory storage for context units with vector embeddings.
 """
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Tuple
 from datetime import datetime
 from models import ContextUnit, ContextType, ContextStatus
+from storage_interface import ContextStoreInterface
 import numpy as np
 from logger import logger
 
 
-class ContextStore:
+class ContextStore(ContextStoreInterface):
     """In-memory store for context units with vector embeddings."""
     
     def __init__(self):

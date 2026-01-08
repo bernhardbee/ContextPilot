@@ -1,7 +1,7 @@
 """
 Database-backed storage for context units.
 """
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Tuple
 from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
@@ -9,11 +9,12 @@ import numpy as np
 
 from db_models import ContextUnitDB
 from models import ContextUnit, ContextStatus
+from storage_interface import ContextStoreInterface
 from database import get_db_session
 from logger import logger
 
 
-class DatabaseContextStore:
+class DatabaseContextStore(ContextStoreInterface):
     """
     Database-backed storage for context units with vector embeddings.
     """
@@ -45,7 +46,7 @@ class DatabaseContextStore:
                 embedding=embedding.tolist() if embedding is not None else None
             )
             db.add(db_context)
-            db.commit()
+            # Commit handled by context manager
             logger.debug(f"Added context {context.id} to database")
     
     def get(self, context_id: str) -> Optional[ContextUnit]:
@@ -101,8 +102,7 @@ class DatabaseContextStore:
                 if hasattr(db_context, key):
                     setattr(db_context, key, value)
             
-            db.commit()
-            db.refresh(db_context)
+            # Commit and refresh handled by context manager
             logger.debug(f"Updated context {context_id}")
             return self._to_context_unit(db_context)
     
@@ -122,7 +122,7 @@ class DatabaseContextStore:
                 return False
             
             db.delete(db_context)
-            db.commit()
+            # Commit handled by context manager
             logger.debug(f"Deleted context {context_id}")
             return True
     
@@ -144,7 +144,7 @@ class DatabaseContextStore:
             
             old_context.status = ContextStatus.SUPERSEDED
             old_context.superseded_by = new_id
-            db.commit()
+            # Commit handled by context manager
             logger.debug(f"Context {old_id} superseded by {new_id}")
             return True
     
@@ -176,7 +176,7 @@ class DatabaseContextStore:
             db_context = db.query(ContextUnitDB).filter(ContextUnitDB.id == context_id).first()
             if db_context:
                 db_context.embedding = embedding.tolist()
-                db.commit()
+                # Commit handled by context manager
                 logger.debug(f"Updated embedding for context {context_id}")
     
     def list_with_embeddings(self, include_superseded: bool = False) -> List[tuple]:
