@@ -8,6 +8,7 @@ from models import ContextUnit, RankedContextUnit
 from storage import ContextStore
 from config import settings
 from logger import logger
+from embedding_cache import EmbeddingCache
 
 
 class RelevanceEngine:
@@ -30,10 +31,14 @@ class RelevanceEngine:
         except Exception as e:
             logger.error(f"Failed to load embedding model: {e}")
             raise RuntimeError(f"Failed to initialize RelevanceEngine: {e}")
+        
+        # Initialize embedding cache
+        self.cache = EmbeddingCache(max_size=1000, ttl_seconds=3600)
+        logger.info("Initialized embedding cache")
     
     def encode(self, text: str) -> np.ndarray:
         """
-        Generate embedding for text.
+        Generate embedding for text with caching.
         
         Args:
             text: Text to encode
@@ -48,8 +53,17 @@ class RelevanceEngine:
         if not text or not text.strip():
             raise ValueError("Cannot encode empty text")
         
+        # Check cache first
+        cached_embedding = self.cache.get(text)
+        if cached_embedding is not None:
+            return cached_embedding
+        
+        # Generate new embedding
         try:
-            return self.model.encode(text, convert_to_numpy=True)
+            embedding = self.model.encode(text, convert_to_numpy=True)
+            # Cache the result
+            self.cache.put(text, embedding)
+            return embedding
         except Exception as e:
             logger.error(f"Failed to encode text: {e}")
             raise RuntimeError(f"Encoding failed: {e}")

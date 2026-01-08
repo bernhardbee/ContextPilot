@@ -36,6 +36,8 @@ else:
 from relevance import relevance_engine
 from composer import prompt_composer
 from ai_service import ai_service
+from request_tracking import RequestTrackingMiddleware
+from response_cache import response_cache
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -102,6 +104,9 @@ app.add_middleware(
     allow_headers=settings.cors_allow_headers,
 )
 
+# Add request tracking middleware
+app.add_middleware(RequestTrackingMiddleware)
+
 
 @app.on_event("startup")
 async def startup_event():
@@ -142,7 +147,23 @@ def create_context(
     context_create: ContextUnitCreate,
     api_key: str = Depends(verify_api_key)
 ):
-    """Create a new context unit."""
+    """
+    Create a new context unit.
+    
+    Creates a new context entry with the specified type, content, and tags.
+    The context will be assigned a unique ID and timestamp automatically.
+    
+    Args:
+        context_create: Context data including type, content, confidence, and tags
+        
+    Returns:
+        The created context unit with generated ID and timestamp
+        
+    Raises:
+        400: Invalid input data (empty content, too many tags, etc.)
+        401: Missing or invalid API key
+        429: Rate limit exceeded (100 requests per minute)
+    """
     # Validate input
     validate_content_length(context_create.content)
     validate_tags(context_create.tags)
@@ -164,6 +185,10 @@ def create_context(
     embedding = relevance_engine.encode(context.content)
     context_store.add(context, embedding)
     
+    # Invalidate relevant caches
+    response_cache.invalidate("contexts")
+    response_cache.invalidate("stats")
+    
     logger.info(f"Created context {context.id} of type {context.type}")
     return context
 
@@ -173,7 +198,21 @@ def list_contexts(
     include_superseded: bool = False,
     api_key: str = Depends(verify_api_key)
 ):
-    """List all context units."""
+    """
+    List all context units.
+    
+    Retrieves all context units, optionally including superseded ones.
+    By default, only returns active contexts.
+    
+    Args:
+        include_superseded: If True, includes contexts that have been superseded
+        
+    Returns:
+        List of context units
+        
+    Raises:
+        401: Missing or invalid API key
+    """
     contexts = context_store.list_all(include_superseded=include_superseded)
     logger.debug(f"Listed {len(contexts)} contexts")
     return contexts
@@ -346,12 +385,20 @@ def get_stats(api_key: str = Depends(verify_api_key)):
             stats_by_type[ctx_type] = 0
         stats_by_type[ctx_type] += 1
     
+    # Get embedding cache stats
+    embedding_cache_stats = relevance_engine.cache.stats()
+    
+    # Get response cache stats
+    response_cache_stats = response_cache.stats()
+    
     return {
         "total_contexts": len(all_contexts),
         "active_contexts": len(active_contexts),
         "superseded_contexts": len(all_contexts) - len(active_contexts),
         "contexts_by_type": stats_by_type,
-        "contexts_with_embeddings": len([c for c in active_contexts if context_store.get_embedding(c.id) is not None])
+        "contexts_with_embeddings": len([c for c in active_contexts if context_store.get_embedding(c.id) is not None]),
+        "embedding_cache": embedding_cache_stats,
+        "response_cache": response_cache_stats
     }
 
 
