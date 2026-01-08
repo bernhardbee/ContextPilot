@@ -42,6 +42,18 @@ class ContextUnit(BaseModel):
 
 class ContextUnitCreate(BaseModel):
     """Schema for creating a new context unit."""
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "type": "preference",
+                "content": "I prefer using React with TypeScript for frontend development",
+                "confidence": 0.9,
+                "tags": ["frontend", "react", "typescript"],
+                "source": "manual"
+            }
+        }
+    )
+    
     type: ContextType
     content: str
     confidence: float = Field(ge=0.0, le=1.0, default=1.0)
@@ -51,6 +63,16 @@ class ContextUnitCreate(BaseModel):
 
 class ContextUnitUpdate(BaseModel):
     """Schema for updating a context unit."""
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "content": "Updated preference: I prefer using Tailwind CSS",
+                "confidence": 0.95,
+                "tags": ["frontend", "css", "tailwind"]
+            }
+        }
+    )
+    
     type: Optional[ContextType] = None
     content: Optional[str] = None
     confidence: Optional[float] = Field(None, ge=0.0, le=1.0)
@@ -61,6 +83,15 @@ class ContextUnitUpdate(BaseModel):
 
 class TaskRequest(BaseModel):
     """Request to generate a contextualized prompt."""
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "task": "Design a React component for user profile display",
+                "max_context_units": 5
+            }
+        }
+    )
+    
     task: str
     max_context_units: int = Field(default=5, ge=1, le=20)
 
@@ -85,6 +116,20 @@ class GeneratedPrompt(BaseModel):
 
 class AIRequest(BaseModel):
     """Request to generate an AI response."""
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "task": "Write a Python function to calculate Fibonacci numbers",
+                "max_context_units": 5,
+                "provider": "openai",
+                "model": "gpt-4-turbo-preview",
+                "temperature": 0.7,
+                "max_tokens": 2000,
+                "use_compact": False
+            }
+        }
+    )
+    
     task: str
     max_context_units: int = Field(default=5, ge=1, le=20)
     provider: Optional[str] = None  # "openai" or "anthropic"
