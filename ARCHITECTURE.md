@@ -6,7 +6,55 @@ ContextPilot is an AI-powered personal context engine with three main layers:
 
 1. **Frontend Layer** - React UI for user interaction
 2. **Backend Layer** - FastAPI server with business logic
-3. **Storage Layer** - In-memory store with vector embeddings
+3. **Storage Layer** - Database (PostgreSQL/SQLite) or in-memory store with vector embeddings
+
+## Recent Architectural Improvements
+
+### 1. Storage Interface Abstraction
+- **Problem**: Storage implementations (in-memory vs database) had no formal contract
+- **Solution**: Introduced `ContextStoreInterface` abstract base class
+- **Benefits**:
+  - Type safety and IDE support
+  - Swappable implementations
+  - Easier testing and mocking
+  - Clear API contract
+
+### 2. Database Session Management
+- **Problem**: Manual commit/rollback, potential session leaks
+- **Solution**: Enhanced context manager with automatic commit and guaranteed cleanup
+- **Implementation**:
+  - Auto-commit on success
+  - Auto-rollback on exceptions
+  - Guaranteed session cleanup
+  - Improved error logging
+- **Impact**: Eliminates session leaks and data consistency issues
+
+### 3. API Rate Limiting
+- **Implementation**: slowapi with per-IP rate limiting
+- **Limits**:
+  - Context operations: 100/minute
+  - Prompt generation: 50/minute
+  - AI chat (most expensive): 10/minute
+- **Benefits**: Prevents abuse, protects API costs
+
+### 4. Standardized Error Handling
+- **Custom Exceptions**: All errors inherit from `ContextPilotException`
+- **Error Response Format**:
+  ```json
+  {
+    "error_code": "VALIDATION_ERROR",
+    "message": "Human-readable description",
+    "details": {}
+  }
+  ```
+- **Global Handlers**: Consistent error format across all endpoints
+- **Benefits**: Better API UX, easier debugging
+
+### 5. Synchronous AI Service
+- **Decision**: Removed false async patterns from AI service
+- **Rationale**: API calls to OpenAI/Anthropic are blocking I/O
+- **Implementation**: Changed from `async def` to `def` for clarity
+- **Documentation**: Added notes explaining synchronous design choice
 
 ## System Components
 
@@ -88,18 +136,39 @@ ContextPilot is an AI-powered personal context engine with three main layers:
 
 ```
 ┌─────────────────────────────────────┐
-│        Context Store                │
+│     ContextStoreInterface (ABC)     │
 ├─────────────────────────────────────┤
-│                                     │
-│  ┌───────────────────────────────┐  │
-│  │  In-Memory Storage            │  │
-│  │                               │  │
-│  │  contexts: Dict[id, Context]  │  │
-│  │  embeddings: Dict[id, Vector] │  │
-│  └───────────────────────────────┘  │
-│                                     │
-│  Operations:                        │
+│  Abstract methods:                  │
 │  - add(context, embedding)          │
+│  - get(context_id)                  │
+│  - list_all(include_superseded)     │
+│  - update(context_id, updates)      │
+│  - delete(context_id)               │
+│  - supersede(old_id, new_id)        │
+│  - get_embedding(context_id)        │
+│  - update_embedding(context_id, emb)│
+│  - list_with_embeddings()           │
+└─────────────────────────────────────┘
+            │
+            │ implements
+    ┌───────┴────────┐
+    │                │
+┌───▼────────┐  ┌───▼────────────────┐
+│ ContextStore│  │ DatabaseContextStore│
+│ (In-Memory) │  │  (PostgreSQL/SQLite)│
+└─────────────┘  └─────────────────────┘
+```
+
+#### In-Memory Storage
+- Fast, ephemeral storage
+- Uses Python dictionaries
+- Good for development/testing
+
+#### Database Storage
+- Persistent storage with SQLAlchemy 2.0
+- Supports PostgreSQL (with pgvector) or SQLite
+- Automatic session management
+- Context manager handles commits/rollbacks          │
 │  - get(id)                          │
 │  - list_all()                       │
 │  - update(id, updates)              │
