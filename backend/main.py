@@ -9,6 +9,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from typing import List, Optional
 from datetime import datetime
+from contextlib import asynccontextmanager
 
 from models import (
     ContextUnit, ContextUnitCreate, ContextUnitUpdate,
@@ -42,10 +43,40 @@ from response_cache import response_cache
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Lifespan context manager for startup and shutdown events.
+    Replaces deprecated @app.on_event decorators.
+    """
+    # Startup
+    logger.info("Starting ContextPilot API")
+    logger.info(f"CORS origins: {settings.cors_origins}")
+    logger.info(f"Authentication enabled: {settings.enable_auth}")
+    
+    # Verify embedding model is loaded
+    try:
+        logger.info("Verifying embedding model...")
+        test_embedding = relevance_engine.encode("test")
+        logger.info(f"Embedding model ready (dimension: {len(test_embedding)})")
+    except Exception as e:
+        logger.error(f"Failed to verify embedding model: {e}")
+        raise RuntimeError("Embedding model not available") from e
+    
+    yield
+    
+    # Shutdown
+    logger.info("Shutting down ContextPilot API")
+    response_cache.clear()
+    logger.info("Cleared response cache")
+
+
 app = FastAPI(
     title="ContextPilot API",
     description="AI-powered personal context engine",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # Add rate limiter to app state
@@ -108,20 +139,6 @@ app.add_middleware(
 app.add_middleware(RequestTrackingMiddleware)
 
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize application on startup."""
-    logger.info("Starting ContextPilot API")
-    logger.info(f"CORS origins: {settings.cors_origins}")
-    logger.info(f"Authentication enabled: {settings.enable_auth}")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown."""
-    logger.info("Shutting down ContextPilot API")
-
-
 @app.get("/")
 def root():
     """Root endpoint."""
@@ -134,8 +151,55 @@ def root():
 
 @app.get("/health")
 def health_check():
-    """Health check endpoint."""
-    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
+    """
+    Health check endpoint with component status.
+    
+    Returns:
+        Health status of API and all critical components
+    """
+    health_status = {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "components": {}
+    }
+    
+    # Check embedding model
+    try:
+        test_embedding = relevance_engine.encode("health check")
+        health_status["components"]["embedding_model"] = {
+            "status": "healthy",
+            "dimension": len(test_embedding)
+        }
+    except Exception as e:
+        health_status["status"] = "unhealthy"
+        health_status["components"]["embedding_model"] = {
+            "status": "unhealthy",
+            "error": str(e)
+        }
+    
+    # Check storage
+    try:
+        context_store.list_contexts(limit=1)
+        health_status["components"]["storage"] = {"status": "healthy"}
+    except Exception as e:
+        health_status["status"] = "unhealthy"
+        health_status["components"]["storage"] = {
+            "status": "unhealthy",
+            "error": str(e)
+        }
+    
+    # Check AI service
+    try:
+        # Just check if it's initialized
+        if ai_service:
+            health_status["components"]["ai_service"] = {"status": "healthy"}
+    except Exception as e:
+        health_status["components"]["ai_service"] = {
+            "status": "degraded",
+            "error": str(e)
+        }
+    
+    return health_status
 
 
 # Context CRUD endpoints
