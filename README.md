@@ -30,6 +30,11 @@ Most AI tools are stateless—they forget context between sessions. ContextPilot
 - ✅ **Structured logging** with JSON output option
 - ✅ **Database migrations** with Alembic
 - ✅ **No external dependencies** for embeddings (uses local models)
+- ✅ **Context Import/Export** - JSON/CSV export and JSON import functionality
+- ✅ **Advanced Filtering** - Search by type, tags, content, and status
+- ✅ **Context Templates** - Quick creation with 6 pre-defined templates
+- ✅ **Mobile Responsive UI** - Optimized for mobile devices
+- ✅ **Enhanced UX** - Loading states, smooth transitions, and improved interactions
 
 ## 🏗️ Architecture
 

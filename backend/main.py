@@ -1,19 +1,22 @@
 """
 FastAPI application for ContextPilot.
 """
-from fastapi import FastAPI, HTTPException, status, Depends, Request
+from fastapi import FastAPI, HTTPException, status, Depends, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from typing import List, Optional
 from datetime import datetime
 from contextlib import asynccontextmanager
+import json
+import csv
+import io
 
 from models import (
     ContextUnit, ContextUnitCreate, ContextUnitUpdate,
-    TaskRequest, GeneratedPrompt, ContextStatus,
+    TaskRequest, GeneratedPrompt, ContextStatus, ContextType,
     AIRequest, AIResponse
 )
 from error_models import ErrorResponse
@@ -260,26 +263,242 @@ def create_context(
 @app.get("/contexts", response_model=List[ContextUnit])
 def list_contexts(
     include_superseded: bool = False,
+    type: Optional[str] = None,
+    tags: Optional[str] = None,
+    search: Optional[str] = None,
+    status_filter: Optional[str] = None,
+    limit: int = 100,
     api_key: str = Depends(verify_api_key)
 ):
     """
-    List all context units.
+    List all context units with optional filtering.
     
-    Retrieves all context units, optionally including superseded ones.
-    By default, only returns active contexts.
+    Retrieves context units with support for multiple filters.
     
     Args:
         include_superseded: If True, includes contexts that have been superseded
+        type: Filter by context type (preference, goal, decision, fact)
+        tags: Comma-separated list of tags to filter by
+        search: Search term to filter content (case-insensitive)
+        status_filter: Filter by status (active, superseded)
+        limit: Maximum number of results to return
         
     Returns:
-        List of context units
+        List of context units matching the filters
         
     Raises:
+        400: Invalid filter parameters
         401: Missing or invalid API key
     """
     contexts = context_store.list_all(include_superseded=include_superseded)
-    logger.debug(f"Listed {len(contexts)} contexts")
+    
+    # Apply type filter
+    if type:
+        try:
+            filter_type = ContextType(type)
+            contexts = [c for c in contexts if c.type == filter_type]
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid type: {type}. Must be one of: preference, goal, decision, fact"
+            )
+    
+    # Apply status filter
+    if status_filter:
+        try:
+            filter_status = ContextStatus(status_filter)
+            contexts = [c for c in contexts if c.status == filter_status]
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid status: {status_filter}. Must be one of: active, superseded"
+            )
+    
+    # Apply tags filter
+    if tags:
+        tag_list = [t.strip().lower() for t in tags.split(",") if t.strip()]
+        contexts = [c for c in contexts if any(tag.lower() in [t.lower() for t in c.tags] for tag in tag_list)]
+    
+    # Apply search filter
+    if search:
+        search_lower = search.lower()
+        contexts = [c for c in contexts if search_lower in c.content.lower() or any(search_lower in tag.lower() for tag in c.tags)]
+    
+    # Apply limit
+    contexts = contexts[:limit]
+    
+    logger.debug(f"Listed {len(contexts)} contexts with filters")
     return contexts
+
+
+@app.get("/contexts/export")
+def export_contexts(
+    format: str = "json",
+    api_key: str = Depends(verify_api_key)
+):
+    """
+    Export all contexts in JSON or CSV format.
+    
+    Args:
+        format: Export format ('json' or 'csv')
+        
+    Returns:
+        StreamingResponse with the exported data
+    """
+    contexts = context_store.list_all()
+    
+    if format == "json":
+        # Export as JSON
+        export_data = {
+            "export_date": datetime.utcnow().isoformat(),
+            "total_contexts": len(contexts),
+            "contexts": [
+                {
+                    "id": ctx.id,
+                    "type": ctx.type.value,
+                    "content": ctx.content,
+                    "confidence": ctx.confidence,
+                    "tags": ctx.tags,
+                    "source": ctx.source,
+                    "status": ctx.status.value,
+                    "created_at": ctx.created_at.isoformat(),
+                    "updated_at": ctx.updated_at.isoformat(),
+                    "last_used": ctx.last_used.isoformat() if ctx.last_used else None
+                }
+                for ctx in contexts
+            ]
+        }
+        
+        json_str = json.dumps(export_data, indent=2)
+        return StreamingResponse(
+            io.BytesIO(json_str.encode()),
+            media_type="application/json",
+            headers={"Content-Disposition": f"attachment; filename=contexts_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"}
+        )
+    
+    elif format == "csv":
+        # Export as CSV
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Write header
+        writer.writerow(["id", "type", "content", "confidence", "tags", "source", "status", "created_at", "updated_at", "last_used"])
+        
+        # Write data
+        for ctx in contexts:
+            writer.writerow([
+                ctx.id,
+                ctx.type.value,
+                ctx.content,
+                ctx.confidence,
+                ",".join(ctx.tags),
+                ctx.source or "",
+                ctx.status.value,
+                ctx.created_at.isoformat(),
+                ctx.updated_at.isoformat(),
+                ctx.last_used.isoformat() if ctx.last_used else ""
+            ])
+        
+        csv_str = output.getvalue()
+        return StreamingResponse(
+            io.BytesIO(csv_str.encode()),
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename=contexts_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"}
+        )
+    
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported format: {format}. Use 'json' or 'csv'"
+        )
+
+
+@app.post("/contexts/import")
+async def import_contexts(
+    file: UploadFile = File(...),
+    replace_existing: bool = False,
+    api_key: str = Depends(verify_api_key)
+):
+    """
+    Import contexts from JSON file.
+    
+    Args:
+        file: JSON file with contexts
+        replace_existing: If True, clear existing contexts before import
+        
+    Returns:
+        Import statistics
+    """
+    if not file.filename.endswith('.json'):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only JSON files are supported for import"
+        )
+    
+    try:
+        # Read file content
+        content = await file.read()
+        import_data = json.loads(content)
+        
+        if replace_existing:
+            # Clear existing contexts
+            all_contexts = context_store.list_all()
+            for ctx in all_contexts:
+                context_store.delete(ctx.id)
+            logger.info(f"Cleared {len(all_contexts)} existing contexts")
+        
+        # Import contexts
+        imported_count = 0
+        skipped_count = 0
+        errors = []
+        
+        for ctx_data in import_data.get("contexts", []):
+            try:
+                # Validate and create context
+                context = ContextUnit(
+                    type=ContextType(ctx_data["type"]),
+                    content=ctx_data["content"],
+                    confidence=ctx_data.get("confidence", 1.0),
+                    tags=ctx_data.get("tags", []),
+                    source=ctx_data.get("source"),
+                    status=ContextStatus(ctx_data.get("status", "active"))
+                )
+                
+                # Generate embedding
+                embedding = relevance_engine.encode(context.content)
+                
+                # Store context
+                context_store.add(context, embedding)
+                imported_count += 1
+                
+                # Invalidate caches
+                response_cache.invalidate("contexts")
+                
+            except Exception as e:
+                skipped_count += 1
+                errors.append(f"Context {ctx_data.get('id', 'unknown')}: {str(e)}")
+                logger.warning(f"Failed to import context: {e}")
+        
+        logger.info(f"Imported {imported_count} contexts, skipped {skipped_count}")
+        
+        return {
+            "imported": imported_count,
+            "skipped": skipped_count,
+            "errors": errors[:10],  # Return first 10 errors
+            "total_errors": len(errors)
+        }
+        
+    except json.JSONDecodeError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid JSON file: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"Import failed: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Import failed: {str(e)}"
+        )
 
 
 @app.get("/contexts/{context_id}", response_model=ContextUnit)
@@ -584,6 +803,8 @@ def get_conversation(
         )
     return conversation
 
+
+# Import/Export Endpoints
 
 if __name__ == "__main__":
     import uvicorn

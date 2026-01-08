@@ -4,6 +4,8 @@
 import React, { useEffect, useState } from 'react';
 import './App.css';
 import { contextAPI } from './api';
+import { ContextTools } from './ContextTools';
+import { ContextTemplates } from './ContextTemplates';
 import {
   AIResponse,
   ContextType,
@@ -45,16 +47,37 @@ function App() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
 
+  // Search and filter states
+  const [filters, setFilters] = useState({
+    search: '',
+    type: '',
+    tags: '',
+    status: '',
+  });
+
   // Load contexts and stats on mount
   useEffect(() => {
     loadContexts();
     loadStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Reload contexts when filters change
+  useEffect(() => {
+    loadContexts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters]);
 
   const loadContexts = async () => {
     try {
       setLoading(true);
-      const data = await contextAPI.listContexts();
+      const apiFilters: any = {};
+      if (filters.type) apiFilters.type = filters.type;
+      if (filters.tags) apiFilters.tags = filters.tags;
+      if (filters.search) apiFilters.search = filters.search;
+      if (filters.status) apiFilters.status_filter = filters.status;
+      
+      const data = await contextAPI.listContexts(false, apiFilters);
       setContexts(data);
       setError(null);
     } catch (err) {
@@ -138,6 +161,12 @@ function App() {
       ...newContext,
       tags: newContext.tags?.filter((t) => t !== tag) || [],
     });
+  };
+
+  const handleUseTemplate = (template: ContextUnitCreate) => {
+    setNewContext(template);
+    setSuccess('Template loaded! Modify as needed and click Add Context.');
+    setTimeout(() => setSuccess(null), 3000);
   };
 
   const handleGeneratePrompt = async (e: React.FormEvent) => {
@@ -289,6 +318,13 @@ function App() {
       <div className="main-content">
         {activeTab === 'contexts' && (
           <>
+            <ContextTools
+              onFiltersChange={setFilters}
+              onRefresh={loadContexts}
+            />
+            
+            <ContextTemplates onUseTemplate={handleUseTemplate} />
+            
             <div className="card">
               <h2>Add Context</h2>
           <form onSubmit={handleCreateContext}>

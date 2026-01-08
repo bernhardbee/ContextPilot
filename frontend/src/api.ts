@@ -30,9 +30,21 @@ export const contextAPI = {
     return response.data;
   },
 
-  listContexts: async (includSuperseded: boolean = false): Promise<ContextUnit[]> => {
+  listContexts: async (
+    includeSuperseded: boolean = false,
+    filters?: {
+      type?: string;
+      tags?: string;
+      search?: string;
+      status_filter?: string;
+      limit?: number;
+    }
+  ): Promise<ContextUnit[]> => {
     const response = await api.get<ContextUnit[]>('/contexts', {
-      params: { include_superseded: includSuperseded },
+      params: {
+        include_superseded: includeSuperseded,
+        ...filters,
+      },
     });
     return response.data;
   },
@@ -49,6 +61,30 @@ export const contextAPI = {
 
   deleteContext: async (id: string): Promise<void> => {
     await api.delete(`/contexts/${id}`);
+  },
+
+  // Import/Export operations
+  exportContexts: async (format: 'json' | 'csv' = 'json'): Promise<Blob> => {
+    const response = await api.get('/contexts/export', {
+      params: { format },
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  importContexts: async (file: File, replaceExisting: boolean = false): Promise<{
+    imported: number;
+    skipped: number;
+    errors: string[];
+    total_errors: number;
+  }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/contexts/import', formData, {
+      params: { replace_existing: replaceExisting },
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
   },
 
   // Prompt generation
