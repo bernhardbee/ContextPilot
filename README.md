@@ -18,12 +18,17 @@ Most AI tools are stateless—they forget context between sessions. ContextPilot
 - ✅ **AI integration** with OpenAI (GPT-4) and Anthropic (Claude)
 - ✅ **Conversation history** with automatic persistence
 - ✅ **Semantic search** using sentence-transformers embeddings
+- ✅ **Embedding caching** for faster similarity searches
+- ✅ **Response caching** for improved API performance
 - ✅ **Confidence scoring** and versioning
 - ✅ **Relevance engine** that ranks contexts by task relevance
 - ✅ **Prompt composer** that generates LLM-ready prompts
 - ✅ **Clean React UI** for managing context and viewing prompts
-- ✅ **RESTful API** with FastAPI
-- ✅ **Security features** - API key auth, input validation, CORS
+- ✅ **RESTful API** with FastAPI and OpenAPI documentation
+- ✅ **Security features** - API key auth, input validation, CORS, rate limiting
+- ✅ **Request tracking** with unique IDs and timing
+- ✅ **Structured logging** with JSON output option
+- ✅ **Database migrations** with Alembic
 - ✅ **No external dependencies** for embeddings (uses local models)
 
 ## 🏗️ Architecture
