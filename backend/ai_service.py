@@ -32,7 +32,7 @@ class AIService:
             self.anthropic_client = Anthropic(api_key=settings.anthropic_api_key)
             logger.info("Anthropic client initialized")
     
-    async def generate_response(
+    def generate_response(
         self,
         task: str,
         generated_prompt: GeneratedPrompt,
@@ -44,6 +44,9 @@ class AIService:
     ) -> Tuple[str, ConversationDB]:
         """
         Generate AI response using the specified provider.
+        
+        Note: This is a synchronous method as it makes blocking API calls.
+        Consider using async httpx client for true async in the future.
         
         Args:
             task: User's original task
@@ -63,17 +66,17 @@ class AIService:
         max_tokens = max_tokens or settings.ai_max_tokens
         
         if provider == "openai":
-            return await self._generate_openai(
+            return self._generate_openai(
                 task, generated_prompt, context_ids, model, temperature, max_tokens
             )
         elif provider == "anthropic":
-            return await self._generate_anthropic(
+            return self._generate_anthropic(
                 task, generated_prompt, context_ids, model, temperature, max_tokens
             )
         else:
             raise ValueError(f"Unknown AI provider: {provider}")
     
-    async def _generate_openai(
+    def _generate_openai(
         self,
         task: str,
         generated_prompt: GeneratedPrompt,
@@ -82,7 +85,7 @@ class AIService:
         temperature: float,
         max_tokens: int
     ) -> Tuple[str, ConversationDB]:
-        """Generate response using OpenAI API."""
+        """Generate response using OpenAI API (synchronous)."""
         if not self.openai_client:
             raise ValueError("OpenAI API key not configured")
         
@@ -132,7 +135,7 @@ class AIService:
             logger.error(f"OpenAI API error: {e}")
             raise
     
-    async def _generate_anthropic(
+    def _generate_anthropic(
         self,
         task: str,
         generated_prompt: GeneratedPrompt,
@@ -141,7 +144,7 @@ class AIService:
         temperature: float,
         max_tokens: int
     ) -> Tuple[str, ConversationDB]:
-        """Generate response using Anthropic API."""
+        """Generate response using Anthropic API (synchronous)."""
         if not self.anthropic_client:
             raise ValueError("Anthropic API key not configured")
         
@@ -204,8 +207,7 @@ class AIService:
                 context_ids=context_ids
             )
             db.add(conversation)
-            db.commit()
-            db.refresh(conversation)
+            # Commit and refresh handled by context manager
             return conversation
     
     def _save_messages(self, conversation_id: str, messages: List[Dict]):
@@ -220,7 +222,7 @@ class AIService:
                     finish_reason=msg.get("finish_reason")
                 )
                 db.add(db_message)
-            db.commit()
+            # Commit handled by context manager
     
     def get_conversation(self, conversation_id: str) -> Optional[Dict]:
         """Get a conversation with all its messages."""

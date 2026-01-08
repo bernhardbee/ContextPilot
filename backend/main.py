@@ -1,8 +1,12 @@
 """
 FastAPI application for ContextPilot.
 """
-from fastapi import FastAPI, HTTPException, status, Depends
+from fastapi import FastAPI, HTTPException, status, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from typing import List, Optional
 from datetime import datetime
 
@@ -10,6 +14,11 @@ from models import (
     ContextUnit, ContextUnitCreate, ContextUnitUpdate,
     TaskRequest, GeneratedPrompt, ContextStatus,
     AIRequest, AIResponse
+)
+from error_models import ErrorResponse
+from exceptions import (
+    ContextPilotException, ValidationError, ResourceNotFoundError,
+    StorageError, AIServiceError, AuthenticationError
 )
 from config import settings
 from logger import logger
@@ -28,12 +37,61 @@ from relevance import relevance_engine
 from composer import prompt_composer
 from ai_service import ai_service
 
+# Initialize rate limiter
+limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
     title="ContextPilot API",
     description="AI-powered personal context engine",
     version="1.0.0"
 )
+
+# Add rate limiter to app state
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+# Custom exception handlers
+@app.exception_handler(ContextPilotException)
+async def contextpilot_exception_handler(request: Request, exc: ContextPilotException):
+    """Handle custom ContextPilot exceptions."""
+    logger.error(f"{exc.error_code}: {exc.message}", extra={"details": exc.details})
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error_code": exc.error_code,
+            "message": exc.message,
+            "details": exc.details
+        }
+    )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Handle FastAPI HTTP exceptions with standard format."""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error_code": "HTTP_ERROR",
+            "message": exc.detail,
+            "details": {}
+        }
+    )
+
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    """Handle unexpected exceptions."""
+    logger.error(f"Unexpected error: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error_code": "INTERNAL_SERVER_ERROR",
+            "message": "An unexpected error occurred",
+            "details": {}
+        }
+    )
+
 
 # Configure CORS with settings
 app.add_middleware(
@@ -78,7 +136,9 @@ def health_check():
 # Context CRUD endpoints
 
 @app.post("/contexts", response_model=ContextUnit, status_code=status.HTTP_201_CREATED)
+@limiter.limit("100/minute")
 def create_context(
+    request: Request,
     context_create: ContextUnitCreate,
     api_key: str = Depends(verify_api_key)
 ):
@@ -189,7 +249,9 @@ def delete_context(context_id: str, api_key: str = Depends(verify_api_key)):
 # Prompt generation endpoints
 
 @app.post("/generate-prompt", response_model=GeneratedPrompt)
+@limiter.limit("50/minute")
 def generate_prompt(
+    request: Request,
     task_request: TaskRequest,
     api_key: str = Depends(verify_api_key)
 ):
@@ -230,7 +292,9 @@ def generate_prompt(
 
 
 @app.post("/generate-prompt/compact", response_model=GeneratedPrompt)
+@limiter.limit("50/minute")
 def generate_prompt_compact(
+    request: Request,
     task_request: TaskRequest,
     api_key: str = Depends(verify_api_key)
 ):
@@ -294,8 +358,10 @@ def get_stats(api_key: str = Depends(verify_api_key)):
 # AI Integration Endpoints
 
 @app.post("/ai/chat", response_model=AIResponse)
-async def ai_chat(
-    request: AIRequest,
+@limiter.limit("10/minute")
+def ai_chat(
+    request: Request,
+    ai_request: AIRequest,
     api_key: str = Depends(verify_api_key)
 ):
     """
@@ -306,12 +372,14 @@ async def ai_chat(
     3. Sends it to the AI provider (OpenAI/Anthropic)
     4. Returns the AI response
     5. Stores the conversation history
+    
+    Note: This is a synchronous endpoint as AI API calls are blocking.
     """
     # Validate input
-    validate_content_length(request.task)
-    sanitized_task = sanitize_string(request.task)
+    validate_content_length(ai_request.task)
+    sanitized_task = sanitize_string(ai_request.task)
     
-    if request.max_context_units > settings.max_contexts_per_request:
+    if ai_request.max_context_units > settings.max_contexts_per_request:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"max_context_units exceeds limit of {settings.max_contexts_per_request}"
@@ -321,7 +389,7 @@ async def ai_chat(
     ranked_contexts = relevance_engine.rank_with_keywords(
         sanitized_task,
         context_store,
-        max_results=request.max_context_units
+        max_results=ai_request.max_context_units
     )
     
     # Update last_used timestamp
@@ -330,7 +398,7 @@ async def ai_chat(
         ranked.context_unit.last_used = current_time
     
     # Compose prompt (full or compact)
-    if request.use_compact:
+    if ai_request.use_compact:
         generated = prompt_composer.compose_compact(sanitized_task, ranked_contexts)
     else:
         generated = prompt_composer.compose(sanitized_task, ranked_contexts)
@@ -339,15 +407,15 @@ async def ai_chat(
     context_ids = [rc.context_unit.id for rc in ranked_contexts]
     
     try:
-        # Generate AI response
-        response_text, conversation = await ai_service.generate_response(
+        # Generate AI response (synchronous call)
+        response_text, conversation = ai_service.generate_response(
             task=sanitized_task,
             generated_prompt=generated,
             context_ids=context_ids,
-            provider=request.provider,
-            model=request.model,
-            temperature=request.temperature,
-            max_tokens=request.max_tokens
+            provider=ai_request.provider,
+            model=ai_request.model,
+            temperature=ai_request.temperature,
+            max_tokens=ai_request.max_tokens
         )
         
         logger.info(f"AI response generated for conversation {conversation.id}")
