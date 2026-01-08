@@ -43,29 +43,73 @@ def get_db() -> Generator[Session, None, None]:
 def get_db_session() -> Generator[Session, None, None]:
     """
     Context manager for getting a database session.
-    Use in non-FastAPI contexts.
+    Use in non-FastAPI contexts. Handles all exceptions and ensures cleanup.
+    
+    Yields:
+        Database session
+        
+    Raises:
+        Exception: Re-raises any exception after rolling back transaction
     """
     db = SessionLocal()
     try:
         yield db
+        # Commit if no exception occurred
+        db.commit()
     except Exception as e:
+        # Rollback on any exception
         db.rollback()
-        logger.error(f"Database session error: {e}")
+        logger.error(f"Database session error: {e}", exc_info=True)
         raise
     finally:
+        # Always close the session
         db.close()
 
 
 def init_db():
-    """Initialize database tables."""
-    from db_models import ContextUnitDB, ConversationDB, MessageDB
-    logger.info("Creating database tables...")
-    Base.metadata.create_all(bind=engine)
-    logger.info("Database tables created successfully")
+    """
+    Initialize database tables.
+    
+    Raises:
+        Exception: If table creation fails
+    """
+    try:
+        from db_models import ContextUnitDB, ConversationDB, MessageDB
+        logger.info("Creating database tables...")
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables created successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {e}", exc_info=True)
+        raise
 
 
 def drop_db():
-    """Drop all database tables. Use with caution!"""
-    logger.warning("Dropping all database tables...")
-    Base.metadata.drop_all(bind=engine)
-    logger.warning("All database tables dropped")
+    """
+    Drop all database tables. Use with caution!
+    
+    Raises:
+        Exception: If table drop fails
+    """
+    try:
+        logger.warning("Dropping all database tables...")
+        Base.metadata.drop_all(bind=engine)
+        logger.warning("All database tables dropped")
+    except Exception as e:
+        logger.error(f"Failed to drop database tables: {e}", exc_info=True)
+        raise
+
+
+def check_db_health() -> bool:
+    """
+    Check if database connection is healthy.
+    
+    Returns:
+        True if database is accessible, False otherwise
+    """
+    try:
+        with get_db_session() as db:
+            db.execute("SELECT 1")
+        return True
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
+        return False
