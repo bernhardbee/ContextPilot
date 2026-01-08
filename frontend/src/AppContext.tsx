@@ -1,8 +1,8 @@
 /**
  * Global state management using React Context API.
  */
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import { ContextUnit, Stats, GeneratedPrompt, AIResponse, Conversation } from './types';
+import React, { createContext, ReactNode, useContext, useReducer } from 'react';
+import { AIResponse, ContextUnit, Conversation, GeneratedPrompt, Stats } from './types';
 
 // State interface
 interface AppState {
