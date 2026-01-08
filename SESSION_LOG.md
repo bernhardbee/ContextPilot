@@ -1349,3 +1349,126 @@ interface AppState {
 ---
 
 *End of Session Log - January 8, 2026*
+
+## Part 9: Final Medium Priority Tasks
+
+### Date: January 8, 2026
+
+### Tasks Completed
+
+#### 1. Migrate to FastAPI Lifespan Events ✅
+
+**Problem:**
+- Using deprecated `@app.on_event("startup")` and `@app.on_event("shutdown")`
+- Code will break in future FastAPI versions
+
+**Solution:**
+- Migrated to `lifespan` context manager (FastAPI 0.93+)
+- Added embedding model verification on startup
+- Added cache cleanup on shutdown
+- Follows modern FastAPI best practices
+
+**Changes:**
+- Modified `backend/main.py`:
+  - Added `from contextlib import asynccontextmanager`
+  - Replaced event decorators with `lifespan()` async context manager
+  - Added model warmup and verification
+  - Pass `lifespan=lifespan` to FastAPI app
+
+**Impact:** ✅ Future-proof, no deprecation warnings
+
+---
+
+#### 2. Add Dependency Injection Container ✅
+
+**Problem:**
+- Global singletons everywhere (hard to test)
+- Inflexible architecture
+
+**Solution:**
+- Created `ServiceContainer` class
+- Lazy initialization of all services
+- Proper FastAPI dependency functions
+
+**Implementation:**
+- Created `backend/dependencies.py` (~170 lines):
+  - `ServiceContainer` with lazy initialization
+  - Methods: `get_context_store()`, `get_relevance_engine()`, `get_prompt_composer()`, `get_ai_service()`
+  - FastAPI dependency functions
+
+**Impact:** Cleaner architecture, easier testing
+
+---
+
+#### 3. Add Embedding Model Health Check ✅
+
+**Problem:**
+- No health check for model
+- Unclear failure modes
+
+**Solution:**
+- Enhanced `/health` endpoint with component status
+- Added embedding model verification
+- Returns detailed status for each component
+
+**Impact:** Production-ready monitoring
+
+---
+
+#### 4. Complete Type Hints Across Codebase ✅
+
+**Solution:**
+- Added complete type hints to all public functions
+- Used proper numpy typing with `NDArray[np.float32]`
+- Updated `relevance.py`, `composer.py`, `database.py`, `response_cache.py`
+
+**Impact:** Better IDE support, type safety
+
+---
+
+#### 5. Testing & Verification ✅
+
+**New Test File:**
+- Created `backend/test_dependencies.py` (8 tests)
+
+**Test Results:** 70 tests passing ✅
+
+---
+
+### Summary of Part 9
+
+**Tasks Completed:** 4/4 remaining medium priority items
+
+**Files Created:** 2
+- `backend/dependencies.py` (~170 lines)
+- `backend/test_dependencies.py` (~120 lines)
+
+**Files Modified:** 5
+- `backend/main.py` (lifespan events, enhanced health check)
+- `backend/relevance.py` (type hints)
+- `backend/composer.py` (type hints)
+- `backend/database.py` (type hints)
+- `backend/response_cache.py` (type hints)
+
+**Lines Changed:** ~350 lines added/modified
+
+**Quality Impact:**
+- ✅ No deprecation warnings (future-proof)
+- ✅ Dependency injection ready
+- ✅ Production health monitoring
+- ✅ Complete type safety
+- ✅ All 70 tests passing
+
+---
+
+## Session Metadata (Part 9)
+
+**Duration:** ~1 hour  
+**Lines of Code Changed:** ~350 added/modified  
+**Tests Run:** 70 tests passed
+
+**Updated Cumulative Stats:**
+- **Total Duration:** ~10 hours
+- **Total Tests:** 70 passing
+- **Total Lines Changed:** ~7,650 net
+
