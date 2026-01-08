@@ -1,8 +1,9 @@
 """
 Relevance engine using sentence embeddings for similarity search.
 """
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 import numpy as np
+from numpy.typing import NDArray
 from sentence_transformers import SentenceTransformer
 from models import ContextUnit, RankedContextUnit
 from storage import ContextStore
@@ -14,7 +15,7 @@ from embedding_cache import EmbeddingCache
 class RelevanceEngine:
     """Engine for ranking context units by relevance to a task."""
     
-    def __init__(self, model_name: str = None):
+    def __init__(self, model_name: Optional[str] = None) -> None:
         """
         Initialize the relevance engine.
         
@@ -36,7 +37,7 @@ class RelevanceEngine:
         self.cache = EmbeddingCache(max_size=1000, ttl_seconds=3600)
         logger.info("Initialized embedding cache")
     
-    def encode(self, text: str) -> np.ndarray:
+    def encode(self, text: str) -> NDArray[np.float32]:
         """
         Generate embedding for text with caching.
         
@@ -68,7 +69,7 @@ class RelevanceEngine:
             logger.error(f"Failed to encode text: {e}")
             raise RuntimeError(f"Encoding failed: {e}")
     
-    def compute_similarity(self, embedding1: np.ndarray, embedding2: np.ndarray) -> float:
+    def compute_similarity(self, embedding1: NDArray[np.float32], embedding2: NDArray[np.float32]) -> float:
         """Compute cosine similarity between two embeddings."""
         return float(np.dot(embedding1, embedding2) / 
                     (np.linalg.norm(embedding1) * np.linalg.norm(embedding2)))

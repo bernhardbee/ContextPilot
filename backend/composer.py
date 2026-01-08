@@ -1,7 +1,7 @@
 """
 Prompt composer that combines task with relevant context.
 """
-from typing import List
+from typing import List, Dict
 from datetime import datetime
 from models import RankedContextUnit, GeneratedPrompt
 
@@ -32,10 +32,10 @@ class PromptComposer:
             )
         
         # Build the contextualized prompt
-        prompt_parts = ["# Context\n"]
+        prompt_parts: List[str] = ["# Context\n"]
         
         # Group contexts by type
-        contexts_by_type = {}
+        contexts_by_type: Dict[str, List[RankedContextUnit]] = {}
         for ranked in relevant_contexts:
             ctx_type = ranked.context_unit.type.value
             if ctx_type not in contexts_by_type:
@@ -92,7 +92,7 @@ class PromptComposer:
             )
         
         # Build compact context
-        context_items = []
+        context_items: List[str] = []
         for ranked in relevant_contexts:
             context = ranked.context_unit
             context_items.append(context.content)

@@ -4,7 +4,7 @@ API response caching for read-only endpoints.
 import time
 import hashlib
 import json
-from typing import Any, Optional, Dict, Tuple
+from typing import Any, Optional, Dict, Tuple, Callable
 from functools import wraps
 from fastapi import Request
 from logger import logger
@@ -112,12 +112,15 @@ class ResponseCache:
 response_cache = ResponseCache(default_ttl=300, max_size=100)
 
 
-def cached(ttl: int = None):
+def cached(ttl: Optional[int] = None) -> Callable:
     """
     Decorator to cache endpoint responses.
     
     Args:
         ttl: Time-to-live in seconds (uses default if None)
+        
+    Returns:
+        Decorator function
     """
     def decorator(func):
         @wraps(func)

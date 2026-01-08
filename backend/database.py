@@ -66,7 +66,7 @@ def get_db_session() -> Generator[Session, None, None]:
         db.close()
 
 
-def init_db():
+def init_db() -> None:
     """
     Initialize database tables.
     
@@ -83,7 +83,7 @@ def init_db():
         raise
 
 
-def drop_db():
+def drop_db() -> None:
     """
     Drop all database tables. Use with caution!
     
