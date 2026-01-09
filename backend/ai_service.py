@@ -105,8 +105,8 @@ class AIService:
                 {"role": "user", "content": generated_prompt.generated_prompt}
             ]
             
-            # Call OpenAI API
-            response = self.openai_client.ChatCompletion.create(
+            # Call OpenAI API (v1.0+ syntax)
+            response = self.openai_client.chat.completions.create(
                 model=model,
                 messages=messages,
                 temperature=temperature,
@@ -114,7 +114,7 @@ class AIService:
             )
             
             # Extract response
-            assistant_message = response.choices[0].message['content']
+            assistant_message = response.choices[0].message.content
             finish_reason = response.choices[0].finish_reason
             tokens_used = response.usage.total_tokens
             

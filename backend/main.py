@@ -42,6 +42,7 @@ from composer import prompt_composer
 from ai_service import ai_service
 from request_tracking import RequestTrackingMiddleware
 from response_cache import response_cache
+import settings_store as settings_store_module
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -57,6 +58,55 @@ async def lifespan(app: FastAPI):
     logger.info("Starting ContextPilot API")
     logger.info(f"CORS origins: {settings.cors_origins}")
     logger.info(f"Authentication enabled: {settings.enable_auth}")
+    
+    # Initialize settings store
+    settings_store_module.init_settings_store(settings.database_url)
+    logger.info("Settings store initialized")
+    
+    # Load persisted API keys from database
+    if settings_store_module.settings_store:
+        stored_openai_key = settings_store_module.settings_store.get("openai_api_key")
+        stored_anthropic_key = settings_store_module.settings_store.get("anthropic_api_key")
+        stored_provider = settings_store_module.settings_store.get("default_ai_provider")
+        stored_model = settings_store_module.settings_store.get("default_ai_model")
+        stored_temperature = settings_store_module.settings_store.get("ai_temperature")
+        stored_max_tokens = settings_store_module.settings_store.get("ai_max_tokens")
+        
+        if stored_openai_key:
+            settings.openai_api_key = stored_openai_key
+            logger.info("Loaded OpenAI API key from database")
+        
+        if stored_anthropic_key:
+            settings.anthropic_api_key = stored_anthropic_key
+            logger.info("Loaded Anthropic API key from database")
+            
+        if stored_provider:
+            settings.default_ai_provider = stored_provider
+            
+        if stored_model:
+            settings.default_ai_model = stored_model
+            
+        if stored_temperature:
+            try:
+                settings.ai_temperature = float(stored_temperature)
+            except ValueError:
+                pass
+                
+        if stored_max_tokens:
+            try:
+                settings.ai_max_tokens = int(stored_max_tokens)
+            except ValueError:
+                pass
+    
+    # Reinitialize AI service with loaded settings
+    if stored_openai_key or stored_anthropic_key:
+        try:
+            from ai_service import AIService
+            global ai_service
+            ai_service = AIService()
+            logger.info("AI service initialized with persisted API keys")
+        except Exception as e:
+            logger.warning(f"Failed to initialize AI service with persisted keys: {e}")
     
     # Verify embedding model is loaded
     try:
@@ -847,27 +897,40 @@ def update_settings(request: Request, settings_update: SettingsUpdate):
     # Update API keys if provided
     if settings_update.openai_api_key is not None:
         settings.openai_api_key = settings_update.openai_api_key
+        if settings_store_module.settings_store:
+            settings_store_module.settings_store.set("openai_api_key", settings_update.openai_api_key)
+            logger.info("OpenAI API key saved to database")
         updated_fields.append("openai_api_key")
     
     if settings_update.anthropic_api_key is not None:
         settings.anthropic_api_key = settings_update.anthropic_api_key
+        if settings_store_module.settings_store:
+            settings_store_module.settings_store.set("anthropic_api_key", settings_update.anthropic_api_key)
         updated_fields.append("anthropic_api_key")
     
     # Update other AI settings
     if settings_update.default_ai_provider is not None:
         settings.default_ai_provider = settings_update.default_ai_provider
+        if settings_store_module.settings_store:
+            settings_store_module.settings_store.set("default_ai_provider", settings_update.default_ai_provider)
         updated_fields.append("default_ai_provider")
         
     if settings_update.default_ai_model is not None:
         settings.default_ai_model = settings_update.default_ai_model
+        if settings_store_module.settings_store:
+            settings_store_module.settings_store.set("default_ai_model", settings_update.default_ai_model)
         updated_fields.append("default_ai_model")
         
     if settings_update.ai_temperature is not None:
         settings.ai_temperature = settings_update.ai_temperature
+        if settings_store_module.settings_store:
+            settings_store_module.settings_store.set("ai_temperature", str(settings_update.ai_temperature))
         updated_fields.append("ai_temperature")
         
     if settings_update.ai_max_tokens is not None:
         settings.ai_max_tokens = settings_update.ai_max_tokens
+        if settings_store_module.settings_store:
+            settings_store_module.settings_store.set("ai_max_tokens", str(settings_update.ai_max_tokens))
         updated_fields.append("ai_max_tokens")
     
     # Reinitialize AI service with new API keys
