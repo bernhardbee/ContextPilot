@@ -42,3 +42,8 @@ htmlcov/
 
 # Logs
 *.log
+
+# Runtime files
+*.pid
+backend.pid
+frontend.pid
