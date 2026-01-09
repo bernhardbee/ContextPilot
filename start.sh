@@ -72,7 +72,7 @@ echo $BACKEND_PID > backend.pid
 echo "  → Waiting for backend to be ready..."
 for i in {1..30}; do
     if curl -s http://localhost:8000/health > /dev/null 2>&1; then
-        HEALTH=$(curl -s http://localhost:8000/health | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+        HEALTH=$(curl -s http://localhost:8000/health | python3 -c "import sys, json; print(json.load(sys.stdin).get('status', ''))" 2>/dev/null)
         if [ "$HEALTH" = "healthy" ]; then
             echo "  ✓ Backend is healthy and ready"
             break
