@@ -111,7 +111,9 @@ ContextPilot/
 ├── ARCHITECTURE.md          # System architecture documentation
 ├── SECURITY.md              # Security guidelines
 ├── DEPLOYMENT.md            # Production deployment guide
-├── start.sh                 # Start both backend & frontend
+├── setup.sh                 # Automated environment setup
+├── start.sh                 # Start both backend & frontend (with auto-setup)
+├── stop.sh                  # Stop all services
 ├── start-backend.sh         # Start backend only
 ├── start-frontend.sh        # Start frontend only
 ├── demo.sh                  # Demo with sample data
@@ -127,7 +129,44 @@ ContextPilot/
 - Node.js 16+
 - npm or yarn
 
-### Backend Setup
+### Option 1: Automated Setup (Recommended)
+
+The easiest way to get started is using the automated setup script:
+
+```bash
+./setup.sh
+```
+
+This script will:
+- ✅ Check all prerequisites (Python 3, Node.js)
+- ✅ Create and configure virtual environment
+- ✅ Install all backend dependencies
+- ✅ Initialize the database
+- ✅ Install all frontend dependencies
+- ✅ Detect and fix common issues (broken symlinks, missing packages)
+
+Then start the application:
+
+```bash
+./start.sh
+```
+
+This will:
+- ✅ Automatically run setup if needed
+- ✅ Start the backend server on http://localhost:8000
+- ✅ Start the frontend development server on http://localhost:3000
+- ✅ Open the application in your browser
+- ✅ Provide health check verification
+
+To stop all services:
+
+```bash
+./stop.sh
+```
+
+### Option 2: Manual Setup
+
+#### Backend Setup
 
 1. Navigate to the backend directory:
 ```bash
@@ -172,7 +211,7 @@ API documentation: **http://localhost:8000/docs**
 
 > **Note**: For production deployment with PostgreSQL and pgvector, see [DATABASE.md](backend/docs/DATABASE.md)
 
-### Frontend Setup
+#### Frontend Setup
 
 1. Navigate to the frontend directory:
 ```bash
