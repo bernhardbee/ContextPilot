@@ -1,75 +1,99 @@
 #!/bin/bash
 
-# ContextPilot - Setup and Run Script
+# ContextPilot - Start Script with Auto-Setup
+set -e
 
-echo "🧭 ContextPilot Setup & Run"
-echo "============================"
+# Get script directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR"
+
+echo "🧭 ContextPilot Launcher"
+echo "========================"
 echo ""
 
-# Check Python
-if ! command -v python3 &> /dev/null; then
-    echo "❌ Python 3 is required but not installed."
-    exit 1
+# Check if setup is needed
+NEEDS_SETUP=false
+
+if [ ! -d "backend/venv" ] || [ ! -f "backend/contextpilot.db" ] || [ ! -d "frontend/node_modules" ]; then
+    NEEDS_SETUP=true
 fi
 
-# Check Node
-if ! command -v node &> /dev/null; then
-    echo "❌ Node.js is required but not installed."
-    exit 1
+if [ ! -d "backend/venv" ]; then
+    echo "⚠️  Backend virtual environment not found"
+    NEEDS_SETUP=true
 fi
 
-echo "✓ Python 3 found: $(python3 --version)"
-echo "✓ Node.js found: $(node --version)"
+if [ ! -f "backend/contextpilot.db" ]; then
+    echo "⚠️  Database not initialized"
+    NEEDS_SETUP=true
+else
+    # Check if database has tables
+    TABLES=$(sqlite3 backend/contextpilot.db "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='context_units';" 2>/dev/null || echo "0")
+    if [ "$TABLES" != "1" ]; then
+        echo "⚠️  Database tables not initialized"
+        NEEDS_SETUP=true
+    fi
+fi
+
+if [ ! -d "frontend/node_modules" ]; then
+    echo "⚠️  Frontend dependencies not installed"
+    NEEDS_SETUP=true
+fi
+
+# Run setup if needed
+if [ "$NEEDS_SETUP" = true ]; then
+    echo ""
+    echo "📦 Running initial setup..."
+    echo ""
+    chmod +x setup.sh
+    ./setup.sh
+    echo ""
+fi
+
+echo "✓ Environment ready!"
 echo ""
 
-# Setup Backend
-echo "📦 Setting up backend..."
-cd backend
-
-if [ ! -d "venv" ]; then
-    echo "Creating virtual environment..."
-    python3 -m venv venv
-fi
-
-echo "Activating virtual environment..."
-source venv/bin/activate
-
-echo "Installing Python dependencies..."
-pip install -q -r requirements.txt
-
-echo "Loading example data..."
-python3 -c "from example_data import load_example_data; load_example_data()"
-
-echo "✓ Backend setup complete!"
-echo ""
-
-# Setup Frontend
-echo "📦 Setting up frontend..."
-cd ../frontend
-
-if [ ! -d "node_modules" ]; then
-    echo "Installing Node dependencies..."
-    npm install --silent
-fi
-
-echo "✓ Frontend setup complete!"
+# Clean up any existing processes on ports 8000 and 3000
+echo "🔍 Checking for running instances..."
+lsof -ti:8000 2>/dev/null | xargs kill -9 2>/dev/null && echo "  → Stopped existing backend" || true
+lsof -ti:3000 2>/dev/null | xargs kill -9 2>/dev/null && echo "  → Stopped existing frontend" || true
 echo ""
 
 # Start services
 echo "🚀 Starting services..."
 echo ""
 echo "Starting backend on http://localhost:8000..."
-cd ../backend
-source venv/bin/activate
-python3 main.py &
+cd "$SCRIPT_DIR/backend"
+nohup "$SCRIPT_DIR/backend/venv/bin/python" main.py > backend.log 2>&1 &
 BACKEND_PID=$!
+echo $BACKEND_PID > backend.pid
+
+# Wait for backend to be ready
+echo "  → Waiting for backend to be ready..."
+for i in {1..30}; do
+    if curl -s http://localhost:8000/health > /dev/null 2>&1; then
+        HEALTH=$(curl -s http://localhost:8000/health | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+        if [ "$HEALTH" = "healthy" ]; then
+            echo "  ✓ Backend is healthy and ready"
+            break
+        fi
+    fi
+    if [ $i -eq 30 ]; then
+        echo "  ❌ Backend failed to start. Check backend/backend.log for details"
+        cat backend/backend.log
+        exit 1
+    fi
+    sleep 1
+done
 
 sleep 3
 
+echo ""
 echo "Starting frontend on http://localhost:3000..."
-cd ../frontend
-npm start &
+cd "$SCRIPT_DIR/frontend"
+npm start > /dev/null 2>&1 &
 FRONTEND_PID=$!
+echo $FRONTEND_PID > frontend.pid
 
 echo ""
 echo "✅ ContextPilot is running!"
@@ -78,11 +102,25 @@ echo "  Backend:  http://localhost:8000"
 echo "  API Docs: http://localhost:8000/docs"
 echo "  Frontend: http://localhost:3000"
 echo ""
+echo "  Backend  PID: $BACKEND_PID (log: backend/backend.log)"
+echo "  Frontend PID: $FRONTEND_PID"
+echo ""
+echo "To stop: ./stop.sh or kill -9 $BACKEND_PID $FRONTEND_PID"
+echo ""
+
+# Wait a bit and open browser
+sleep 2
+if command -v open >/dev/null 2>&1; then
+    open http://localhost:3000
+elif command -v xdg-open >/dev/null 2>&1; then
+    xdg-open http://localhost:3000
+fi
+
 echo "Press Ctrl+C to stop all services"
 echo ""
 
 # Trap SIGINT and cleanup
-trap "echo ''; echo 'Stopping services...'; kill $BACKEND_PID $FRONTEND_PID; exit 0" SIGINT
+trap "echo ''; echo 'Stopping services...'; kill $BACKEND_PID $FRONTEND_PID 2>/dev/null; exit 0" SIGINT
 
 # Wait for both processes
 wait
