@@ -119,8 +119,8 @@ export const contextAPI = {
   },
 
   listConversations: async (): Promise<Conversation[]> => {
-    const response = await api.get<Conversation[]>('/ai/conversations');
-    return response.data;
+    const response = await api.get<{conversations: Conversation[], limit: number, offset: number, count: number}>('/ai/conversations');
+    return response.data.conversations;
   },
 
   getConversation: async (id: string): Promise<Conversation> => {
