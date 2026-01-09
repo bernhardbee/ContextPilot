@@ -74,28 +74,46 @@ Most AI tools are stateless—they forget context between sessions. ContextPilot
 
 ```
 ContextPilot/
-├── backend/
-│   ├── main.py              # FastAPI application
+├── backend/                 # FastAPI backend server
+│   ├── main.py              # FastAPI application entry point
 │   ├── models.py            # Pydantic data models
+│   ├── db_models.py         # SQLAlchemy database models
 │   ├── storage.py           # In-memory context store
-│   ├── relevance.py         # Relevance ranking engine
-│   ├── composer.py          # Prompt composition
-│   ├── example_data.py      # Example context units
-│   ├── test_api.py          # Test script
+│   ├── db_storage.py        # Database storage implementation
+│   ├── storage_interface.py # Storage abstraction layer
+│   ├── relevance.py         # Semantic search & ranking
+│   ├── composer.py          # Prompt composition engine
+│   ├── ai_service.py        # OpenAI/Anthropic integration
+│   ├── config.py            # Configuration management
+│   ├── security.py          # Authentication & validation
+│   ├── database.py          # Database session management
+│   ├── alembic/             # Database migration scripts
+│   ├── test_*.py            # Comprehensive test suite (107 tests)
 │   ├── requirements.txt     # Python dependencies
-│   └── README.md            # Backend docs
-├── frontend/
+│   └── README.md            # Backend documentation
+├── frontend/                # React TypeScript frontend
 │   ├── src/
-│   │   ├── App.tsx          # Main React component
-│   │   ├── App.css          # Styles
-│   │   ├── api.ts           # API client
-│   │   ├── types.ts         # TypeScript types
-│   │   └── index.tsx        # Entry point
+│   │   ├── App.tsx          # Main application component
+│   │   ├── AppContext.tsx   # React context & state management
+│   │   ├── ContextTemplates.tsx # Template creation component
+│   │   ├── ContextTools.tsx # Import/export & filtering tools
+│   │   ├── api.ts           # API client with all endpoints
+│   │   ├── types.ts         # TypeScript type definitions
+│   │   └── index.tsx        # React entry point
 │   ├── public/
 │   │   └── index.html       # HTML template
-│   ├── package.json         # Node dependencies
-│   └── tsconfig.json        # TypeScript config
-├── demo.sh                  # Demo script
+│   ├── package.json         # Node.js dependencies
+│   └── tsconfig.json        # TypeScript configuration
+├── LICENSE                  # MIT License
+├── THIRD_PARTY_NOTICES      # Third-party dependency licenses
+├── QUICKSTART.md            # Quick reference guide
+├── ARCHITECTURE.md          # System architecture documentation
+├── SECURITY.md              # Security guidelines
+├── DEPLOYMENT.md            # Production deployment guide
+├── start.sh                 # Start both backend & frontend
+├── start-backend.sh         # Start backend only
+├── start-frontend.sh        # Start frontend only
+├── demo.sh                  # Demo with sample data
 ├── CONCEPT.txt              # Original concept document
 └── README.md                # This file
 ```
@@ -340,21 +358,16 @@ SQLAlchemy 2.0 (ORM and database toolkit)
 
 - [x] Persistent storage (PostgreSQL + pgvector) ✅
 - [x] ChatGPT/Claude API integration ✅
+- [x] Export/import functionality ✅
+- [x] Advanced search and filtering ✅
 - [ ] Automatic context extraction from documents
 - [ ] Context decay and reinforcement learning
 - [ ] Conflict detection between contexts
 - [ ] Browser extension for automatic context capture
 - [ ] IDE plugin integration
-- [ ] Export/import functionality
-- [ ] Advanced search and filtering
 - [ ] Analytics dashboard
 - [ ] Streaming AI responses
-- [ ] Multi-turn conversationsor automatic context capture
-- [ ] IDE plugin integration
-- [ ] ChatGPT/Claude API integration
-- [ ] Export/import functionality
-- [ ] Search and filtering
-- [ ] Analytics dashboard
+- [ ] Multi-turn conversations
 
 ## 🤝 Contributing
 

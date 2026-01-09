@@ -47,35 +47,44 @@ pytest test_api_security.py -v
 - **Context Management**: CRUD operations for context units
 - **Semantic Search**: Relevance ranking using embeddings
 - **Prompt Generation**: Full and compact prompt composition
+- **Database Storage**: PostgreSQL with Alembic migrations
+- **Import/Export**: JSON import/export functionality
 - **Security**: API key authentication, input validation, CORS
-- **Testing**: 82 comprehensive tests
+- **Testing**: 107 comprehensive tests across multiple suites
 
 ## Project Structure
 
 ```
 backend/
-├── main.py              # FastAPI application
-├── models.py            # Data models
-├── storage.py           # In-memory storage
-├── relevance.py         # Relevance engine
-├── composer.py          # Prompt composer
-├── config.py            # Configuration management
-├── logger.py            # Logging system
-├── validators.py        # Input validation
-├── security.py          # Authentication
-├── example_data.py      # Example data loader
-├── test_*.py            # Test suites (82 tests)
-└── requirements.txt     # Dependencies
-```
-├── storage.py           # In-memory storage
-├── relevance.py         # Relevance engine
-├── composer.py          # Prompt composer
-├── config.py            # Configuration management
-├── logger.py            # Logging system
-├── validators.py        # Input validation
-├── security.py          # Authentication
-├── prompt_logger.py     # Prompt logging & audit
-├── example_data.py      # Example data loader
-├── test_*.py            # Test suites (107 tests)
-└── requirements.txt     # Dependencies
+├── main.py                  # FastAPI application entry point
+├── models.py                # Pydantic data models
+├── db_models.py             # SQLAlchemy database models
+├── storage.py               # In-memory storage implementation
+├── db_storage.py            # Database storage implementation
+├── storage_interface.py     # Storage interface abstraction
+├── relevance.py             # Relevance ranking engine
+├── composer.py              # Prompt composition logic
+├── ai_service.py            # OpenAI/Anthropic integration
+├── config.py                # Configuration management
+├── logger.py                # Logging system
+├── validators.py            # Input validation
+├── security.py              # Authentication & security
+├── exceptions.py            # Custom exception classes
+├── error_models.py          # Error response models
+├── dependencies.py          # FastAPI dependency injection
+├── database.py              # Database session management
+├── embedding_cache.py       # Embedding caching layer
+├── response_cache.py        # Response caching system
+├── request_tracking.py      # Request tracking & analytics
+├── example_data.py          # Example data loader
+├── init_db.py               # Database initialization
+├── migrate.py               # Database migration utilities
+├── migrate_to_db.py         # Migration from in-memory to DB
+├── alembic/                 # Database migration scripts
+├── alembic.ini              # Alembic configuration
+├── docs/                    # API documentation
+├── test_*.py                # Test suites (107 tests)
+├── requirements.txt         # Python dependencies
+├── pyproject.toml           # Project configuration
+└── .env.example             # Environment variables template
 ```
