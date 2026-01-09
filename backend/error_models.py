@@ -18,7 +18,7 @@ class ErrorResponse(BaseModel):
     details: Dict[str, Any] = {}
     
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "error_code": "VALIDATION_ERROR",
                 "message": "Invalid input data",

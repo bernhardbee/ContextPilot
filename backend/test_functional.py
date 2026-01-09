@@ -84,8 +84,6 @@ def test_basic_functionality():
     print("\n" + "=" * 50)
     print("✅ All functional tests passed!")
     print("")
-    
-    return True
 
 
 if __name__ == "__main__":
