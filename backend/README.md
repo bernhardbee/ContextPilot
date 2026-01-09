@@ -49,8 +49,9 @@ pytest test_api_security.py -v
 - **Prompt Generation**: Full and compact prompt composition
 - **Database Storage**: PostgreSQL with Alembic migrations
 - **Import/Export**: JSON import/export functionality
+- **Settings Management**: API key and AI configuration via /settings endpoints
 - **Security**: API key authentication, input validation, CORS
-- **Testing**: 107 comprehensive tests across multiple suites
+- **Testing**: 135 comprehensive tests across multiple suites
 
 ## Project Structure
 

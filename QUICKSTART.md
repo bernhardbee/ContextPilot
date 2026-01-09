@@ -83,6 +83,8 @@ python test_api.py
 |--------|----------|-------------|
 | GET | `/health` | Health check |
 | GET | `/stats` | Get statistics |
+| GET | `/settings` | Get current settings |
+| POST | `/settings` | Update settings |
 | GET | `/` | Root info |
 
 ## cURL Examples
@@ -191,15 +193,33 @@ console.log(result.generated_prompt);
 
 ## Configuration
 
-### Backend (.env)
+### Option 1: Settings UI (Recommended)
+
+The easiest way to configure API keys:
+
+1. Open http://localhost:3000
+2. Click the ⚙️ settings button in the header
+3. Enter your OpenAI or Anthropic API key
+4. Configure AI model and parameters
+5. Click "Save Settings"
+
+No restart required - settings apply immediately!
+
+### Option 2: Environment Files
+
+#### Backend (.env)
 ```bash
 HOST=0.0.0.0
 PORT=8000
 EMBEDDING_MODEL=all-MiniLM-L6-v2
 LOG_LEVEL=INFO
+
+# AI Configuration (or use Settings UI)
+CONTEXTPILOT_OPENAI_API_KEY=sk-your-key-here
+CONTEXTPILOT_ANTHROPIC_API_KEY=sk-ant-your-key-here
 ```
 
-### Frontend (.env)
+#### Frontend (.env)
 ```bash
 REACT_APP_API_URL=http://localhost:8000
 ```

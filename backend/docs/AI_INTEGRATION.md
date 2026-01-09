@@ -28,7 +28,25 @@ ContextPilot integrates with multiple AI providers to generate responses using y
 2. Create a new API key
 3. Copy the key (starts with `sk-ant-`)
 
-### 2. Configure Environment
+### 2. Configure API Keys
+
+**Option A: Settings UI (Easiest)**
+
+1. Open the web interface at http://localhost:3000
+2. Click the ⚙️ settings button in the header
+3. Enter your API key(s):
+   - **OpenAI**: Paste your `sk-` key
+   - **Anthropic**: Paste your `sk-ant-` key
+4. Configure AI parameters:
+   - Provider: `openai` or `anthropic`
+   - Model: Select from dropdown
+   - Temperature: 0-2 (default 0.7)
+   - Max Tokens: 1-4000 (default 2000)
+5. Click "Save Settings"
+
+Settings apply immediately - no restart required!
+
+**Option B: Environment File**
 
 Add to your `.env` file:
 
@@ -47,6 +65,8 @@ CONTEXTPILOT_DEFAULT_AI_MODEL=claude-3-opus-20240229
 CONTEXTPILOT_AI_MAX_TOKENS=2000
 CONTEXTPILOT_AI_TEMPERATURE=0.7
 ```
+
+Note: Restart backend after changing .env file.
 
 ### 3. Test the Integration
 
@@ -148,6 +168,51 @@ Get a specific conversation with full message history.
   ]
 }
 ```
+
+### GET /settings
+
+Get current AI configuration settings.
+
+**Response**:
+```json
+{
+  "openai_api_key_set": true,
+  "anthropic_api_key_set": false,
+  "ai_provider": "openai",
+  "ai_model": "gpt-4-turbo-preview",
+  "temperature": 0.7,
+  "max_tokens": 2000
+}
+```
+
+**Note**: API keys are never exposed - only boolean flags indicating if they're configured.
+
+### POST /settings
+
+Update AI configuration settings.
+
+**Request Body**:
+```json
+{
+  "openai_api_key": "sk-your-key-here",
+  "anthropic_api_key": "sk-ant-your-key-here",
+  "ai_provider": "openai",
+  "ai_model": "gpt-4-turbo-preview",
+  "temperature": 0.7,
+  "max_tokens": 2000
+}
+```
+
+**All fields are optional** - only provide the settings you want to update.
+
+**Validation**:
+- `temperature`: Must be between 0 and 2
+- `max_tokens`: Must be between 1 and 4000
+- `ai_provider`: Must be "openai" or "anthropic"
+
+**Response**: Same as GET /settings
+
+**Note**: Settings apply immediately - AI service is automatically reinitialized with new credentials.
 
 ## Model Selection Guide
 
