@@ -43,9 +43,8 @@ def sample_prompt():
 class TestAIService:
     """Tests for AIService."""
     
-    @pytest.mark.asyncio
     @patch('ai_service.openai')
-    async def test_generate_openai_response(self, mock_openai, ai_service_instance, sample_prompt):
+    def test_generate_openai_response(self, mock_openai, ai_service_instance, sample_prompt):
         """Test generating a response with OpenAI."""
         # Mock OpenAI response
         mock_response = Mock()
@@ -60,7 +59,7 @@ class TestAIService:
         ai_service_instance.openai_client = mock_openai
         
         # Generate response
-        response, conversation = await ai_service_instance.generate_response(
+        response, conversation = ai_service_instance.generate_response(
             task="What is Python?",
             generated_prompt=sample_prompt,
             context_ids=["ctx-1"],

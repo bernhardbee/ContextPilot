@@ -569,6 +569,7 @@ code {
   color: #999;
   margin-top: 5px;
 }
+
 /* Context Tools Component */
 .context-tools {
   margin-bottom: 20px;
@@ -630,11 +631,11 @@ code {
   .filter-row {
     grid-template-columns: 1fr;
   }
-  
+
   .button-group {
     flex-direction: column;
   }
-  
+
   .button-group button,
   .button-group label {
     width: 100%;
@@ -655,8 +656,13 @@ code {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-overlay {
@@ -683,41 +689,41 @@ code {
   .app {
     padding: 10px;
   }
-  
+
   .header h1 {
     font-size: 1.8rem;
   }
-  
+
   .stats-bar {
     flex-direction: column;
     gap: 10px;
   }
-  
+
   .stat {
     width: 100%;
   }
-  
+
   .tabs {
     flex-direction: column;
   }
-  
+
   .tab {
     width: 100%;
     margin-bottom: 5px;
   }
-  
+
   .card {
     padding: 15px;
   }
-  
+
   .form-group textarea {
     min-height: 80px;
   }
-  
+
   .context-list {
     padding: 0;
   }
-  
+
   .context-item {
     margin-bottom: 10px;
   }
@@ -727,12 +733,12 @@ code {
   .header h1 {
     font-size: 1.5rem;
   }
-  
+
   .button {
     width: 100%;
     margin-bottom: 10px;
   }
-  
+
   .context-header {
     flex-direction: column;
     align-items: flex-start;
@@ -740,7 +746,11 @@ code {
 }
 
 /* Smooth Transitions */
-.card, .button, .tab, .context-item, .stat {
+.card,
+.button,
+.tab,
+.context-item,
+.stat {
   transition: all 0.3s ease;
 }
 
@@ -754,7 +764,9 @@ code {
 }
 
 /* Better Focus States */
-input:focus, textarea:focus, select:focus {
+input:focus,
+textarea:focus,
+select:focus {
   outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -771,6 +783,7 @@ input:focus, textarea:focus, select:focus {
   0% {
     background-position: 200% 0;
   }
+
   100% {
     background-position: -200% 0;
   }
@@ -839,12 +852,166 @@ input:focus, textarea:focus, select:focus {
   .template-grid {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   }
-  
+
   .template-card {
     padding: 12px;
   }
-  
+
   .template-icon {
     font-size: 1.5rem;
+  }
+}
+
+/* Settings Styles */
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.settings-button {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  padding: 10px 12px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.settings-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  border-radius: 8px;
+  padding: 0;
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: #333;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 5px;
+  color: #666;
+}
+
+.modal-close:hover {
+  color: #333;
+}
+
+.settings-form {
+  padding: 20px;
+}
+
+.form-section {
+  margin-bottom: 30px;
+}
+
+.form-section h3 {
+  margin: 0 0 15px 0;
+  color: #333;
+  border-bottom: 2px solid #667eea;
+  padding-bottom: 5px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #555;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+.api-key-status {
+  color: #28a745;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.button-secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.button-secondary:hover {
+  background: #5a6268;
+}
+
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .modal {
+    width: 95%;
+    margin: 10px;
+  }
+
+  .modal-actions {
+    flex-direction: column;
   }
 }

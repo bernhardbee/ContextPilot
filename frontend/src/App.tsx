@@ -13,6 +13,8 @@ import {
   ContextUnitCreate,
   Conversation,
   GeneratedPrompt,
+  Settings,
+  SettingsUpdate,
   Stats,
 } from './types';
 
@@ -55,10 +57,16 @@ function App() {
     status: '',
   });
 
+  // Settings states
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [settingsModal, setSettingsModal] = useState(false);
+  const [settingsForm, setSettingsForm] = useState<SettingsUpdate>({});
+
   // Load contexts and stats on mount
   useEffect(() => {
     loadContexts();
     loadStats();
+    loadSettings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -95,6 +103,42 @@ function App() {
     } catch (err) {
       console.error('Failed to load stats:', err);
     }
+  };
+
+  const loadSettings = async () => {
+    try {
+      const data = await contextAPI.getSettings();
+      setSettings(data);
+    } catch (err) {
+      console.error('Failed to load settings:', err);
+    }
+  };
+
+  const handleUpdateSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      await contextAPI.updateSettings(settingsForm);
+      setSuccess('Settings updated successfully!');
+      setSettingsModal(false);
+      setSettingsForm({});
+      loadSettings(); // Reload settings to get updated status
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to update settings');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openSettingsModal = () => {
+    setSettingsForm({
+      default_ai_provider: settings?.default_ai_provider,
+      default_ai_model: settings?.default_ai_model,
+      ai_temperature: settings?.ai_temperature,
+      ai_max_tokens: settings?.ai_max_tokens,
+    });
+    setSettingsModal(true);
   };
 
   const handleCreateContext = async (e: React.FormEvent) => {
@@ -262,8 +306,19 @@ function App() {
   return (
     <div className="app">
       <header className="header">
-        <h1>🧭 ContextPilot</h1>
-        <p>AI-powered personal context engine</p>
+        <div className="header-content">
+          <div>
+            <h1>🧭 ContextPilot</h1>
+            <p>AI-powered personal context engine</p>
+          </div>
+          <button 
+            className="settings-button"
+            onClick={openSettingsModal}
+            title="Settings"
+          >
+            ⚙️
+          </button>
+        </div>
       </header>
 
       {stats && (
@@ -697,6 +752,130 @@ function App() {
           <></>
         )}
       </div>
+
+      {/* Settings Modal */}
+      {settingsModal && (
+        <div className="modal-overlay" onClick={() => setSettingsModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>⚙️ Settings</h2>
+              <button 
+                className="modal-close"
+                onClick={() => setSettingsModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            
+            <form onSubmit={handleUpdateSettings} className="settings-form">
+              <div className="form-section">
+                <h3>API Keys</h3>
+                <div className="form-group">
+                  <label>OpenAI API Key:</label>
+                  <input
+                    type="password"
+                    placeholder={settings?.openai_api_key_set ? "••••••••••••••••" : "Enter OpenAI API key"}
+                    value={settingsForm.openai_api_key || ''}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, openai_api_key: e.target.value })}
+                  />
+                  {settings?.openai_api_key_set && (
+                    <span className="api-key-status">✅ Set</span>
+                  )}
+                </div>
+                
+                <div className="form-group">
+                  <label>Anthropic API Key:</label>
+                  <input
+                    type="password"
+                    placeholder={settings?.anthropic_api_key_set ? "••••••••••••••••" : "Enter Anthropic API key"}
+                    value={settingsForm.anthropic_api_key || ''}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, anthropic_api_key: e.target.value })}
+                  />
+                  {settings?.anthropic_api_key_set && (
+                    <span className="api-key-status">✅ Set</span>
+                  )}
+                </div>
+              </div>
+              
+              <div className="form-section">
+                <h3>AI Settings</h3>
+                <div className="form-group">
+                  <label>Default Provider:</label>
+                  <select
+                    value={settingsForm.default_ai_provider || settings?.default_ai_provider || 'openai'}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, default_ai_provider: e.target.value })}
+                  >
+                    <option value="openai">OpenAI</option>
+                    <option value="anthropic">Anthropic</option>
+                  </select>
+                </div>
+                
+                <div className="form-group">
+                  <label>Default Model:</label>
+                  <select
+                    value={settingsForm.default_ai_model || settings?.default_ai_model || 'gpt-4-turbo-preview'}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, default_ai_model: e.target.value })}
+                  >
+                    {(settingsForm.default_ai_provider || settings?.default_ai_provider) === 'anthropic' ? (
+                      <>
+                        <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                        <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
+                        <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="gpt-4-turbo-preview">GPT-4 Turbo</option>
+                        <option value="gpt-4">GPT-4</option>
+                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+                
+                <div className="form-group">
+                  <label>Temperature:</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="2"
+                    step="0.1"
+                    value={settingsForm.ai_temperature ?? settings?.ai_temperature ?? 0.7}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, ai_temperature: parseFloat(e.target.value) })}
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Max Tokens:</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="4000"
+                    value={settingsForm.ai_max_tokens ?? settings?.ai_max_tokens ?? 2000}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, ai_max_tokens: parseInt(e.target.value) })}
+                  />
+                </div>
+              </div>
+              
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  onClick={() => setSettingsModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="button button-primary"
+                  disabled={loading}
+                >
+                  {loading ? 'Updating...' : 'Save Settings'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -17,7 +17,7 @@ import io
 from models import (
     ContextUnit, ContextUnitCreate, ContextUnitUpdate,
     TaskRequest, GeneratedPrompt, ContextStatus, ContextType,
-    AIRequest, AIResponse
+    AIRequest, AIResponse, SettingsResponse, SettingsUpdate
 )
 from error_models import ErrorResponse
 from exceptions import (
@@ -182,7 +182,7 @@ def health_check():
     
     # Check storage
     try:
-        context_store.list_contexts(limit=1)
+        context_store.list_all(include_superseded=False)
         health_status["components"]["storage"] = {"status": "healthy"}
     except Exception as e:
         health_status["status"] = "unhealthy"
@@ -362,7 +362,7 @@ def export_contexts(
                     "source": ctx.source,
                     "status": ctx.status.value,
                     "created_at": ctx.created_at.isoformat(),
-                    "updated_at": ctx.updated_at.isoformat(),
+
                     "last_used": ctx.last_used.isoformat() if ctx.last_used else None
                 }
                 for ctx in contexts
@@ -382,7 +382,7 @@ def export_contexts(
         writer = csv.writer(output)
         
         # Write header
-        writer.writerow(["id", "type", "content", "confidence", "tags", "source", "status", "created_at", "updated_at", "last_used"])
+        writer.writerow(["id", "type", "content", "confidence", "tags", "source", "status", "created_at", "last_used"])
         
         # Write data
         for ctx in contexts:
@@ -395,7 +395,7 @@ def export_contexts(
                 ctx.source or "",
                 ctx.status.value,
                 ctx.created_at.isoformat(),
-                ctx.updated_at.isoformat(),
+
                 ctx.last_used.isoformat() if ctx.last_used else ""
             ])
         
@@ -805,6 +805,93 @@ def get_conversation(
 
 
 # Import/Export Endpoints
+
+
+# Settings Endpoints
+
+@app.get("/settings", response_model=SettingsResponse)
+@limiter.limit("30/minute")  
+def get_settings(request: Request):
+    """
+    Get current application settings (without exposing actual API keys).
+    
+    Returns:
+        Current settings with API key status indicators
+    """
+    return SettingsResponse(
+        openai_api_key_set=bool(settings.openai_api_key),
+        anthropic_api_key_set=bool(settings.anthropic_api_key),
+        default_ai_provider=settings.default_ai_provider,
+        default_ai_model=settings.default_ai_model,
+        ai_temperature=settings.ai_temperature,
+        ai_max_tokens=settings.ai_max_tokens
+    )
+
+
+@app.post("/settings")
+@limiter.limit("10/minute")
+def update_settings(request: Request, settings_update: SettingsUpdate):
+    """
+    Update application settings including API keys.
+    
+    Args:
+        settings_update: Settings to update
+        
+    Returns:
+        Success message and updated settings status
+    """
+    global ai_service
+    
+    updated_fields = []
+    
+    # Update API keys if provided
+    if settings_update.openai_api_key is not None:
+        settings.openai_api_key = settings_update.openai_api_key
+        updated_fields.append("openai_api_key")
+    
+    if settings_update.anthropic_api_key is not None:
+        settings.anthropic_api_key = settings_update.anthropic_api_key
+        updated_fields.append("anthropic_api_key")
+    
+    # Update other AI settings
+    if settings_update.default_ai_provider is not None:
+        settings.default_ai_provider = settings_update.default_ai_provider
+        updated_fields.append("default_ai_provider")
+        
+    if settings_update.default_ai_model is not None:
+        settings.default_ai_model = settings_update.default_ai_model
+        updated_fields.append("default_ai_model")
+        
+    if settings_update.ai_temperature is not None:
+        settings.ai_temperature = settings_update.ai_temperature
+        updated_fields.append("ai_temperature")
+        
+    if settings_update.ai_max_tokens is not None:
+        settings.ai_max_tokens = settings_update.ai_max_tokens
+        updated_fields.append("ai_max_tokens")
+    
+    # Reinitialize AI service with new API keys
+    if any(field in updated_fields for field in ["openai_api_key", "anthropic_api_key"]):
+        try:
+            from ai_service import AIService
+            global ai_service
+            ai_service = AIService()
+            logger.info("AI service reinitialized with updated API keys")
+        except Exception as e:
+            logger.warning(f"Failed to reinitialize AI service: {e}")
+    
+    return {
+        "message": "Settings updated successfully",
+        "updated_fields": updated_fields,
+        "settings": SettingsResponse(
+            openai_api_key_set=bool(settings.openai_api_key),
+            anthropic_api_key_set=bool(settings.anthropic_api_key),
+            default_ai_provider=settings.default_ai_provider,
+            default_ai_model=settings.default_ai_model,
+            ai_temperature=settings.ai_temperature,
+            ai_max_tokens=settings.ai_max_tokens
+        )
+    }
 
 if __name__ == "__main__":
     import uvicorn

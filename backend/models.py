@@ -153,3 +153,23 @@ class AIResponse(BaseModel):
     context_ids: List[str]
     prompt_used: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+class SettingsResponse(BaseModel):
+    """Current application settings."""
+    openai_api_key_set: bool = Field(description="Whether OpenAI API key is configured")
+    anthropic_api_key_set: bool = Field(description="Whether Anthropic API key is configured")
+    default_ai_provider: str = Field(description="Default AI provider")
+    default_ai_model: str = Field(description="Default AI model")
+    ai_temperature: float = Field(description="AI temperature setting")
+    ai_max_tokens: int = Field(description="AI max tokens setting")
+
+
+class SettingsUpdate(BaseModel):
+    """Settings update request."""
+    openai_api_key: Optional[str] = Field(None, description="OpenAI API key (optional)")
+    anthropic_api_key: Optional[str] = Field(None, description="Anthropic API key (optional)")
+    default_ai_provider: Optional[str] = Field(None, description="Default AI provider")
+    default_ai_model: Optional[str] = Field(None, description="Default AI model")
+    ai_temperature: Optional[float] = Field(None, ge=0.0, le=2.0, description="AI temperature")
+    ai_max_tokens: Optional[int] = Field(None, ge=1, le=4000, description="AI max tokens")

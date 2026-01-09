@@ -107,3 +107,21 @@ export interface Conversation {
   message_count?: number;
   messages?: ConversationMessage[];
 }
+
+export interface Settings {
+  openai_api_key_set: boolean;
+  anthropic_api_key_set: boolean;
+  default_ai_provider: string;
+  default_ai_model: string;
+  ai_temperature: number;
+  ai_max_tokens: number;
+}
+
+export interface SettingsUpdate {
+  openai_api_key?: string;
+  anthropic_api_key?: string;
+  default_ai_provider?: string;
+  default_ai_model?: string;
+  ai_temperature?: number;
+  ai_max_tokens?: number;
+}

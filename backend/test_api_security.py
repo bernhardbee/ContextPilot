@@ -26,7 +26,7 @@ class TestAPISecurityIntegration:
         }
         response = client.post("/contexts", json=context_data)
         assert response.status_code == 400
-        assert "exceeds maximum" in response.json()["detail"].lower()
+        assert "exceeds maximum" in response.json()["message"].lower()
     
     def test_create_context_with_empty_content(self, client):
         """Test that creating context with empty content fails."""
@@ -38,7 +38,7 @@ class TestAPISecurityIntegration:
         }
         response = client.post("/contexts", json=context_data)
         assert response.status_code == 400
-        assert "empty" in response.json()["detail"].lower()
+        assert "empty" in response.json()["message"].lower()
     
     def test_create_context_with_too_many_tags(self, client):
         """Test that creating context with too many tags fails."""
@@ -50,7 +50,7 @@ class TestAPISecurityIntegration:
         }
         response = client.post("/contexts", json=context_data)
         assert response.status_code == 400
-        assert "maximum" in response.json()["detail"].lower()
+        assert "maximum" in response.json()["message"].lower()
     
     def test_create_context_with_invalid_tag_chars(self, client):
         """Test that creating context with invalid tag characters fails."""
@@ -62,7 +62,7 @@ class TestAPISecurityIntegration:
         }
         response = client.post("/contexts", json=context_data)
         assert response.status_code == 400
-        assert "invalid characters" in response.json()["detail"].lower()
+        assert "invalid characters" in response.json()["message"].lower()
     
     def test_create_context_sanitizes_input(self, client):
         """Test that input is properly sanitized."""
@@ -86,7 +86,7 @@ class TestAPISecurityIntegration:
         }
         response = client.post("/generate-prompt", json=task_data)
         assert response.status_code == 400
-        assert "exceeds maximum" in response.json()["detail"].lower()
+        assert "exceeds maximum" in response.json()["message"].lower()
     
     def test_generate_prompt_with_too_many_contexts(self, client):
         """Test that requesting too many contexts fails."""

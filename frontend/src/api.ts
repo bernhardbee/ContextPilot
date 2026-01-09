@@ -3,15 +3,17 @@
  */
 import axios from 'axios';
 import {
-  AIRequest,
-  AIResponse,
-  ContextUnit,
-  ContextUnitCreate,
-  ContextUnitUpdate,
-  Conversation,
-  GeneratedPrompt,
-  Stats,
-  TaskRequest,
+    AIRequest,
+    AIResponse,
+    ContextUnit,
+    ContextUnitCreate,
+    ContextUnitUpdate,
+    Conversation,
+    GeneratedPrompt,
+    Settings,
+    SettingsUpdate,
+    Stats,
+    TaskRequest,
 } from './types';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
@@ -123,6 +125,17 @@ export const contextAPI = {
 
   getConversation: async (id: string): Promise<Conversation> => {
     const response = await api.get<Conversation>(`/ai/conversations/${id}`);
+    return response.data;
+  },
+
+  // Settings management
+  getSettings: async (): Promise<Settings> => {
+    const response = await api.get<Settings>('/settings');
+    return response.data;
+  },
+
+  updateSettings: async (settings: SettingsUpdate): Promise<any> => {
+    const response = await api.post('/settings', settings);
     return response.data;
   },
 };

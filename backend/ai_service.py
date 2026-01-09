@@ -207,8 +207,25 @@ class AIService:
                 context_ids=context_ids
             )
             db.add(conversation)
-            # Commit and refresh handled by context manager
-            return conversation
+            db.commit()
+            db.refresh(conversation)
+            
+            # Make the conversation accessible outside the session
+            conversation_id = conversation.id
+            conversation_data = {
+                "id": conversation.id,
+                "task": conversation.task,
+                "prompt_type": conversation.prompt_type,
+                "provider": conversation.provider,
+                "model": conversation.model,
+                "context_ids": conversation.context_ids,
+                "created_at": conversation.created_at
+            }
+            
+            # Create a detached conversation object with the same data
+            detached_conversation = ConversationDB(**conversation_data)
+            detached_conversation.id = conversation_id
+            return detached_conversation
     
     def _save_messages(self, conversation_id: str, messages: List[Dict]):
         """Save messages to the database."""

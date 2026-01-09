@@ -33,8 +33,9 @@ Most AI tools are stateless—they forget context between sessions. ContextPilot
 - ✅ **Context Import/Export** - JSON/CSV export and JSON import functionality
 - ✅ **Advanced Filtering** - Search by type, tags, content, and status
 - ✅ **Context Templates** - Quick creation with 6 pre-defined templates
-- ✅ **Mobile Responsive UI** - Optimized for mobile devices
+- ✅ **Mobile Responsive UI** - Optimized for mobile devices  
 - ✅ **Enhanced UX** - Loading states, smooth transitions, and improved interactions
+- ✅ **Settings Management** - Configure API keys and AI parameters directly in the UI
 
 ## 🏗️ Architecture
 
@@ -195,11 +196,13 @@ The frontend will be available at **http://localhost:3000**
 ### 1. Using the Web UI
 
 1. Open http://localhost:3000
-2. Add context units (preferences, decisions, facts, goals)
-3. Enter a task in the "Generate Prompt" section
-4. View the generated prompt with relevant context
-5. Copy the prompt to use with any LLM
-6. **NEW**: Use the AI Chat feature to get instant AI responses with context
+2. **Configure API Keys**: Click the ⚙️ settings button to configure your OpenAI or Anthropic API keys for AI chat functionality
+3. Add context units (preferences, decisions, facts, goals) using templates or manual entry
+4. Enter a task in the "Generate Prompt" section
+5. View the generated prompt with relevant context
+6. Copy the prompt to use with any LLM
+7. **Use AI Chat**: Get instant AI responses with relevant context automatically included
+8. **Import/Export**: Export your contexts to JSON/CSV or import from JSON files
 
 ### 2. Using the API
 
