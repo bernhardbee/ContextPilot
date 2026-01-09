@@ -87,7 +87,6 @@ class TestContextCRUD:
         assert result["content"] == context_data["content"]
         assert result["confidence"] == 0.9
         assert "id" in result
-        return result["id"]
     
     def test_list_contexts(self, api_client):
         """Test listing all contexts."""
