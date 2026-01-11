@@ -106,12 +106,18 @@ class AIService:
             ]
             
             # Call OpenAI API (v1.0+ syntax)
-            response = self.openai_client.chat.completions.create(
-                model=model,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens
-            )
+            # Handle model-specific parameter support
+            api_params = {
+                "model": model,
+                "messages": messages,
+                "max_completion_tokens": max_tokens
+            }
+            
+            # Some models (like GPT-5) only support default temperature
+            if not model.startswith(('gpt-5', 'o1', 'o3')):
+                api_params["temperature"] = temperature
+                
+            response = self.openai_client.chat.completions.create(**api_params)
             
             # Extract response
             assistant_message = response.choices[0].message.content

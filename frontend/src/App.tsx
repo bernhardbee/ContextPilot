@@ -7,15 +7,15 @@ import './App.css';
 import { ContextTemplates } from './ContextTemplates';
 import { ContextTools } from './ContextTools';
 import {
-    AIResponse,
-    ContextType,
-    ContextUnit,
-    ContextUnitCreate,
-    Conversation,
-    GeneratedPrompt,
-    Settings,
-    SettingsUpdate,
-    Stats,
+  AIResponse,
+  ContextType,
+  ContextUnit,
+  ContextUnitCreate,
+  Conversation,
+  GeneratedPrompt,
+  Settings,
+  SettingsUpdate,
+  Stats,
 } from './types';
 
 function App() {
@@ -46,7 +46,7 @@ function App() {
   const [aiTask, setAiTask] = useState('');
   const [aiMaxContexts, setAiMaxContexts] = useState(5);
   const [aiProvider, setAiProvider] = useState('openai');
-  const [aiModel, setAiModel] = useState('gpt-4-turbo-preview');
+  const [aiModel, setAiModel] = useState('gpt-5');
   const [aiResponse, setAiResponse] = useState<AIResponse | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
@@ -442,9 +442,9 @@ function App() {
                           onChange={(e) => {
                             setAiProvider(e.target.value);
                             if (e.target.value === 'openai') {
-                              setAiModel('gpt-4-turbo-preview');
+                              setAiModel('gpt-5');
                             } else {
-                              setAiModel('claude-3-opus-20240229');
+                              setAiModel('claude-3-5-sonnet-20241022');
                             }
                           }}
                         >
@@ -461,14 +461,17 @@ function App() {
                         >
                           {aiProvider === 'openai' ? (
                             <>
-                              <option value="gpt-4-turbo-preview">GPT-4 Turbo</option>
+                              <option value="gpt-5">GPT-5</option>
+                              <option value="gpt-4o">GPT-4o</option>
+                              <option value="gpt-4o-mini">GPT-4o Mini</option>
+                              <option value="gpt-4-turbo">GPT-4 Turbo</option>
                               <option value="gpt-4">GPT-4</option>
-                              <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
                             </>
                           ) : (
                             <>
+                              <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                              <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
                               <option value="claude-3-opus-20240229">Claude 3 Opus</option>
-                              <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
                               <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
                             </>
                           )}
@@ -786,20 +789,23 @@ function App() {
                 <div className="form-group">
                   <label>Default Model:</label>
                   <select
-                    value={settingsForm.default_ai_model || settings?.default_ai_model || 'gpt-4-turbo-preview'}
+                    value={settingsForm.default_ai_model || settings?.default_ai_model || 'gpt-5'}
                     onChange={(e) => setSettingsForm({ ...settingsForm, default_ai_model: e.target.value })}
                   >
                     {(settingsForm.default_ai_provider || settings?.default_ai_provider) === 'anthropic' ? (
                       <>
+                        <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                        <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
                         <option value="claude-3-opus-20240229">Claude 3 Opus</option>
-                        <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
                         <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
                       </>
                     ) : (
                       <>
-                        <option value="gpt-4-turbo-preview">GPT-4 Turbo</option>
+                        <option value="gpt-5">GPT-5</option>
+                        <option value="gpt-4o">GPT-4o</option>
+                        <option value="gpt-4o-mini">GPT-4o Mini</option>
+                        <option value="gpt-4-turbo">GPT-4 Turbo</option>
                         <option value="gpt-4">GPT-4</option>
-                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
                       </>
                     )}
                   </select>
