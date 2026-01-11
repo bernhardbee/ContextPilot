@@ -125,7 +125,8 @@ class AIRequest(BaseModel):
                 "model": "gpt-4-turbo-preview",
                 "temperature": 0.7,
                 "max_tokens": 2000,
-                "use_compact": False
+                "use_compact": False,
+                "conversation_id": None
             }
         }
     )
@@ -137,6 +138,7 @@ class AIRequest(BaseModel):
     temperature: Optional[float] = Field(None, ge=0.0, le=2.0)
     max_tokens: Optional[int] = Field(None, ge=1, le=4000)
     use_compact: bool = False  # Use compact prompt format
+    conversation_id: Optional[str] = None  # Continue existing conversation
 
 
 class AIResponse(BaseModel):

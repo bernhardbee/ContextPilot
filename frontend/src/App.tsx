@@ -271,6 +271,7 @@ function App() {
         max_context_units: aiMaxContexts,
         provider: aiProvider,
         model: aiModel,
+        conversation_id: selectedConversation?.id,
       });
       setAiResponse(result);
       setError(null);

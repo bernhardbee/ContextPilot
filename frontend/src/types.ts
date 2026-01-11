@@ -77,6 +77,7 @@ export interface AIRequest {
   temperature?: number;
   max_tokens?: number;
   use_compact?: boolean;
+  conversation_id?: string;
 }
 
 export interface AIResponse {

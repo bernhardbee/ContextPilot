@@ -795,7 +795,8 @@ def ai_chat(
             provider=ai_request.provider,
             model=ai_request.model,
             temperature=ai_request.temperature,
-            max_tokens=ai_request.max_tokens
+            max_tokens=ai_request.max_tokens,
+            conversation_id=ai_request.conversation_id
         )
         
         logger.info(f"AI response generated for conversation {conversation.id}")

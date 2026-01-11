@@ -40,7 +40,8 @@ class AIService:
         provider: Optional[str] = None,
         model: Optional[str] = None,
         temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None
+        max_tokens: Optional[int] = None,
+        conversation_id: Optional[str] = None
     ) -> Tuple[str, ConversationDB]:
         """
         Generate AI response using the specified provider.
@@ -56,6 +57,7 @@ class AIService:
             model: Model to use
             temperature: Temperature parameter
             max_tokens: Max tokens in response
+            conversation_id: Optional ID of existing conversation to continue
             
         Returns:
             Tuple of (response_text, conversation_record)
@@ -67,11 +69,11 @@ class AIService:
         
         if provider == "openai":
             return self._generate_openai(
-                task, generated_prompt, context_ids, model, temperature, max_tokens
+                task, generated_prompt, context_ids, model, temperature, max_tokens, conversation_id
             )
         elif provider == "anthropic":
             return self._generate_anthropic(
-                task, generated_prompt, context_ids, model, temperature, max_tokens
+                task, generated_prompt, context_ids, model, temperature, max_tokens, conversation_id
             )
         else:
             raise ValueError(f"Unknown AI provider: {provider}")
@@ -83,27 +85,55 @@ class AIService:
         context_ids: List[str],
         model: str,
         temperature: float,
-        max_tokens: int
+        max_tokens: int,
+        conversation_id: Optional[str] = None
     ) -> Tuple[str, ConversationDB]:
         """Generate response using OpenAI API (synchronous)."""
         if not self.openai_client:
             raise ValueError("OpenAI API key not configured")
         
         try:
-            # Create conversation record
-            conversation = self._create_conversation(
-                task=task,
-                prompt_type="full" if "compact" not in generated_prompt.generated_prompt.lower() else "compact",
-                context_ids=context_ids,
-                provider="openai",
-                model=model
-            )
+            # Get existing conversation and its messages if continuing
+            existing_conversation = None
+            existing_messages = []
+            if conversation_id:
+                conversation_data = self.get_conversation(conversation_id)
+                if conversation_data:
+                    existing_conversation = conversation_data
+                    # Convert stored messages to API format (excluding system messages for continuation)
+                    for msg in conversation_data['messages']:
+                        if msg['role'] in ['user', 'assistant']:
+                            existing_messages.append({
+                                "role": msg['role'],
+                                "content": msg['content']
+                            })
+
+            # Create or get existing conversation record
+            if existing_conversation:
+                # Use the existing conversation ID to save new messages
+                current_conversation_id = existing_conversation['id']
+                # Create a temporary conversation object for return compatibility
+                conversation = self._get_conversation_object(current_conversation_id)
+            else:
+                conversation = self._create_conversation(
+                    task=task,
+                    prompt_type="full" if "compact" not in generated_prompt.generated_prompt.lower() else "compact",
+                    context_ids=context_ids,
+                    provider="openai",
+                    model=model
+                )
+                current_conversation_id = conversation.id
             
-            # Prepare messages
+            # Prepare messages - start with system message
             messages = [
-                {"role": "system", "content": "You are a helpful AI assistant with access to personalized context."},
-                {"role": "user", "content": generated_prompt.generated_prompt}
+                {"role": "system", "content": "You are a helpful AI assistant with access to personalized context."}
             ]
+            
+            # Add existing conversation history
+            messages.extend(existing_messages)
+            
+            # Add current user message (contextualized prompt)
+            messages.append({"role": "user", "content": generated_prompt.generated_prompt})
             
             # Call OpenAI API (v1.0+ syntax)
             # Handle model-specific parameter support
@@ -124,15 +154,17 @@ class AIService:
             finish_reason = response.choices[0].finish_reason
             tokens_used = response.usage.total_tokens
             
-            # Save messages
-            self._save_messages(
-                conversation.id,
-                messages=[
-                    {"role": "system", "content": messages[0]["content"]},
-                    {"role": "user", "content": messages[1]["content"]},
-                    {"role": "assistant", "content": assistant_message, "tokens": tokens_used, "finish_reason": finish_reason}
-                ]
-            )
+            # Save new messages (only the new user and assistant messages)
+            new_messages = [
+                {"role": "user", "content": generated_prompt.generated_prompt},
+                {"role": "assistant", "content": assistant_message, "tokens": tokens_used, "finish_reason": finish_reason}
+            ]
+            
+            # If this is a new conversation, also save the system message
+            if not existing_conversation:
+                new_messages.insert(0, {"role": "system", "content": "You are a helpful AI assistant with access to personalized context."})
+            
+            self._save_messages(current_conversation_id, new_messages)
             
             logger.info(f"OpenAI response generated: {model}, {tokens_used} tokens")
             return assistant_message, conversation
@@ -148,30 +180,55 @@ class AIService:
         context_ids: List[str],
         model: str,
         temperature: float,
-        max_tokens: int
+        max_tokens: int,
+        conversation_id: Optional[str] = None
     ) -> Tuple[str, ConversationDB]:
         """Generate response using Anthropic API (synchronous)."""
         if not self.anthropic_client:
             raise ValueError("Anthropic API key not configured")
         
         try:
-            # Create conversation record
-            conversation = self._create_conversation(
-                task=task,
-                prompt_type="full" if "compact" not in generated_prompt.generated_prompt.lower() else "compact",
-                context_ids=context_ids,
-                provider="anthropic",
-                model=model
-            )
+            # Get existing conversation and its messages if continuing
+            existing_conversation = None
+            existing_messages = []
+            if conversation_id:
+                conversation_data = self.get_conversation(conversation_id)
+                if conversation_data:
+                    existing_conversation = conversation_data
+                    # Convert stored messages to API format (exclude system messages for Anthropic)
+                    for msg in conversation_data['messages']:
+                        if msg['role'] in ['user', 'assistant']:
+                            existing_messages.append({
+                                "role": msg['role'],
+                                "content": msg['content']
+                            })
+
+            # Create or get existing conversation record
+            if existing_conversation:
+                # Use the existing conversation ID to save new messages
+                current_conversation_id = existing_conversation['id']
+                # Create a temporary conversation object for return compatibility
+                conversation = self._get_conversation_object(current_conversation_id)
+            else:
+                conversation = self._create_conversation(
+                    task=task,
+                    prompt_type="full" if "compact" not in generated_prompt.generated_prompt.lower() else "compact",
+                    context_ids=context_ids,
+                    provider="anthropic",
+                    model=model
+                )
+                current_conversation_id = conversation.id
+            
+            # Prepare messages - Anthropic doesn't use system messages in the same way
+            messages = existing_messages.copy()
+            messages.append({"role": "user", "content": generated_prompt.generated_prompt})
             
             # Call Anthropic API
             response = self.anthropic_client.messages.create(
                 model=model,
                 max_tokens=max_tokens,
                 temperature=temperature,
-                messages=[
-                    {"role": "user", "content": generated_prompt.generated_prompt}
-                ]
+                messages=messages
             )
             
             # Extract response
@@ -179,14 +236,13 @@ class AIService:
             finish_reason = response.stop_reason
             tokens_used = response.usage.input_tokens + response.usage.output_tokens
             
-            # Save messages
-            self._save_messages(
-                conversation.id,
-                messages=[
-                    {"role": "user", "content": generated_prompt.prompt},
-                    {"role": "assistant", "content": assistant_message, "tokens": tokens_used, "finish_reason": finish_reason}
-                ]
-            )
+            # Save new messages (only the new user and assistant messages)
+            new_messages = [
+                {"role": "user", "content": generated_prompt.generated_prompt},
+                {"role": "assistant", "content": assistant_message, "tokens": tokens_used, "finish_reason": finish_reason}
+            ]
+            
+            self._save_messages(current_conversation_id, new_messages)
             
             logger.info(f"Anthropic response generated: {model}, {tokens_used} tokens")
             return assistant_message, conversation
@@ -246,6 +302,27 @@ class AIService:
                 )
                 db.add(db_message)
             # Commit handled by context manager
+    
+    def _get_conversation_object(self, conversation_id: str) -> Optional[ConversationDB]:
+        """Get a conversation object for return compatibility."""
+        with get_db_session() as db:
+            conversation = db.query(ConversationDB).filter(
+                ConversationDB.id == conversation_id
+            ).first()
+            if conversation:
+                # Create a detached copy to avoid session issues
+                from copy import copy
+                conv_copy = ConversationDB(
+                    id=conversation.id,
+                    task=conversation.task,
+                    prompt_type=conversation.prompt_type,
+                    provider=conversation.provider,
+                    model=conversation.model,
+                    context_ids=conversation.context_ids,
+                    created_at=conversation.created_at
+                )
+                return conv_copy
+            return None
     
     def get_conversation(self, conversation_id: str) -> Optional[Dict]:
         """Get a conversation with all its messages."""
