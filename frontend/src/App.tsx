@@ -7,15 +7,15 @@ import './App.css';
 import { ContextTemplates } from './ContextTemplates';
 import { ContextTools } from './ContextTools';
 import {
-  AIResponse,
-  ContextType,
-  ContextUnit,
-  ContextUnitCreate,
-  Conversation,
-  GeneratedPrompt,
-  Settings,
-  SettingsUpdate,
-  Stats,
+    AIResponse,
+    ContextType,
+    ContextUnit,
+    ContextUnitCreate,
+    Conversation,
+    GeneratedPrompt,
+    Settings,
+    SettingsUpdate,
+    Stats,
 } from './types';
 
 function App() {
@@ -24,7 +24,9 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'contexts' | 'prompt' | 'ai'>('contexts');
+  const [activeTab, setActiveTab] = useState<'chat' | 'manage'>('chat');
+  const [showConversations, setShowConversations] = useState(true);
+  const [showContexts, setShowContexts] = useState(true);
 
   // Form states
   const [newContext, setNewContext] = useState<ContextUnitCreate>({
@@ -67,6 +69,7 @@ function App() {
     loadContexts();
     loadStats();
     loadSettings();
+    loadConversations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -351,28 +354,252 @@ function App() {
 
       <div className="tabs">
         <button
-          className={`tab ${activeTab === 'contexts' ? 'active' : ''}`}
-          onClick={() => setActiveTab('contexts')}
+          className={`tab ${activeTab === 'chat' ? 'active' : ''}`}
+          onClick={() => setActiveTab('chat')}
+        >
+          🤖 AI Workspace
+        </button>
+        <button
+          className={`tab ${activeTab === 'manage' ? 'active' : ''}`}
+          onClick={() => setActiveTab('manage')}
         >
           📝 Manage Contexts
         </button>
-        <button
-          className={`tab ${activeTab === 'prompt' ? 'active' : ''}`}
-          onClick={() => setActiveTab('prompt')}
-        >
-          ✨ Generate Prompt
-        </button>
-        <button
-          className={`tab ${activeTab === 'ai' ? 'active' : ''}`}
-          onClick={() => setActiveTab('ai')}
-        >
-          🤖 AI Chat
-        </button>
       </div>
 
-      <div className="main-content">
-        {activeTab === 'contexts' && (
+      <div className="workspace-layout">
+        {activeTab === 'chat' && (
           <>
+            {/* Left Sidebar: Conversations */}
+            <div className={`sidebar sidebar-left ${showConversations ? 'visible' : 'collapsed'}`}>
+              <div className="sidebar-header">
+                <h3>💬 Conversations</h3>
+                <button 
+                  className="toggle-button"
+                  onClick={() => setShowConversations(!showConversations)}
+                  title={showConversations ? "Hide conversations" : "Show conversations"}
+                >
+                  {showConversations ? '◀' : '▶'}
+                </button>
+              </div>
+              {showConversations && (
+                <div className="sidebar-content">
+                  {conversations.length === 0 ? (
+                    <p className="help-text">No conversations yet</p>
+                  ) : (
+                    <div className="conversation-list">
+                      {conversations.map((conv) => (
+                        <div 
+                          key={conv.id} 
+                          className={`conversation-item ${selectedConversation?.id === conv.id ? 'active' : ''}`}
+                          onClick={() => handleViewConversation(conv.id)}
+                        >
+                          <div className="conversation-preview">
+                            <div className="conversation-task">{conv.task.substring(0, 60)}...</div>
+                            <div className="conversation-meta">
+                              <span className="conversation-model">{conv.model}</span>
+                              <span className="conversation-messages">{conv.message_count} msgs</span>
+                            </div>
+                            <div className="conversation-date">
+                              {new Date(conv.created_at).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Center: Main Chat Area */}
+            <div className="main-panel">
+              <div className="chat-container">
+                <div className="card chat-card">
+                  <div className="chat-header">
+                    <h2>🚀 AI Assistant</h2>
+                    <div className="chat-stats">
+                      <span className="stat-badge">{contexts.length} contexts available</span>
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleAIChat} className="chat-form">
+                    <div className="form-group">
+                      <label>Your Task or Question</label>
+                      <textarea
+                        value={aiTask}
+                        onChange={(e) => setAiTask(e.target.value)}
+                        placeholder="Ask a question or describe a task... Your contexts will be automatically included."
+                        rows={5}
+                      />
+                    </div>
+
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Provider</label>
+                        <select
+                          value={aiProvider}
+                          onChange={(e) => {
+                            setAiProvider(e.target.value);
+                            if (e.target.value === 'openai') {
+                              setAiModel('gpt-4-turbo-preview');
+                            } else {
+                              setAiModel('claude-3-opus-20240229');
+                            }
+                          }}
+                        >
+                          <option value="openai">OpenAI</option>
+                          <option value="anthropic">Anthropic</option>
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                        <label>Model</label>
+                        <select
+                          value={aiModel}
+                          onChange={(e) => setAiModel(e.target.value)}
+                        >
+                          {aiProvider === 'openai' ? (
+                            <>
+                              <option value="gpt-4-turbo-preview">GPT-4 Turbo</option>
+                              <option value="gpt-4">GPT-4</option>
+                              <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                            </>
+                          ) : (
+                            <>
+                              <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                              <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
+                              <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
+                            </>
+                          )}
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                        <label>Max Contexts</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="20"
+                          value={aiMaxContexts}
+                          onChange={(e) => setAiMaxContexts(parseInt(e.target.value))}
+                        />
+                      </div>
+                    </div>
+
+                    <button type="submit" className="button button-ai" disabled={loading}>
+                      {loading ? 'Thinking...' : '🚀 Ask AI'}
+                    </button>
+                  </form>
+
+                  {aiResponse && (
+                    <div className="ai-response">
+                      <div className="response-header">
+                        <h3>AI Response</h3>
+                        <button className="button button-small copy-button" onClick={handleCopyAIResponse}>
+                          📋 Copy
+                        </button>
+                      </div>
+                      <div className="response-meta">
+                        <span className="meta-item">
+                          {aiResponse.provider} / {aiResponse.model}
+                        </span>
+                        <span className="meta-item">
+                          {aiResponse.context_ids.length} contexts used
+                        </span>
+                      </div>
+                      <div className="response-content">{aiResponse.response}</div>
+
+                      <details className="prompt-details">
+                        <summary>View Full Prompt Sent to AI</summary>
+                        <pre className="prompt-code">{aiResponse.prompt_used}</pre>
+                      </details>
+                    </div>
+                  )}
+
+                  {selectedConversation && (
+                    <div className="conversation-details">
+                      <div className="conversation-header">
+                        <h3>Conversation Details</h3>
+                        <button 
+                          className="button button-small"
+                          onClick={() => setSelectedConversation(null)}
+                        >
+                          ✕ Close
+                        </button>
+                      </div>
+                      <div className="conversation-messages">
+                        {selectedConversation.messages?.map((msg, idx) => (
+                          <div key={idx} className={`message message-${msg.role}`}>
+                            <div className="message-role">{msg.role}</div>
+                            <div className="message-content">{msg.content}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Sidebar: Quick Context View */}
+            <div className={`sidebar sidebar-right ${showContexts ? 'visible' : 'collapsed'}`}>
+              <div className="sidebar-header">
+                <h3>📚 Your Contexts</h3>
+                <button 
+                  className="toggle-button"
+                  onClick={() => setShowContexts(!showContexts)}
+                  title={showContexts ? "Hide contexts" : "Show contexts"}
+                >
+                  {showContexts ? '▶' : '◀'}
+                </button>
+              </div>
+              {showContexts && (
+                <div className="sidebar-content">
+                  <div className="context-summary">
+                    <div className="context-stats">
+                      <div className="stat-mini">
+                        <span className="stat-value">{contexts.filter(c => c.type === 'preference').length}</span>
+                        <span className="stat-label">Preferences</span>
+                      </div>
+                      <div className="stat-mini">
+                        <span className="stat-value">{contexts.filter(c => c.type === 'decision').length}</span>
+                        <span className="stat-label">Decisions</span>
+                      </div>
+                      <div className="stat-mini">
+                        <span className="stat-value">{contexts.filter(c => c.type === 'fact').length}</span>
+                        <span className="stat-label">Facts</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="quick-context-list">
+                    {contexts.slice(0, 10).map((context) => (
+                      <div key={context.id} className="quick-context-item">
+                        <span className={`context-type-badge ${context.type}`}>
+                          {context.type[0].toUpperCase()}
+                        </span>
+                        <div className="quick-context-content">
+                          {context.content.substring(0, 80)}...
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button 
+                    className="button button-secondary button-full"
+                    onClick={() => setActiveTab('manage')}
+                  >
+                    ➕ Manage All Contexts
+                  </button>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {activeTab === 'manage' && (
+          <div className="manage-content">
             <ContextTools
               onFiltersChange={setFilters}
               onRefresh={loadContexts}
@@ -458,35 +685,6 @@ function App() {
 
         <div className="card">
           <h2>Your Contexts ({contexts.length})</h2>
-          <form onSubmit={handleGeneratePrompt}>
-            <div className="form-group">
-              <label>Task</label>
-              <textarea
-                value={task}
-                onChange={(e) => setTask(e.target.value)}
-                placeholder="Describe what you want to do..."
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Max Context Units</label>
-              <input
-                type="number"
-                min="1"
-                max="20"
-                value={maxContexts}
-                onChange={(e) => setMaxContexts(parseInt(e.target.value))}
-              />
-            </div>
-
-            <button type="submit" className="button button-secondary" disabled={loading}>
-              {loading ? 'Generating...' : 'Generate Prompt'}
-            </button>
-          </form>
-        </div>
-
-        <div className="card">
-          <h2>Your Contexts ({contexts.length})</h2>
           <div className="context-list">
             {contexts.length === 0 ? (
               <p>No contexts yet. Add your first context above!</p>
@@ -524,232 +722,7 @@ function App() {
             )}
           </div>
         </div>
-          </>
-        )}
-
-        {activeTab === 'prompt' && (
-          <>
-            <div className="card">
-              <h2>Generate Prompt</h2>
-              <form onSubmit={handleGeneratePrompt}>
-                <div className="form-group">
-                  <label>Task</label>
-                  <textarea
-                    value={task}
-                    onChange={(e) => setTask(e.target.value)}
-                    placeholder="Describe what you want to do..."
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Max Context Units</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="20"
-                    value={maxContexts}
-                    onChange={(e) => setMaxContexts(parseInt(e.target.value))}
-                  />
-                </div>
-
-                <button type="submit" className="button button-secondary" disabled={loading}>
-                  {loading ? 'Generating...' : 'Generate Prompt'}
-                </button>
-              </form>
-            </div>
-
-            {generatedPrompt && (
-              <div className="card prompt-output">
-                <h2>Generated Prompt</h2>
-                <div className="prompt-display">{generatedPrompt.generated_prompt}</div>
-                <button className="button copy-button" onClick={handleCopyPrompt}>
-                  Copy to Clipboard
-                </button>
-
-                <div className="relevant-contexts">
-                  <h3>Relevant Contexts Used ({generatedPrompt.relevant_context.length})</h3>
-                  {generatedPrompt.relevant_context.map((ranked, idx) => (
-                    <div key={idx} className="relevant-context-item">
-                      <div className="context-header">
-                        <span className={`context-type ${ranked.context_unit.type}`}>
-                          {ranked.context_unit.type}
-                        </span>
-                        <span className="relevance-score">
-                          Relevance: {(ranked.relevance_score * 100).toFixed(1)}%
-                        </span>
-                      </div>
-                      <div className="context-content">{ranked.context_unit.content}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {activeTab === 'ai' && (
-          <>
-            <div className="card">
-              <h2>🤖 AI Chat with Context</h2>
-              <p className="help-text">
-                Ask a question and the AI will respond using your relevant contexts.
-              </p>
-              <form onSubmit={handleAIChat}>
-                <div className="form-group">
-                  <label>Question / Task</label>
-                  <textarea
-                    value={aiTask}
-                    onChange={(e) => setAiTask(e.target.value)}
-                    placeholder="Ask a question or describe a task..."
-                    rows={4}
-                  />
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Provider</label>
-                    <select
-                      value={aiProvider}
-                      onChange={(e) => {
-                        setAiProvider(e.target.value);
-                        if (e.target.value === 'openai') {
-                          setAiModel('gpt-4-turbo-preview');
-                        } else {
-                          setAiModel('claude-3-opus-20240229');
-                        }
-                      }}
-                    >
-                      <option value="openai">OpenAI</option>
-                      <option value="anthropic">Anthropic</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Model</label>
-                    <select
-                      value={aiModel}
-                      onChange={(e) => setAiModel(e.target.value)}
-                    >
-                      {aiProvider === 'openai' ? (
-                        <>
-                          <option value="gpt-4-turbo-preview">GPT-4 Turbo</option>
-                          <option value="gpt-4">GPT-4</option>
-                          <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                        </>
-                      ) : (
-                        <>
-                          <option value="claude-3-opus-20240229">Claude 3 Opus</option>
-                          <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
-                          <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
-                        </>
-                      )}
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Max Contexts</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="20"
-                      value={aiMaxContexts}
-                      onChange={(e) => setAiMaxContexts(parseInt(e.target.value))}
-                    />
-                  </div>
-                </div>
-
-                <button type="submit" className="button button-ai" disabled={loading}>
-                  {loading ? 'Thinking...' : '🚀 Ask AI'}
-                </button>
-              </form>
-            </div>
-
-            {aiResponse && (
-              <div className="card ai-response">
-                <h2>AI Response</h2>
-                <div className="response-meta">
-                  <span className="meta-item">
-                    Provider: <strong>{aiResponse.provider}</strong>
-                  </span>
-                  <span className="meta-item">
-                    Model: <strong>{aiResponse.model}</strong>
-                  </span>
-                  <span className="meta-item">
-                    Contexts Used: <strong>{aiResponse.context_ids.length}</strong>
-                  </span>
-                </div>
-                <div className="response-content">{aiResponse.response}</div>
-                <button className="button copy-button" onClick={handleCopyAIResponse}>
-                  Copy Response
-                </button>
-
-                <details className="prompt-details">
-                  <summary>View Full Prompt Sent to AI</summary>
-                  <pre className="prompt-code">{aiResponse.prompt_used}</pre>
-                </details>
-              </div>
-            )}
-
-            <div className="card">
-              <h2>Conversation History ({conversations.length})</h2>
-              {conversations.length === 0 ? (
-                <p className="help-text">No conversations yet. Start chatting above!</p>
-              ) : (
-                <div className="conversation-list">
-                  {conversations.map((conv) => (
-                    <div key={conv.id} className="conversation-item">
-                      <div className="conversation-header">
-                        <span className="conversation-task">{conv.task}</span>
-                        <span className="conversation-meta">
-                          {conv.provider} · {conv.model}
-                        </span>
-                      </div>
-                      <div className="conversation-footer">
-                        <span className="conversation-date">
-                          {new Date(conv.created_at).toLocaleString()}
-                        </span>
-                        <button
-                          className="button button-small"
-                          onClick={() => handleViewConversation(conv.id)}
-                        >
-                          View
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {selectedConversation && (
-              <div className="card conversation-detail">
-                <h2>Conversation Details</h2>
-                <button
-                  className="button button-small"
-                  onClick={() => setSelectedConversation(null)}
-                >
-                  Close
-                </button>
-                <div className="conversation-messages">
-                  {selectedConversation.messages?.map((msg, idx) => (
-                    <div key={idx} className={`message message-${msg.role}`}>
-                      <div className="message-role">{msg.role}</div>
-                      <div className="message-content">{msg.content}</div>
-                      {msg.tokens && (
-                        <div className="message-meta">
-                          Tokens: {msg.tokens} · {msg.finish_reason}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {generatedPrompt && activeTab === 'prompt' && (
-          <></>
+          </div>
         )}
       </div>
 
