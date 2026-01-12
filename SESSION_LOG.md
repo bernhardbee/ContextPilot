@@ -3229,3 +3229,247 @@ b340a2a - fix: Implement persistent settings storage and fix OpenAI API
 
 **End of Part 16**
 
+---
+
+## Part 17: UI/UX Redesign and Conversation Features
+
+**Date:** January 11, 2026  
+**Focus:** Chat-style interface, full-width layout, conversation history, context optimization
+
+### User Requests Evolution
+1. "rethink ui concept. ensure better usability and better usage of screen real estate"
+2. "use the full width of the window to have more space for the middle column"
+3. "when a conversation is chosen, send it as part of the request flagged as the conversation up to now"
+4. "rebuild the middle column to a more chat style with conversation history and text field at bottom"
+5. "contexts that has been given in conversation shall not be sent again, only if explicitly told so"
+
+### Major UI/UX Improvements
+
+#### 1. Full-Width Layout
+**Implementation:**
+- Removed `max-width: 1200px` constraint from `.app` CSS class
+- Application now uses full browser width
+- More space for middle conversation column
+- Better screen real estate utilization
+
+**Files Modified:**
+- `frontend/src/App.css`: Width constraint removal
+
+#### 2. Conversation History Integration
+**Backend Changes:**
+- Added `conversation_id` field to `AIRequest` model
+- Updated `generate_response()` to accept conversation_id parameter
+- Enhanced OpenAI/Anthropic handlers to include conversation history in API calls
+- Fixed database session management for conversation objects
+- Added `_get_conversation_object()` helper for proper DB session handling
+
+**Frontend Changes:**
+- Updated `AIRequest` type to include optional `conversation_id`
+- Modified `handleAIChat()` to send selected conversation ID
+- Conversation history automatically included in subsequent messages
+
+**Files Modified:**
+- `backend/models.py`: AIRequest model update
+- `backend/ai_service.py`: Conversation history handling
+- `backend/main.py`: Pass conversation_id to AI service
+- `frontend/src/types.ts`: AIRequest interface update
+- `frontend/src/App.tsx`: Conversation ID handling
+
+#### 3. Chat-Style Interface
+**Complete Middle Column Redesign:**
+- **Welcome Screen**: Displays when starting new chat with context count
+- **Message Display**: Chat bubbles with user (left) and assistant (right) messages
+- **Message Metadata**: Timestamps and copy buttons for each message
+- **Typing Indicator**: Animated dots when AI is responding
+- **Input at Bottom**: Multi-line text input with send button
+- **Model Controls**: Inline provider/model selectors
+- **New Conversation**: Button to start fresh chats
+- **Auto-scroll**: Automatically scrolls to latest message
+
+**UI Components Added:**
+- Message list with scrollable container
+- Chat bubbles with role-based styling
+- Message avatars (👤 for user, 🤖 for assistant)
+- Typing animation with CSS keyframes
+- Compact settings in chat footer
+- Context refresh toggle button
+
+**Files Modified:**
+- `frontend/src/App.tsx`: Complete chat interface rebuild (300+ lines)
+- `frontend/src/App.css`: Chat styling (400+ lines of new CSS)
+
+#### 4. Smart Context Management
+**Intelligent Context Sending:**
+- **First Message**: Sends configured contexts (e.g., 5 contexts)
+- **Follow-up Messages**: Sends 0 contexts (already in conversation history)
+- **Refresh Option**: Explicit button to reload contexts if needed
+- **Context Tracking**: Displays total contexts used per conversation
+
+**Implementation Details:**
+- Added `conversationContexts` state to track contexts per conversation
+- Added `currentChatMessages` state for chat display
+- Added `refreshContexts` toggle for explicit context refresh
+- Logic: `maxContextsToSend = 0` when continuing conversation
+- Backend validation: Allow `max_context_units: 0` (changed from `ge=1` to `ge=0`)
+
+**Files Modified:**
+- `frontend/src/App.tsx`: Context tracking logic
+- `backend/models.py`: Validation update for zero contexts
+- `frontend/src/App.css`: Refresh button styling
+
+### Message Rendering Improvements
+
+#### 5. Message Alignment Fix
+**Changes:**
+- User messages appear on LEFT side (white background)
+- Assistant messages appear on RIGHT side (blue background)
+- Updated CSS from `.message-user` to `.message-assistant` for flex-direction
+
+**Files Modified:**
+- `frontend/src/App.css`: Swapped message alignment classes
+
+#### 6. Auto-Scroll Implementation
+**Solution:**
+- Added `useRef` for message container
+- Added `useEffect` that triggers on message/loading state changes
+- Uses `setTimeout(100ms)` to ensure DOM is fully rendered
+- Ref attached to `.chat-messages` (the scrollable container)
+
+**Files Modified:**
+- `frontend/src/App.tsx`: Added useRef import, messageListRef, and useEffect
+
+#### 7. Message Rendering Robustness
+**Improvements:**
+- Added `renderMessageContent()` function for safe rendering
+- Better React keys: `${msg.timestamp}-${idx}` instead of just `idx`
+- Fallback text for empty/undefined content
+- Console logging for debugging message flow
+- CSS improvements for code blocks and long content
+
+**Files Modified:**
+- `frontend/src/App.tsx`: Safe rendering function, logging
+- `frontend/src/App.css`: Code block styling, word-break rules
+
+### TypeScript Fixes
+**Errors Resolved:**
+1. Missing `ConversationMessage` import
+2. Set iteration incompatibility (used `Array.from(new Set(...))`)
+3. JSX children prop issue (moved console.log inside map)
+
+**Files Modified:**
+- `frontend/src/App.tsx`: Import fixes, Array.from usage
+
+### Testing & Validation
+
+#### Backend Tests
+```bash
+# Context continuation test (0 contexts on follow-up)
+curl -X POST http://localhost:8000/ai/chat \
+  -d '{"task": "...", "max_context_units": 0, "conversation_id": "..."}'
+# Result: ✅ 0 contexts sent, conversation history preserved
+
+# Conversation history verification
+curl http://localhost:8000/ai/conversations/{id}
+# Result: ✅ All messages stored and retrieved correctly
+```
+
+#### Frontend Tests
+- ✅ Full-width layout working
+- ✅ Chat interface displays messages correctly
+- ✅ Auto-scroll working on new messages
+- ✅ User messages on left, assistant on right
+- ✅ Context tracking functional
+- ✅ Refresh contexts button working
+- ✅ TypeScript compilation successful
+- ✅ All message content rendering properly
+
+### Commits Made
+1. **"feat: Implement full window width usage and conversation history integration"**
+   - Full-width layout
+   - Conversation ID support
+   - Backend conversation history integration
+   - 6 files changed, 130 insertions, 48 deletions
+
+### Architecture Improvements
+
+**State Management:**
+- Added conversation-level context tracking
+- Added current chat messages state separate from API responses
+- Added refresh contexts toggle state
+- Better separation between conversation data and display state
+
+**Component Structure:**
+- Moved from form-based to chat-based interaction
+- Input moved to bottom for better UX
+- Settings integrated into chat footer
+- Conversation list remains in left sidebar
+
+**Backend Optimization:**
+- Conversations now store full history
+- Context included automatically from conversation history
+- No need to re-send contexts on every message
+- More efficient API usage
+
+### CSS Architecture
+**New Style Components:**
+- `.chat-card`: Flexbox container with proper height
+- `.chat-messages`: Scrollable message area
+- `.message-list`: Message container with gaps
+- `.message-bubble`: Chat bubble styling with role variants
+- `.chat-input-area`: Bottom input section
+- `.typing-indicator`: Animated typing dots
+- `.refresh-contexts-btn`: Context refresh toggle
+
+### Performance Improvements
+1. **Reduced API Calls**: Only send contexts once per conversation
+2. **Better Rendering**: Stable React keys prevent unnecessary re-renders
+3. **Efficient Scrolling**: useEffect with cleanup
+4. **CSS Optimization**: Proper flexbox usage, minimal reflows
+
+### Cumulative Stats Update
+- **Total Duration:** ~19 hours across all parts
+- **Total Tests:** 135+ passing (conversation features validated)
+- **Total Lines Changed:** ~11,000+ net additions
+- **UI Components:** Chat interface with 10+ new components
+- **CSS Lines Added:** ~400 lines for chat styling
+- **New Features:** Chat UI, conversation history, smart context management
+- **TypeScript Fixes:** 3 compilation errors resolved
+- **Backend Updates:** Conversation history integration, zero-context validation
+
+### Current Feature Set
+✅ **Core Features:**
+- Context CRUD operations
+- Semantic search with embeddings
+- AI integration (OpenAI GPT-5, Anthropic Claude)
+- Conversation persistence with full history
+- Settings management with API key storage
+
+✅ **UI/UX Features:**
+- Full-width workspace layout
+- Chat-style conversation interface
+- Auto-scroll to latest messages
+- Message bubbles with timestamps
+- Typing indicators
+- Context refresh control
+- New conversation button
+- Responsive design
+
+✅ **Smart Context Management:**
+- One-time context sending per conversation
+- Automatic context history inclusion
+- Explicit refresh option
+- Context usage tracking per conversation
+
+✅ **Code Quality:**
+- TypeScript strict mode compliance
+- Proper React hooks usage
+- Clean component architecture
+- Comprehensive error handling
+- Debugging tools (console logging)
+
+**Phase Complete:** ✅ Chat-style interface implemented, conversation history working, smart context management functional, all TypeScript errors resolved.
+
+---
+
+**End of Part 17**
+

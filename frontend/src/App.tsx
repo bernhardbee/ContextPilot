@@ -1,18 +1,17 @@
 /**
  * Main App component for ContextPilot.
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { contextAPI } from './api';
 import './App.css';
 import { ContextTemplates } from './ContextTemplates';
 import { ContextTools } from './ContextTools';
 import {
-  AIResponse,
   ContextType,
   ContextUnit,
   ContextUnitCreate,
   Conversation,
-  GeneratedPrompt,
+  ConversationMessage,
   Settings,
   SettingsUpdate,
   Stats,
@@ -37,19 +36,17 @@ function App() {
   });
   const [tagInput, setTagInput] = useState('');
 
-  // Task and prompt states
-  const [task, setTask] = useState('');
-  const [maxContexts, setMaxContexts] = useState(5);
-  const [generatedPrompt, setGeneratedPrompt] = useState<GeneratedPrompt | null>(null);
-
   // AI Chat states
   const [aiTask, setAiTask] = useState('');
   const [aiMaxContexts, setAiMaxContexts] = useState(5);
   const [aiProvider, setAiProvider] = useState('openai');
   const [aiModel, setAiModel] = useState('gpt-5');
-  const [aiResponse, setAiResponse] = useState<AIResponse | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [conversationContexts, setConversationContexts] = useState<{[conversationId: string]: string[]}>({});
+  const [currentChatMessages, setCurrentChatMessages] = useState<ConversationMessage[]>([]);
+  const [refreshContexts, setRefreshContexts] = useState(false);
+  const messageListRef = useRef<HTMLDivElement>(null);
 
   // Search and filter states
   const [filters, setFilters] = useState({
@@ -78,6 +75,18 @@ function App() {
     loadContexts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
+
+  // Auto-scroll to latest message
+  useEffect(() => {
+    if (messageListRef.current) {
+      // Use setTimeout to ensure DOM is updated before scrolling
+      setTimeout(() => {
+        if (messageListRef.current) {
+          messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
+        }
+      }, 100);
+    }
+  }, [currentChatMessages, loading]);
 
   const loadContexts = async () => {
     try {
@@ -216,36 +225,7 @@ function App() {
     setTimeout(() => setSuccess(null), 3000);
   };
 
-  const handleGeneratePrompt = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!task.trim()) {
-      setError('Task is required');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const result = await contextAPI.generatePrompt({
-        task,
-        max_context_units: maxContexts,
-      });
-      setGeneratedPrompt(result);
-      setError(null);
-    } catch (err) {
-      setError('Failed to generate prompt');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCopyPrompt = () => {
-    if (generatedPrompt) {
-      navigator.clipboard.writeText(generatedPrompt.generated_prompt);
-      setSuccess('Prompt copied to clipboard!');
-      setTimeout(() => setSuccess(null), 2000);
-    }
-  };
+  // Legacy prompt generation functions removed - now using direct AI chat
 // AI Chat handlers
   const loadConversations = async () => {
     try {
@@ -265,15 +245,68 @@ function App() {
 
     try {
       setLoading(true);
-      setAiResponse(null);
+      
+      // Context sending logic:
+      // - New conversation: send contexts normally
+      // - Continuing conversation: send 0 contexts (already in conversation history)
+      // - Exception: if user explicitly wants to refresh contexts, send them again
+      let maxContextsToSend = aiMaxContexts;
+      if (selectedConversation?.id && currentChatMessages.length > 0 && !refreshContexts) {
+        // Continuing existing conversation - contexts already in history
+        maxContextsToSend = 0;
+      }
+      
+      // Reset refresh flag after use
+      if (refreshContexts) {
+        setRefreshContexts(false);
+      }
+      
       const result = await contextAPI.chatWithAI({
         task: aiTask,
-        max_context_units: aiMaxContexts,
+        max_context_units: maxContextsToSend,
         provider: aiProvider,
         model: aiModel,
         conversation_id: selectedConversation?.id,
       });
-      setAiResponse(result);
+      
+      // Track contexts used for this conversation (for display purposes)
+      if (result.context_ids && result.context_ids.length > 0) {
+        const existingContexts = conversationContexts[result.conversation_id] || [];
+        const allContexts = Array.from(new Set([...existingContexts, ...result.context_ids]));
+        setConversationContexts(prev => ({
+          ...prev,
+          [result.conversation_id]: allContexts
+        }));
+      }
+      
+      // Add user message and AI response to current chat
+      const userMessage: ConversationMessage = {
+        role: 'user',
+        content: aiTask,
+        timestamp: new Date().toISOString()
+      };
+      const assistantMessage: ConversationMessage = {
+        role: 'assistant',
+        content: result.response,
+        timestamp: result.timestamp
+      };
+      
+      setCurrentChatMessages(prev => [...prev, userMessage, assistantMessage]);
+      
+      // Update selected conversation if it's a new conversation
+      if (!selectedConversation || selectedConversation.id !== result.conversation_id) {
+        const newConversation: Conversation = {
+          id: result.conversation_id,
+          task: aiTask,
+          provider: result.provider,
+          model: result.model,
+          created_at: result.timestamp,
+          messages: [userMessage, assistantMessage]
+        };
+        setSelectedConversation(newConversation);
+      }
+      
+      setAiTask('');
       setError(null);
       await loadConversations();
     } catch (err: any) {
@@ -290,6 +323,12 @@ function App() {
       setLoading(true);
       const conversation = await contextAPI.getConversation(id);
       setSelectedConversation(conversation);
+      // Set current chat messages for display
+      if (conversation.messages) {
+        setCurrentChatMessages(conversation.messages.filter(msg => msg.role !== 'system'));
+      }
+      // Clear any pending response
+      setAiTask('');
     } catch (err) {
       setError('Failed to load conversation');
       console.error(err);
@@ -298,12 +337,25 @@ function App() {
     }
   };
 
-  const handleCopyAIResponse = () => {
-    if (aiResponse) {
-      navigator.clipboard.writeText(aiResponse.response);
-      setSuccess('Response copied to clipboard!');
-      setTimeout(() => setSuccess(null), 2000);
+  const handleNewConversation = () => {
+    setSelectedConversation(null);
+    setCurrentChatMessages([]);
+    setAiTask('');
+    setRefreshContexts(false);
+  };
+
+  const handleCopyMessage = (content: string) => {
+    navigator.clipboard.writeText(content);
+    setSuccess('Message copied to clipboard!');
+    setTimeout(() => setSuccess(null), 2000);
+  };
+
+  const renderMessageContent = (content: string | undefined, role: string) => {
+    if (!content || content.trim() === '') {
+      console.warn('Empty message content for role:', role);
+      return '(No content)';
     }
+    return content;
   };
 
   
@@ -418,130 +470,172 @@ function App() {
               <div className="chat-container">
                 <div className="card chat-card">
                   <div className="chat-header">
-                    <h2>🚀 AI Assistant</h2>
-                    <div className="chat-stats">
-                      <span className="stat-badge">{contexts.length} contexts available</span>
+                    <h2>� {selectedConversation ? 'Conversation' : 'New Chat'}</h2>
+                    <div className="chat-controls">
+                      <button 
+                        className="button button-small"
+                        onClick={handleNewConversation}
+                        title="Start new conversation"
+                      >
+                        ➕ New
+                      </button>
+                      {selectedConversation && (
+                        <div className="conversation-info">
+                          <span className="conversation-model">{selectedConversation.model}</span>
+                          <span className="context-count">
+                            {(conversationContexts[selectedConversation.id] || []).length} contexts used
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  <form onSubmit={handleAIChat} className="chat-form">
-                    <div className="form-group">
-                      <label>Your Task or Question</label>
-                      <textarea
-                        value={aiTask}
-                        onChange={(e) => setAiTask(e.target.value)}
-                        placeholder="Ask a question or describe a task... Your contexts will be automatically included."
-                        rows={5}
-                      />
-                    </div>
-
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label>Provider</label>
-                        <select
-                          value={aiProvider}
-                          onChange={(e) => {
-                            setAiProvider(e.target.value);
-                            if (e.target.value === 'openai') {
-                              setAiModel('gpt-5');
-                            } else {
-                              setAiModel('claude-3-5-sonnet-20241022');
-                            }
-                          }}
-                        >
-                          <option value="openai">OpenAI</option>
-                          <option value="anthropic">Anthropic</option>
-                        </select>
+                  <div className="chat-messages" ref={messageListRef}>
+                    {currentChatMessages.length === 0 ? (
+                      <div className="welcome-message">
+                        <div className="welcome-icon">🚀</div>
+                        <h3>Ready to Chat!</h3>
+                        <p>Ask me anything. I'll use your personal contexts to provide relevant responses.</p>
+                        <div className="context-preview">
+                          <strong>Available contexts:</strong> {contexts.length}
+                        </div>
                       </div>
-
-                      <div className="form-group">
-                        <label>Model</label>
-                        <select
-                          value={aiModel}
-                          onChange={(e) => setAiModel(e.target.value)}
-                        >
-                          {aiProvider === 'openai' ? (
-                            <>
-                              <option value="gpt-5">GPT-5</option>
-                              <option value="gpt-4o">GPT-4o</option>
-                              <option value="gpt-4o-mini">GPT-4o Mini</option>
-                              <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                              <option value="gpt-4">GPT-4</option>
-                            </>
-                          ) : (
-                            <>
-                              <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
-                              <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
-                              <option value="claude-3-opus-20240229">Claude 3 Opus</option>
-                              <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
-                            </>
-                          )}
-                        </select>
-                      </div>
-
-                      <div className="form-group">
-                        <label>Max Contexts</label>
-                        <input
-                          type="number"
-                          min="1"
-                          max="20"
-                          value={aiMaxContexts}
-                          onChange={(e) => setAiMaxContexts(parseInt(e.target.value))}
-                        />
-                      </div>
-                    </div>
-
-                    <button type="submit" className="button button-ai" disabled={loading}>
-                      {loading ? 'Thinking...' : '🚀 Ask AI'}
-                    </button>
-                  </form>
-
-                  {aiResponse && (
-                    <div className="ai-response">
-                      <div className="response-header">
-                        <h3>AI Response</h3>
-                        <button className="button button-small copy-button" onClick={handleCopyAIResponse}>
-                          📋 Copy
-                        </button>
-                      </div>
-                      <div className="response-meta">
-                        <span className="meta-item">
-                          {aiResponse.provider} / {aiResponse.model}
-                        </span>
-                        <span className="meta-item">
-                          {aiResponse.context_ids.length} contexts used
-                        </span>
-                      </div>
-                      <div className="response-content">{aiResponse.response}</div>
-
-                      <details className="prompt-details">
-                        <summary>View Full Prompt Sent to AI</summary>
-                        <pre className="prompt-code">{aiResponse.prompt_used}</pre>
-                      </details>
-                    </div>
-                  )}
-
-                  {selectedConversation && (
-                    <div className="conversation-details">
-                      <div className="conversation-header">
-                        <h3>Conversation Details</h3>
-                        <button 
-                          className="button button-small"
-                          onClick={() => setSelectedConversation(null)}
-                        >
-                          ✕ Close
-                        </button>
-                      </div>
-                      <div className="conversation-messages">
-                        {selectedConversation.messages?.map((msg, idx) => (
-                          <div key={idx} className={`message message-${msg.role}`}>
-                            <div className="message-role">{msg.role}</div>
-                            <div className="message-content">{msg.content}</div>
+                    ) : (
+                      <div className="message-list">
+                        {currentChatMessages.map((msg, idx) => (
+                          <div key={`${msg.timestamp}-${idx}`} className={`message message-${msg.role}`}>
+                            <div className="message-avatar">
+                              {msg.role === 'user' ? '👤' : '🤖'}
+                            </div>
+                            <div className="message-bubble">
+                              <div className="message-content">
+                                {renderMessageContent(msg.content, msg.role)}
+                              </div>
+                              <div className="message-actions">
+                                <span className="message-time">
+                                  {new Date(msg.timestamp).toLocaleTimeString()}
+                                </span>
+                                <button
+                                  className="copy-message-btn"
+                                  onClick={() => handleCopyMessage(msg.content)}
+                                  title="Copy message"
+                                >
+                                  📋
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         ))}
+                        {loading && (
+                          <div className="message message-assistant">
+                            <div className="message-avatar">🤖</div>
+                            <div className="message-bubble typing">
+                              <div className="typing-indicator">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
+
+                  <div className="chat-input-area">
+                    <form onSubmit={handleAIChat} className="chat-input-form">
+                      <div className="input-row">
+                        <textarea
+                          value={aiTask}
+                          onChange={(e) => setAiTask(e.target.value)}
+                          placeholder={selectedConversation ? "Continue the conversation..." : "Ask a question or describe a task..."}
+                          rows={3}
+                          className="chat-input"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleAIChat(e);
+                            }
+                          }}
+                        />
+                        <button 
+                          type="submit" 
+                          className="send-button" 
+                          disabled={loading || !aiTask.trim()}
+                          title={loading ? 'Thinking...' : 'Send message (Enter)'}
+                        >
+                          {loading ? '⏳' : '🚀'}
+                        </button>
+                      </div>
+                      
+                      <div className="chat-settings">
+                        <div className="setting-group">
+                          <select
+                            value={aiProvider}
+                            onChange={(e) => {
+                              setAiProvider(e.target.value);
+                              if (e.target.value === 'openai') {
+                                setAiModel('gpt-5');
+                              } else {
+                                setAiModel('claude-3-5-sonnet-20241022');
+                              }
+                            }}
+                            className="setting-select"
+                          >
+                            <option value="openai">OpenAI</option>
+                            <option value="anthropic">Anthropic</option>
+                          </select>
+                          
+                          <select
+                            value={aiModel}
+                            onChange={(e) => setAiModel(e.target.value)}
+                            className="setting-select"
+                          >
+                            {aiProvider === 'openai' ? (
+                              <>
+                                <option value="gpt-5">GPT-5</option>
+                                <option value="gpt-4o">GPT-4o</option>
+                                <option value="gpt-4o-mini">GPT-4o Mini</option>
+                                <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                                <option value="gpt-4">GPT-4</option>
+                              </>
+                            ) : (
+                              <>
+                                <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                                <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
+                                <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+                                <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
+                              </>
+                            )}
+                          </select>
+                        </div>
+                        
+                        <div className="setting-group">
+                          <label className="setting-label">
+                            Max Contexts: 
+                            <input
+                              type="number"
+                              min="1"
+                              max="20"
+                              value={aiMaxContexts}
+                              onChange={(e) => setAiMaxContexts(parseInt(e.target.value))}
+                              className="setting-input"
+                            />
+                          </label>
+                          {selectedConversation && currentChatMessages.length > 0 && (
+                            <button
+                              type="button"
+                              className={`refresh-contexts-btn ${refreshContexts ? 'active' : ''}`}
+                              onClick={() => setRefreshContexts(!refreshContexts)}
+                              title={refreshContexts ? "Contexts will be refreshed" : "Using existing contexts"}
+                            >
+                              {refreshContexts ? '🔄 Refreshing' : '♻️ Refresh Contexts'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </form>
+                  </div>
                 </div>
               </div>
             </div>

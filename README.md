@@ -13,29 +13,43 @@ Most AI tools are stateless—they forget context between sessions. ContextPilot
 
 ## ✨ Features
 
-- ✅ **CRUD operations** for context units
+### Core Functionality
+- ✅ **CRUD operations** for context units with versioning
 - ✅ **Persistent storage** with SQLite or PostgreSQL + pgvector
-- ✅ **AI integration** with OpenAI (GPT-4) and Anthropic (Claude)
-- ✅ **Conversation history** with automatic persistence
+- ✅ **AI integration** with OpenAI (GPT-4, GPT-5) and Anthropic (Claude)
 - ✅ **Semantic search** using sentence-transformers embeddings
 - ✅ **Embedding caching** for faster similarity searches
 - ✅ **Response caching** for improved API performance
-- ✅ **Confidence scoring** and versioning
+- ✅ **Confidence scoring** and context versioning
 - ✅ **Relevance engine** that ranks contexts by task relevance
 - ✅ **Prompt composer** that generates LLM-ready prompts
+
+### Chat & Conversations
+- ✅ **Chat-style interface** with message bubbles and timestamps
+- ✅ **Conversation history** with automatic persistence
+- ✅ **Smart context management** - sends contexts once per conversation
+- ✅ **Auto-scroll** to latest messages
+- ✅ **Typing indicators** for AI responses
+- ✅ **Context refresh control** for explicit context reloading
+- ✅ **New conversation** button to start fresh chats
+
+### UI/UX
+- ✅ **Full-width layout** utilizing entire browser window
 - ✅ **Clean React UI** for managing context and viewing prompts
+- ✅ **Mobile Responsive** - Optimized for all screen sizes
+- ✅ **Enhanced UX** - Loading states, smooth transitions, and improved interactions
+- ✅ **Settings Management** - Configure API keys and AI parameters directly in the UI
+- ✅ **Context Import/Export** - JSON/CSV export and JSON import functionality
+- ✅ **Advanced Filtering** - Search by type, tags, content, and status
+- ✅ **Context Templates** - Quick creation with 6 pre-defined templates
+
+### Technical Features
 - ✅ **RESTful API** with FastAPI and OpenAPI documentation
 - ✅ **Security features** - API key auth, input validation, CORS, rate limiting
 - ✅ **Request tracking** with unique IDs and timing
 - ✅ **Structured logging** with JSON output option
 - ✅ **Database migrations** with Alembic
 - ✅ **No external dependencies** for embeddings (uses local models)
-- ✅ **Context Import/Export** - JSON/CSV export and JSON import functionality
-- ✅ **Advanced Filtering** - Search by type, tags, content, and status
-- ✅ **Context Templates** - Quick creation with 6 pre-defined templates
-- ✅ **Mobile Responsive UI** - Optimized for mobile devices  
-- ✅ **Enhanced UX** - Loading states, smooth transitions, and improved interactions
-- ✅ **Settings Management** - Configure API keys and AI parameters directly in the UI
 
 ## 🏗️ Architecture
 
@@ -236,12 +250,20 @@ The frontend will be available at **http://localhost:3000**
 
 1. Open http://localhost:3000
 2. **Configure API Keys**: Click the ⚙️ settings button to configure your OpenAI or Anthropic API keys for AI chat functionality
-3. Add context units (preferences, decisions, facts, goals) using templates or manual entry
-4. Enter a task in the "Generate Prompt" section
-5. View the generated prompt with relevant context
-6. Copy the prompt to use with any LLM
-7. **Use AI Chat**: Get instant AI responses with relevant context automatically included
-8. **Import/Export**: Export your contexts to JSON/CSV or import from JSON files
+3. **Add Context**: Add context units (preferences, decisions, facts, goals) using templates or manual entry in the left sidebar
+4. **Start a Chat**: 
+   - Select a previous conversation from the list, or
+   - Click "New Conversation" to start fresh
+5. **Chat with AI**: Enter your question/task in the chat interface
+   - Relevant contexts are automatically included in the first message
+   - Follow-up messages continue the conversation without re-sending contexts
+   - Click the "Refresh Contexts" toggle if you want to reload contexts in a follow-up
+6. **View History**: All conversations are saved and can be accessed from the left sidebar
+7. **Context Management**:
+   - View all your contexts in the right sidebar
+   - Use filters to find specific contexts
+   - Export/import contexts as JSON or CSV
+8. **Generate Standalone Prompts**: Use the middle column's "Generate Prompt" section to create prompts for use in other tools
 
 ### 2. Using the API
 
@@ -272,7 +294,7 @@ curl -X POST http://localhost:8000/generate-prompt \
   }'
 ```
 
-**Ask AI with context (NEW):**
+**Ask AI with context:**
 ```bash
 curl -X POST http://localhost:8000/ai/chat \
   -H "Content-Type: application/json" \
@@ -284,9 +306,27 @@ curl -X POST http://localhost:8000/ai/chat \
   }'
 ```
 
-**View conversation history (NEW):**
+**Continue a conversation (with conversation_id):**
+```bash
+curl -X POST http://localhost:8000/ai/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "task": "Can you elaborate on the architecture?",
+    "max_context_units": 0,
+    "provider": "openai",
+    "model": "gpt-4-turbo-preview",
+    "conversation_id": "abc123"
+  }'
+```
+
+**View conversation history:**
 ```bash
 curl http://localhost:8000/ai/conversations
+```
+
+**Get specific conversation:**
+```bash
+curl http://localhost:8000/ai/conversations/{conversation_id}
 ```
 
 ### 3. Example Generated Prompt
@@ -334,11 +374,6 @@ python test_api.py
 
 ### Run Demo Script
 ```bash
-| POST | `/ai/chat` | **NEW**: Generate AI response with context |
-| GET | `/ai/conversations` | **NEW**: List conversation history |
-| GET | `/ai/conversations/{id}` | **NEW**: Get specific conversation |
-
-For detailed API documentation, see the interactive docs at `/docs` when the server is running.
 chmod +x demo.sh
 ./demo.sh
 ```
@@ -357,6 +392,12 @@ chmod +x demo.sh
 | DELETE | `/contexts/{id}` | Delete context |
 | POST | `/generate-prompt` | Generate contextualized prompt |
 | POST | `/generate-prompt/compact` | Generate compact prompt |
+| POST | `/ai/chat` | Generate AI response with context |
+| GET | `/ai/conversations` | List conversation history |
+| GET | `/ai/conversations/{id}` | Get specific conversation with messages |
+| DELETE | `/ai/conversations/{id}` | Delete conversation |
+
+For detailed API documentation, see the interactive docs at `/docs` when the server is running.
 
 ## 📊 Data Model
 
@@ -402,6 +443,8 @@ SQLAlchemy 2.0 (ORM and database toolkit)
 - [x] ChatGPT/Claude API integration ✅
 - [x] Export/import functionality ✅
 - [x] Advanced search and filtering ✅
+- [x] Chat-style interface with conversation history ✅
+- [x] Smart context management (one-time sending per conversation) ✅
 - [ ] Automatic context extraction from documents
 - [ ] Context decay and reinforcement learning
 - [ ] Conflict detection between contexts
@@ -409,7 +452,7 @@ SQLAlchemy 2.0 (ORM and database toolkit)
 - [ ] IDE plugin integration
 - [ ] Analytics dashboard
 - [ ] Streaming AI responses
-- [ ] Multi-turn conversations
+- [ ] Multi-user support with authentication
 
 ## 🤝 Contributing
 

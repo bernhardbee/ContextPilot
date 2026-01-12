@@ -132,7 +132,7 @@ class AIRequest(BaseModel):
     )
     
     task: str
-    max_context_units: int = Field(default=5, ge=1, le=20)
+    max_context_units: int = Field(default=5, ge=0, le=20)
     provider: Optional[str] = None  # "openai" or "anthropic"
     model: Optional[str] = None
     temperature: Optional[float] = Field(None, ge=0.0, le=2.0)
