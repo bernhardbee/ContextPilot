@@ -1,11 +1,11 @@
 /**
  * Main App component for ContextPilot.
  */
+import 'highlight.js/styles/github-dark.css';
 import React, { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
-import 'highlight.js/styles/github-dark.css';
+import remarkGfm from 'remark-gfm';
 import { contextAPI } from './api';
 import './App.css';
 import { ContextTemplates } from './ContextTemplates';
