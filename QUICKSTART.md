@@ -46,7 +46,15 @@ npm start
 ### Run Tests
 ```bash
 cd backend
-python test_api.py
+python -m pytest  # All tests
+python -m pytest --ignore=test_integration.py  # Unit tests only
+```
+
+### Backup Database
+```bash
+cd backend
+./backup_db.sh  # Create backup
+./restore_db.sh  # Restore from backup
 ```
 
 ## URLs
@@ -76,6 +84,15 @@ python test_api.py
 |--------|----------|-------------|
 | POST | `/generate-prompt` | Generate full prompt |
 | POST | `/generate-prompt/compact` | Generate compact prompt |
+
+### AI Chat & Conversations
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/ai/chat` | Generate AI response with context |
+| GET | `/ai/conversations` | List conversation history |
+| GET | `/ai/conversations/{id}` | Get specific conversation |
+| DELETE | `/ai/conversations/{id}` | Delete conversation |
 
 ### Utilities
 

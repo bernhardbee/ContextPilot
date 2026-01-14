@@ -40,8 +40,10 @@ ContextPilot integrates with multiple AI providers to generate responses using y
 4. Configure AI parameters:
    - Provider: `openai` or `anthropic`
    - Model: Select from dropdown
-   - Temperature: 0-2 (default 0.7)
-   - Max Tokens: 1-4000 (default 2000)
+   - Temperature: 0-2 (default 1.0)
+   - Max Tokens: 1-16000 (default 4000)
+     - Increase for image-heavy responses (8000+)
+     - Prevents truncation of long responses
 5. Click "Save Settings"
 
 Settings apply immediately - no restart required!
@@ -62,8 +64,8 @@ CONTEXTPILOT_DEFAULT_AI_PROVIDER=anthropic
 CONTEXTPILOT_DEFAULT_AI_MODEL=claude-3-opus-20240229
 
 # AI Parameters
-CONTEXTPILOT_AI_MAX_TOKENS=2000
-CONTEXTPILOT_AI_TEMPERATURE=0.7
+CONTEXTPILOT_AI_MAX_TOKENS=4000  # Supports up to 16000
+CONTEXTPILOT_AI_TEMPERATURE=1.0
 ```
 
 Note: Restart backend after changing .env file.

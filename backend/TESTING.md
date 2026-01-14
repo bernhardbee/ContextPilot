@@ -37,17 +37,28 @@ python -m pytest -v
 
 ## Test Coverage
 
-### ✅ Models (8 tests)
+**Total: 135+ passing unit tests**
+
+### ✅ Models
 - ContextUnit creation and validation
 - ContextUnitCreate/Update schemas
 - TaskRequest validation
 - Confidence bounds checking
+- Updated max_tokens validation (1-16000)
 
-### ✅ Storage (14 tests)
+### ✅ Storage (Database & In-Memory)
 - Add/get/update/delete operations
-- Embedding storage
+- Embedding storage and retrieval
 - Supersede functionality
 - Active vs. superseded filtering
+- Database session management
+
+### ✅ AI Service
+- OpenAI SDK integration with proper mocking
+- Anthropic API integration
+- Empty response handling
+- Message truncation detection
+- Conversation persistence
 - Edge cases (nonexistent IDs, etc.)
 
 ### ✅ Composer (4 tests)

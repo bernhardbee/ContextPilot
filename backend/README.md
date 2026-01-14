@@ -32,7 +32,8 @@ Once the server is running, visit:
 
 Run all tests:
 ```bash
-pytest -v
+python -m pytest  # All tests
+python -m pytest --ignore=test_integration.py  # Unit tests only (135 passing)
 ```
 
 Run specific test suites:
@@ -40,6 +41,16 @@ Run specific test suites:
 pytest test_validators.py -v
 pytest test_security.py -v
 pytest test_api_security.py -v
+pytest test_ai_service.py -v
+pytest test_settings.py -v
+```
+
+## Database Management
+
+Backup and restore database:
+```bash
+./backup_db.sh   # Create timestamped backup
+./restore_db.sh  # Restore from backup
 ```
 
 ## Features
@@ -47,11 +58,13 @@ pytest test_api_security.py -v
 - **Context Management**: CRUD operations for context units
 - **Semantic Search**: Relevance ranking using embeddings
 - **Prompt Generation**: Full and compact prompt composition
-- **Database Storage**: PostgreSQL with Alembic migrations
-- **Import/Export**: JSON import/export functionality
-- **Settings Management**: API key and AI configuration via /settings endpoints
-- **Security**: API key authentication, input validation, CORS
-- **Testing**: 135 comprehensive tests across multiple suites
+- **AI Chat**: OpenAI and Anthropic integration with conversation history
+- **Image Support**: Markdown image rendering in chat responses
+- **Database Storage**: SQLite/PostgreSQL with Alembic migrations
+- **Import/Export**: JSON and CSV import/export functionality
+- **Settings Management**: API key and AI configuration (max 16K tokens)
+- **Security**: API key authentication, input validation, CORS, rate limiting
+- **Testing**: 135+ comprehensive unit tests across multiple suites
 
 ## Project Structure
 
