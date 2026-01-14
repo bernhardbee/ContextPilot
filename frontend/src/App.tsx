@@ -459,22 +459,68 @@ function App() {
               </code>
             );
           },
-          // Style pre blocks
-          pre: ({ node, children, ...props }) => (
-            <pre
-              style={{
-                backgroundColor: '#0d1117',
-                padding: '16px',
-                borderRadius: '6px',
-                overflow: 'auto',
-                marginTop: '8px',
-                marginBottom: '8px'
-              }}
-              {...props}
-            >
-              {children}
-            </pre>
-          ),
+          // Style pre blocks with copy button
+          pre: ({ node, children, ...props }) => {
+            const codeContent = React.Children.toArray(children)
+              .map((child: any) => {
+                if (typeof child === 'string') return child;
+                if (child?.props?.children) {
+                  if (typeof child.props.children === 'string') {
+                    return child.props.children;
+                  }
+                  if (Array.isArray(child.props.children)) {
+                    return child.props.children.join('');
+                  }
+                }
+                return '';
+              })
+              .join('');
+
+            const handleCopyCode = () => {
+              navigator.clipboard.writeText(codeContent);
+              setSuccess('Code copied to clipboard!');
+              setTimeout(() => setSuccess(null), 2000);
+            };
+
+            return (
+              <div style={{ position: 'relative', marginTop: '8px', marginBottom: '8px' }}>
+                <button
+                  onClick={handleCopyCode}
+                  style={{
+                    position: 'absolute',
+                    top: '8px',
+                    right: '8px',
+                    background: '#238636',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '4px 8px',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    opacity: 0.8,
+                    zIndex: 1
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                  onMouseLeave={(e) => e.currentTarget.style.opacity = '0.8'}
+                  title="Copy code"
+                >
+                  📋 Copy
+                </button>
+                <pre
+                  style={{
+                    backgroundColor: '#0d1117',
+                    padding: '16px',
+                    borderRadius: '6px',
+                    overflow: 'auto',
+                    margin: 0
+                  }}
+                  {...props}
+                >
+                  {children}
+                </pre>
+              </div>
+            );
+          },
           // Style links
           a: ({ node, children, ...props }) => (
             <a
