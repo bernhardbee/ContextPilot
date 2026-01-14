@@ -136,7 +136,7 @@ class AIRequest(BaseModel):
     provider: Optional[str] = None  # "openai" or "anthropic"
     model: Optional[str] = None
     temperature: Optional[float] = Field(None, ge=0.0, le=2.0)
-    max_tokens: Optional[int] = Field(None, ge=1, le=4000)
+    max_tokens: Optional[int] = Field(None, ge=1, le=16000)
     use_compact: bool = False  # Use compact prompt format
     conversation_id: Optional[str] = None  # Continue existing conversation
 
@@ -174,4 +174,4 @@ class SettingsUpdate(BaseModel):
     default_ai_provider: Optional[str] = Field(None, description="Default AI provider")
     default_ai_model: Optional[str] = Field(None, description="Default AI model")
     ai_temperature: Optional[float] = Field(None, ge=0.0, le=2.0, description="AI temperature")
-    ai_max_tokens: Optional[int] = Field(None, ge=1, le=4000, description="AI max tokens")
+    ai_max_tokens: Optional[int] = Field(None, ge=1, le=16000, description="AI max tokens")

@@ -238,10 +238,25 @@ function App() {
 
   const handleAIChat = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!aiTask.trim()) {
-      setError('Task is required');
+    if (!aiTask.trim() || loading) {
       return;
     }
+
+    // Create user message immediately
+    const userMessage: ConversationMessage = {
+      role: 'user',
+      content: aiTask,
+      timestamp: new Date().toISOString()
+    };
+    
+    // Add user message to chat immediately
+    setCurrentChatMessages(prev => [...prev, userMessage]);
+    
+    // Store task for API call before clearing
+    const taskToSend = aiTask;
+    
+    // Clear input immediately
+    setAiTask('');
 
     try {
       setLoading(true);
@@ -262,12 +277,17 @@ function App() {
       }
       
       const result = await contextAPI.chatWithAI({
-        task: aiTask,
+        task: taskToSend,
         max_context_units: maxContextsToSend,
         provider: aiProvider,
         model: aiModel,
         conversation_id: selectedConversation?.id,
       });
+      
+      console.log('API Response:', result);
+      console.log('Response content:', result.response);
+      console.log('Response type:', typeof result.response);
+      console.log('Response is truthy:', !!result.response);
       
       // Track contexts used for this conversation (for display purposes)
       if (result.context_ids && result.context_ids.length > 0) {
@@ -279,25 +299,22 @@ function App() {
         }));
       }
       
-      // Add user message and AI response to current chat
-      const userMessage: ConversationMessage = {
-        role: 'user',
-        content: aiTask,
-        timestamp: new Date().toISOString()
-      };
+      // Add AI response to current chat
       const assistantMessage: ConversationMessage = {
         role: 'assistant',
-        content: result.response,
+        content: result.response || '',
         timestamp: result.timestamp
       };
       
-      setCurrentChatMessages(prev => [...prev, userMessage, assistantMessage]);
+      console.log('Creating assistant message:', assistantMessage);
+      
+      setCurrentChatMessages(prev => [...prev, assistantMessage]);
       
       // Update selected conversation if it's a new conversation
       if (!selectedConversation || selectedConversation.id !== result.conversation_id) {
         const newConversation: Conversation = {
           id: result.conversation_id,
-          task: aiTask,
+          task: taskToSend,
           provider: result.provider,
           model: result.model,
           created_at: result.timestamp,
@@ -306,7 +323,6 @@ function App() {
         setSelectedConversation(newConversation);
       }
       
-      setAiTask('');
       setError(null);
       await loadConversations();
     } catch (err: any) {
@@ -322,10 +338,22 @@ function App() {
     try {
       setLoading(true);
       const conversation = await contextAPI.getConversation(id);
+      console.log('Loaded conversation:', conversation);
       setSelectedConversation(conversation);
       // Set current chat messages for display
       if (conversation.messages) {
-        setCurrentChatMessages(conversation.messages.filter(msg => msg.role !== 'system'));
+        const filteredMessages = conversation.messages.filter(msg => msg.role !== 'system');
+        console.log('Filtered messages:', filteredMessages);
+        filteredMessages.forEach((msg, idx) => {
+          console.log(`Message ${idx}:`, { 
+            role: msg.role, 
+            hasContent: !!msg.content, 
+            contentLength: msg.content?.length,
+            tokens: msg.tokens,
+            finish_reason: msg.finish_reason
+          });
+        });
+        setCurrentChatMessages(filteredMessages);
       }
       // Clear any pending response
       setAiTask('');
@@ -350,11 +378,64 @@ function App() {
     setTimeout(() => setSuccess(null), 2000);
   };
 
-  const renderMessageContent = (content: string | undefined, role: string) => {
+  const renderMessageContent = (message: ConversationMessage) => {
+    const { content, role, tokens, finish_reason } = message;
+    console.log('Rendering message:', { role, content, contentType: typeof content, contentLength: content?.length, tokens, finish_reason });
+    
     if (!content || content.trim() === '') {
       console.warn('Empty message content for role:', role);
-      return '(No content)';
+      
+      // If we have metadata about why it's empty, show that
+      if (finish_reason === 'length') {
+        return <span style={{ color: '#999', fontStyle: 'italic' }}>(Response was truncated due to length limit. Used {tokens} tokens.)</span>;
+      }
+      
+      return <span style={{ color: '#999', fontStyle: 'italic' }}>(Empty response)</span>;
     }
+    
+    // Check if content contains markdown image syntax
+    const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/;
+    const match = content.match(imageRegex);
+    
+    if (match) {
+      console.log('Found image markdown:', match);
+      const altText = match[1] || 'Image';
+      const imageUrl = match[2];
+      
+      // Split content by the image markdown to render text and image separately
+      const parts = content.split(imageRegex);
+      
+      return (
+        <div>
+          {parts[0] && <div>{parts[0]}</div>}
+          <div style={{ position: 'relative', display: 'inline-block', width: '100%' }}>
+            <img 
+              src={imageUrl} 
+              alt={altText} 
+              style={{ 
+                maxWidth: '100%', 
+                borderRadius: '8px', 
+                margin: '8px 0',
+                display: 'block'
+              }} 
+              onError={(e) => {
+                console.error('Image failed to load:', imageUrl);
+                const parent = e.currentTarget.parentElement;
+                if (parent) {
+                  e.currentTarget.style.display = 'none';
+                  const errorMsg = document.createElement('div');
+                  errorMsg.style.cssText = 'padding: 12px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; margin: 8px 0; color: #856404;';
+                  errorMsg.innerHTML = `⚠️ <strong>Image unavailable:</strong> <a href="${imageUrl}" target="_blank" style="color: #856404; text-decoration: underline;">${imageUrl}</a>`;
+                  parent.appendChild(errorMsg);
+                }
+              }}
+            />
+          </div>
+          {parts[3] && <div>{parts[3]}</div>}
+        </div>
+      );
+    }
+    
     return content;
   };
 
@@ -509,7 +590,7 @@ function App() {
                             </div>
                             <div className="message-bubble">
                               <div className="message-content">
-                                {renderMessageContent(msg.content, msg.role)}
+                                {renderMessageContent(msg)}
                               </div>
                               <div className="message-actions">
                                 <span className="message-time">
@@ -923,8 +1004,8 @@ function App() {
                   <input
                     type="number"
                     min="1"
-                    max="4000"
-                    value={settingsForm.ai_max_tokens ?? settings?.ai_max_tokens ?? 2000}
+                    max="16000"
+                    value={settingsForm.ai_max_tokens ?? settings?.ai_max_tokens ?? 4000}
                     onChange={(e) => setSettingsForm({ ...settingsForm, ai_max_tokens: parseInt(e.target.value) })}
                   />
                 </div>

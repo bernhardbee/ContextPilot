@@ -114,7 +114,10 @@ export const contextAPI = {
 
   // AI Integration
   chatWithAI: async (data: AIRequest): Promise<AIResponse> => {
+    console.log('API Request:', data);
     const response = await api.post<AIResponse>('/ai/chat', data);
+    console.log('API Raw Response:', response);
+    console.log('API Response Data:', response.data);
     return response.data;
   },
 

@@ -150,9 +150,13 @@ class AIService:
             response = self.openai_client.chat.completions.create(**api_params)
             
             # Extract response
-            assistant_message = response.choices[0].message.content
+            assistant_message = response.choices[0].message.content or ""
             finish_reason = response.choices[0].finish_reason
             tokens_used = response.usage.total_tokens
+            
+            # Log warning if content is empty
+            if not assistant_message:
+                logger.warning(f"Empty response from OpenAI. Finish reason: {finish_reason}, Tokens: {tokens_used}")
             
             # Save new messages (only the new user and assistant messages)
             new_messages = [
