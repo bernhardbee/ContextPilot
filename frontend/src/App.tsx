@@ -41,6 +41,8 @@ function App() {
   const [aiMaxContexts, setAiMaxContexts] = useState(5);
   const [aiProvider, setAiProvider] = useState('openai');
   const [aiModel, setAiModel] = useState('gpt-5');
+  const [aiMaxTokens, setAiMaxTokens] = useState(4000);
+  const [aiTemperature, setAiTemperature] = useState(1.0);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [conversationContexts, setConversationContexts] = useState<{[conversationId: string]: string[]}>({});
@@ -121,6 +123,11 @@ function App() {
     try {
       const data = await contextAPI.getSettings();
       setSettings(data);
+      // Apply settings to AI chat defaults
+      if (data.default_ai_provider) setAiProvider(data.default_ai_provider);
+      if (data.default_ai_model) setAiModel(data.default_ai_model);
+      if (data.ai_max_tokens) setAiMaxTokens(data.ai_max_tokens);
+      if (data.ai_temperature !== undefined) setAiTemperature(data.ai_temperature);
     } catch (err) {
       console.error('Failed to load settings:', err);
     }
@@ -282,6 +289,8 @@ function App() {
         provider: aiProvider,
         model: aiModel,
         conversation_id: selectedConversation?.id,
+        max_tokens: aiMaxTokens,
+        temperature: aiTemperature,
       });
       
       console.log('API Response:', result);
@@ -701,6 +710,19 @@ function App() {
                               value={aiMaxContexts}
                               onChange={(e) => setAiMaxContexts(parseInt(e.target.value))}
                               className="setting-input"
+                            />
+                          </label>
+                          <label className="setting-label">
+                            Max Tokens: 
+                            <input
+                              type="number"
+                              min="100"
+                              max="16000"
+                              step="100"
+                              value={aiMaxTokens}
+                              onChange={(e) => setAiMaxTokens(parseInt(e.target.value))}
+                              className="setting-input"
+                              title="Higher values allow longer responses (recommended: 4000+)"
                             />
                           </label>
                           {selectedConversation && currentChatMessages.length > 0 && (
