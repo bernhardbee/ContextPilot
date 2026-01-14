@@ -297,11 +297,6 @@ function App() {
         temperature: aiTemperature,
       });
       
-      console.log('API Response:', result);
-      console.log('Response content:', result.response);
-      console.log('Response type:', typeof result.response);
-      console.log('Response is truthy:', !!result.response);
-      
       // Track contexts used for this conversation (for display purposes)
       if (result.context_ids && result.context_ids.length > 0) {
         const existingContexts = conversationContexts[result.conversation_id] || [];
@@ -318,8 +313,6 @@ function App() {
         content: result.response || '',
         created_at: result.timestamp || new Date().toISOString()
       };
-      
-      console.log('Creating assistant message:', assistantMessage);
       
       setCurrentChatMessages(prev => [...prev, assistantMessage]);
       
@@ -351,21 +344,10 @@ function App() {
     try {
       setLoading(true);
       const conversation = await contextAPI.getConversation(id);
-      console.log('Loaded conversation:', conversation);
       setSelectedConversation(conversation);
       // Set current chat messages for display
       if (conversation.messages) {
         const filteredMessages = conversation.messages.filter(msg => msg.role !== 'system');
-        console.log('Filtered messages:', filteredMessages);
-        filteredMessages.forEach((msg, idx) => {
-          console.log(`Message ${idx}:`, { 
-            role: msg.role, 
-            hasContent: !!msg.content, 
-            contentLength: msg.content?.length,
-            tokens: msg.tokens,
-            finish_reason: msg.finish_reason
-          });
-        });
         setCurrentChatMessages(filteredMessages);
       }
       // Clear any pending response
@@ -393,16 +375,15 @@ function App() {
 
   const renderMessageContent = (message: ConversationMessage) => {
     const { content, role, tokens, finish_reason } = message;
-    console.log('Rendering message:', { role, content, contentType: typeof content, contentLength: content?.length, tokens, finish_reason });
     
     if (!content || content.trim() === '') {
-      console.warn('Empty message content for role:', role);
-      
-      // If we have metadata about why it's empty, show that
+      // Handle empty content cases
       if (finish_reason === 'length') {
+        console.log(`Message truncated: ${role} message was cut off (${tokens || 'unknown'} tokens used)`);
         return <span style={{ color: '#999', fontStyle: 'italic' }}>(Response was truncated due to length limit. Used {tokens} tokens.)</span>;
       }
       
+      console.log(`Empty content for ${role} message (finish_reason: ${finish_reason || 'none'})`);
       return <span style={{ color: '#999', fontStyle: 'italic' }}>(Empty response)</span>;
     }
     
