@@ -416,6 +416,27 @@ When AI responses include image markdown:
 - Failed image loads show a helpful warning with a link to the image URL
 - This is useful for asking AI to generate or reference images
 
+### Database Backup & Restore
+
+To prevent accidental data loss, use the provided backup scripts:
+
+```bash
+# Create a backup (stored in backend/backups/)
+cd backend
+./backup_db.sh
+
+# Restore from a backup
+./restore_db.sh
+```
+
+**Automatic backup retention**: The backup script keeps the last 10 backups automatically.
+
+**Before database maintenance**: Always create a backup before:
+- Running database migrations
+- Reinitializing the database
+- Upgrading the application
+- Testing database-related changes
+
 ## 🧪 Testing
 
 ### Run Backend Tests
