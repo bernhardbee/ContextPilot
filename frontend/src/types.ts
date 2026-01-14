@@ -92,9 +92,11 @@ export interface AIResponse {
 }
 
 export interface ConversationMessage {
+  id?: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
-  timestamp: string;
+  created_at?: string;  // ISO timestamp from backend
+  timestamp?: string;   // Backwards compatibility
   tokens?: number;
   finish_reason?: string;
 }

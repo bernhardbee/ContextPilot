@@ -257,7 +257,7 @@ function App() {
     const userMessage: ConversationMessage = {
       role: 'user',
       content: aiTask,
-      timestamp: new Date().toISOString()
+      created_at: new Date().toISOString()
     };
     
     // Add user message to chat immediately
@@ -316,7 +316,7 @@ function App() {
       const assistantMessage: ConversationMessage = {
         role: 'assistant',
         content: result.response || '',
-        timestamp: result.timestamp
+        created_at: result.timestamp || new Date().toISOString()
       };
       
       console.log('Creating assistant message:', assistantMessage);
@@ -640,8 +640,10 @@ function App() {
                       </div>
                     ) : (
                       <div className="message-list">
-                        {currentChatMessages.map((msg, idx) => (
-                          <div key={`${msg.timestamp}-${idx}`} className={`message message-${msg.role}`}>
+                        {currentChatMessages.map((msg, idx) => {
+                          const msgTime = msg.created_at || msg.timestamp || new Date().toISOString();
+                          return (
+                          <div key={`${msgTime}-${idx}`} className={`message message-${msg.role}`}>
                             <div className="message-avatar">
                               {msg.role === 'user' ? '👤' : '🤖'}
                             </div>
@@ -651,7 +653,7 @@ function App() {
                               </div>
                               <div className="message-actions">
                                 <span className="message-time">
-                                  {new Date(msg.timestamp).toLocaleTimeString()}
+                                  {new Date(msg.created_at || msg.timestamp || '').toLocaleTimeString()}
                                 </span>
                                 <button
                                   className="copy-message-btn"
@@ -663,7 +665,8 @@ function App() {
                               </div>
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                         {loading && (
                           <div className="message message-assistant">
                             <div className="message-avatar">🤖</div>
