@@ -32,13 +32,20 @@ Most AI tools are stateless—they forget context between sessions. ContextPilot
 - ✅ **Typing indicators** for AI responses
 - ✅ **Context refresh control** for explicit context reloading
 - ✅ **New conversation** button to start fresh chats
+- ✅ **Markdown image support** - Automatically renders images from `![alt](url)` syntax
+- ✅ **Image error handling** - Displays helpful warnings when images fail to load
+- ✅ **Immediate message display** - Shows user messages before API response
+- ✅ **Concurrent request prevention** - Disables send button during API calls
+- ✅ **Smart truncation handling** - Shows detailed messages for truncated responses with token counts
 
 ### UI/UX
 - ✅ **Full-width layout** utilizing entire browser window
 - ✅ **Clean React UI** for managing context and viewing prompts
 - ✅ **Mobile Responsive** - Optimized for all screen sizes
 - ✅ **Enhanced UX** - Loading states, smooth transitions, and improved interactions
+- ✅ **Input clearing** - Automatically clears text box on message send
 - ✅ **Settings Management** - Configure API keys and AI parameters directly in the UI
+- ✅ **Flexible token limits** - Supports up to 16,000 tokens (default: 4000)
 - ✅ **Context Import/Export** - JSON/CSV export and JSON import functionality
 - ✅ **Advanced Filtering** - Search by type, tags, content, and status
 - ✅ **Context Templates** - Quick creation with 6 pre-defined templates
@@ -364,13 +371,66 @@ Please complete the task above, taking into account the provided context.
 Align your response with the stated preferences, goals, and decisions.
 ```
 
+## ⚙️ Configuration
+
+### Settings Management
+
+ContextPilot provides a settings UI (⚙️ button) where you can configure:
+
+#### AI Configuration
+- **OpenAI API Key**: Required for using GPT models
+- **Anthropic API Key**: Required for using Claude models  
+- **Default AI Provider**: Choose between `openai` or `anthropic`
+- **Default AI Model**: Set default model (e.g., `gpt-4-turbo-preview`, `claude-3-opus-20240229`)
+- **Temperature**: Control randomness (0.0-2.0, default: 1.0)
+- **Max Tokens**: Maximum response length (1-16000, default: 4000)
+  - Increase this if you're getting truncated responses
+  - For image-heavy responses, consider 8000+ tokens
+
+#### Settings API
+
+You can also configure settings via API:
+
+```bash
+# Get current settings
+curl http://localhost:8000/settings
+
+# Update settings
+curl -X POST http://localhost:8000/settings \
+  -H "Content-Type: application/json" \
+  -d '{
+    "openai_api_key": "sk-...",
+    "default_ai_provider": "openai",
+    "default_ai_model": "gpt-4-turbo-preview",
+    "ai_temperature": 0.7,
+    "ai_max_tokens": 8000
+  }'
+```
+
+### Image Display
+
+The chat interface supports markdown images using the syntax: `![alt text](image_url)`
+
+When AI responses include image markdown:
+- Images are automatically rendered inline
+- Failed image loads show a helpful warning with a link to the image URL
+- This is useful for asking AI to generate or reference images
+
 ## 🧪 Testing
 
 ### Run Backend Tests
 ```bash
 cd backend
-python test_api.py
+python -m pytest  # Run all tests
+python -m pytest --ignore=test_integration.py  # Skip integration tests
 ```
+
+Test Coverage:
+- ✅ 135+ unit tests passing
+- ✅ Mock-based testing for AI services
+- ✅ Database storage tests
+- ✅ API validation tests
+- ✅ Security and authentication tests
 
 ### Run Demo Script
 ```bash

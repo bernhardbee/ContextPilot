@@ -117,5 +117,5 @@ class TestSettings:
         assert response.status_code == 422
         
         # Invalid max tokens (too high)
-        response = client.post("/settings", json={"ai_max_tokens": 5000})
+        response = client.post("/settings", json={"ai_max_tokens": 20000})
         assert response.status_code == 422

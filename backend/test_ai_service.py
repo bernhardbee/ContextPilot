@@ -46,17 +46,21 @@ class TestAIService:
     @patch('ai_service.openai')
     def test_generate_openai_response(self, mock_openai, ai_service_instance, sample_prompt):
         """Test generating a response with OpenAI."""
-        # Mock OpenAI response
+        # Mock OpenAI response properly for the new SDK
         mock_response = Mock()
-        mock_response.choices = [Mock()]
-        mock_response.choices[0].message = {'content': 'Python is a programming language'}
-        mock_response.choices[0].finish_reason = 'stop'
+        mock_choice = Mock()
+        mock_message = Mock()
+        mock_message.content = 'Python is a programming language'
+        mock_choice.message = mock_message
+        mock_choice.finish_reason = 'stop'
+        mock_response.choices = [mock_choice]
         mock_response.usage = Mock()
         mock_response.usage.total_tokens = 50
         
-        mock_openai.ChatCompletion.create = Mock(return_value=mock_response)
-        mock_openai.api_key = "test-key"
-        ai_service_instance.openai_client = mock_openai
+        # Mock the new OpenAI SDK structure
+        mock_client = Mock()
+        mock_client.chat.completions.create = Mock(return_value=mock_response)
+        ai_service_instance.openai_client = mock_client
         
         # Generate response
         response, conversation = ai_service_instance.generate_response(
