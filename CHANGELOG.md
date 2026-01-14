@@ -7,8 +7,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **Full Markdown Rendering**: Complete markdown support using react-markdown
+  - Syntax-highlighted code blocks with GitHub Dark theme
+  - Inline code with custom styling
+  - Bold, italic, strikethrough text formatting
+  - Links (open in new tab with security attributes)
+  - Lists (ordered and unordered)
+  - Tables (via remark-gfm)
+  - Blockquotes and headings
+- **Code Syntax Highlighting**: Automatic language detection and highlighting via highlight.js
 - **Markdown Image Support**: Chat interface now renders images from `![alt](url)` syntax automatically
 - **Image Error Handling**: Failed image loads show helpful yellow warning boxes with links
+- **Settings Auto-Loading**: Chat interface loads max_tokens and temperature from backend settings
+- **Max Tokens Control**: Added visible max tokens input in chat interface (100-16000 range)
 - **Immediate Message Display**: User messages appear instantly before API response
 - **Concurrent Request Prevention**: Send button disabled during API calls to prevent multiple requests
 - **Smart Truncation Handling**: Shows detailed messages for truncated responses with token counts
@@ -17,22 +28,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Database Backup Scripts**: 
   - `backup_db.sh`: Creates timestamped backups, keeps last 10
   - `restore_db.sh`: Interactive restore with safety confirmations
+  - `update_default_tokens.py`: Script to update legacy token limit settings
 - **Enhanced Error Messages**: Empty response handling with finish_reason metadata
 - **Comprehensive Logging**: Added debug logging throughout message lifecycle
 
 ### Changed
+- **Message Rendering**: Replaced custom parsing with ReactMarkdown for robust formatting
 - **Max Tokens Default**: Increased from 2,000 to 4,000 tokens
 - **Max Tokens Validation**: Increased limit from 4,000 to 16,000 tokens
 - **Frontend Max Tokens UI**: Updated slider range to 16,000
+- **Settings Loading**: Frontend now applies backend settings on load
+- **Temperature Default**: Updated from 0.7 to 1.0 (correct default)
 - **Test Coverage**: Improved to 135+ passing unit tests
 - **API Response Handling**: Better null/empty content handling from OpenAI API
 
 ### Fixed
+- **Settings Application**: Frontend now loads and uses backend settings for chat
+- **Low Token Limit Issue**: Fixed legacy 2000 token limit causing image truncation
 - **AI Service Tests**: Fixed OpenAI SDK mocking to work with new SDK structure
 - **Settings Validation Tests**: Updated to reflect new max_tokens limits
 - **Empty Message Content**: Added safeguard for None responses from AI APIs
 - **Message Rendering**: Fixed renderMessageContent to accept full message object with metadata
 - **Truncated Responses**: Now properly detected and displayed with helpful messages
+- **Code Block Display**: Code examples now render with proper formatting and highlighting
 
 ### Documentation
 - **README.md**: 
