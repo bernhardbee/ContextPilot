@@ -2,6 +2,10 @@
  * Main App component for ContextPilot.
  */
 import React, { useEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
+import 'highlight.js/styles/github-dark.css';
 import { contextAPI } from './api';
 import './App.css';
 import { ContextTemplates } from './ContextTemplates';
@@ -402,50 +406,94 @@ function App() {
       return <span style={{ color: '#999', fontStyle: 'italic' }}>(Empty response)</span>;
     }
     
-    // Check if content contains markdown image syntax
-    const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/;
-    const match = content.match(imageRegex);
-    
-    if (match) {
-      console.log('Found image markdown:', match);
-      const altText = match[1] || 'Image';
-      const imageUrl = match[2];
-      
-      // Split content by the image markdown to render text and image separately
-      const parts = content.split(imageRegex);
-      
-      return (
-        <div>
-          {parts[0] && <div>{parts[0]}</div>}
-          <div style={{ position: 'relative', display: 'inline-block', width: '100%' }}>
-            <img 
-              src={imageUrl} 
-              alt={altText} 
-              style={{ 
-                maxWidth: '100%', 
-                borderRadius: '8px', 
+    // Use ReactMarkdown for full markdown support including code blocks
+    return (
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeHighlight]}
+        components={{
+          // Custom image component with error handling
+          img: ({ node, ...props }) => (
+            <img
+              {...props}
+              alt={props.alt || 'AI-generated image'}
+              style={{
+                maxWidth: '100%',
+                borderRadius: '8px',
                 margin: '8px 0',
                 display: 'block'
-              }} 
+              }}
               onError={(e) => {
+                const target = e.currentTarget;
+                const imageUrl = target.src;
                 console.error('Image failed to load:', imageUrl);
-                const parent = e.currentTarget.parentElement;
-                if (parent) {
-                  e.currentTarget.style.display = 'none';
-                  const errorMsg = document.createElement('div');
-                  errorMsg.style.cssText = 'padding: 12px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; margin: 8px 0; color: #856404;';
-                  errorMsg.innerHTML = `⚠️ <strong>Image unavailable:</strong> <a href="${imageUrl}" target="_blank" style="color: #856404; text-decoration: underline;">${imageUrl}</a>`;
-                  parent.appendChild(errorMsg);
-                }
+                target.style.display = 'none';
+                const errorDiv = document.createElement('div');
+                errorDiv.style.cssText = 'padding: 12px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; margin: 8px 0; color: #856404;';
+                errorDiv.innerHTML = `⚠️ <strong>Image unavailable:</strong> <a href="${imageUrl}" target="_blank" style="color: #856404; text-decoration: underline;">${imageUrl}</a>`;
+                target.parentNode?.insertBefore(errorDiv, target);
               }}
             />
-          </div>
-          {parts[3] && <div>{parts[3]}</div>}
-        </div>
-      );
-    }
-    
-    return content;
+          ),
+          // Style code blocks
+          code: ({ node, inline, className, children, ...props }: any) => {
+            if (inline) {
+              return (
+                <code
+                  style={{
+                    backgroundColor: '#f6f8fa',
+                    padding: '2px 6px',
+                    borderRadius: '3px',
+                    fontSize: '0.9em',
+                    fontFamily: 'Monaco, Consolas, monospace'
+                  }}
+                  {...props}
+                >
+                  {children}
+                </code>
+              );
+            }
+            return (
+              <code className={className} {...props}>
+                {children}
+              </code>
+            );
+          },
+          // Style pre blocks
+          pre: ({ node, children, ...props }) => (
+            <pre
+              style={{
+                backgroundColor: '#0d1117',
+                padding: '16px',
+                borderRadius: '6px',
+                overflow: 'auto',
+                marginTop: '8px',
+                marginBottom: '8px'
+              }}
+              {...props}
+            >
+              {children}
+            </pre>
+          ),
+          // Style links
+          a: ({ node, children, ...props }) => (
+            <a
+              {...props}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                color: '#0969da',
+                textDecoration: 'none'
+              }}
+            >
+              {children}
+            </a>
+          )
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    );
   };
 
   
