@@ -16,7 +16,9 @@ Most AI tools are stateless—they forget context between sessions. ContextPilot
 ### Core Functionality
 - ✅ **CRUD operations** for context units with versioning
 - ✅ **Persistent storage** with SQLite or PostgreSQL + pgvector
-- ✅ **AI integration** with OpenAI (GPT-4, GPT-5) and Anthropic (Claude)
+- ✅ **AI integration** with OpenAI (GPT-4, GPT-4o), Anthropic (Claude), and Ollama (local models)
+- ✅ **Dynamic model discovery** - Automatically detects available models from each provider
+- ✅ **Model validation** - Only shows working, current models in the UI
 - ✅ **Semantic search** using sentence-transformers embeddings
 - ✅ **Embedding caching** for faster similarity searches
 - ✅ **Response caching** for improved API performance
@@ -37,6 +39,7 @@ Most AI tools are stateless—they forget context between sessions. ContextPilot
 - ✅ **Immediate message display** - Shows user messages before API response
 - ✅ **Concurrent request prevention** - Disables send button during API calls
 - ✅ **Smart truncation handling** - Shows detailed messages for truncated responses with token counts
+- ✅ **Model attribution** - Shows which AI model generated each response for transparency
 
 ### UI/UX
 - ✅ **Full-width layout** utilizing entire browser window
@@ -49,6 +52,7 @@ Most AI tools are stateless—they forget context between sessions. ContextPilot
 - ✅ **Context Import/Export** - JSON/CSV export and JSON import functionality
 - ✅ **Advanced Filtering** - Search by type, tags, content, and status
 - ✅ **Context Templates** - Quick creation with 6 pre-defined templates
+- ✅ **Dynamic Model Management** - Automatic model discovery and caching for optimal performance
 
 ### Technical Features
 - ✅ **RESTful API** with FastAPI and OpenAPI documentation
@@ -108,7 +112,9 @@ ContextPilot/
 │   ├── ai_service.py        # OpenAI/Anthropic integration
 │   ├── config.py            # Configuration management
 │   ├── security.py          # Authentication & validation
+│   ├── validators.py        # Dynamic model validation
 │   ├── database.py          # Database session management
+│   ├── valid_models.json    # Dynamic model validation rules
 │   ├── alembic/             # Database migration scripts
 │   ├── test_*.py            # Comprehensive test suite (107 tests)
 │   ├── requirements.txt     # Python dependencies
@@ -121,6 +127,7 @@ ContextPilot/
 │   │   ├── ContextTools.tsx # Import/export & filtering tools
 │   │   ├── api.ts           # API client with all endpoints
 │   │   ├── types.ts         # TypeScript type definitions
+│   │   ├── model_options.json # Dynamic model configuration
 │   │   └── index.tsx        # React entry point
 │   ├── public/
 │   │   └── index.html       # HTML template
@@ -132,6 +139,12 @@ ContextPilot/
 ├── ARCHITECTURE.md          # System architecture documentation
 ├── SECURITY.md              # Security guidelines
 ├── DEPLOYMENT.md            # Production deployment guide
+├── MODEL_DISCOVERY.md       # Dynamic model discovery documentation
+├── discover_models.py       # Model discovery script
+├── refresh_models.py        # Startup model refresh integration
+├── update_models.sh         # Manual model update script
+├── test_dynamic_models.py   # Model discovery test suite
+├── demo_dynamic_models.py   # Model discovery demo script
 ├── setup.sh                 # Automated environment setup
 ├── start.sh                 # Start both backend & frontend (with auto-setup)
 ├── stop.sh                  # Stop all services
@@ -379,13 +392,47 @@ ContextPilot provides a settings UI (⚙️ button) where you can configure:
 
 #### AI Configuration
 - **OpenAI API Key**: Required for using GPT models
-- **Anthropic API Key**: Required for using Claude models  
-- **Default AI Provider**: Choose between `openai` or `anthropic`
-- **Default AI Model**: Set default model (e.g., `gpt-4-turbo-preview`, `claude-3-opus-20240229`)
+- **Anthropic API Key**: Required for using Claude models
+- **Ollama Base URL**: Local Ollama server endpoint (default: http://localhost:11434)
+- **Default AI Provider**: Choose between `openai`, `anthropic`, or `ollama`
+- **Default AI Model**: Set default model
+  - OpenAI: `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `gpt-4`, etc.
+  - Anthropic: `claude-3-5-sonnet-20241022`, `claude-3-5-haiku-20241022`, etc.
+  - Ollama: `llama3.2`, `mistral`, `codellama`, `phi3`, etc.
 - **Temperature**: Control randomness (0.0-2.0, default: 1.0)
 - **Max Tokens**: Maximum response length (1-16000, default: 4000)
   - Increase this if you're getting truncated responses
   - For image-heavy responses, consider 8000+ tokens
+
+#### Local Models with Ollama
+
+ContextPilot supports running AI models locally using [Ollama](https://ollama.ai):
+
+1. **Install Ollama**: Download from https://ollama.ai
+2. **Pull a model**: `ollama pull llama3.2` (or mistral, codellama, etc.)
+3. **Start Ollama**: `ollama serve` (runs on http://localhost:11434 by default)
+4. **Configure ContextPilot**: 
+   - Open Settings (⚙️ button)
+   - Set Ollama Base URL (default works if Ollama is running locally)
+   - Select "Ollama (Local)" as provider
+   - Choose your downloaded model
+
+**Benefits of Local Models:**
+- ✅ No API keys required
+- ✅ Complete privacy - no data sent to external services
+- ✅ No API costs
+- ✅ Works offline
+- ✅ Faster responses (no network latency)
+
+**Supported Ollama Models:**
+- `llama3.2` - Meta's latest Llama model
+- `llama3.1` - Previous Llama version
+- `mistral` - Mistral AI's model
+- `codellama` - Specialized for code generation
+- `phi3` - Microsoft's efficient model
+
+**Automatic Model Download:**
+If you select a model that hasn't been downloaded yet, ContextPilot will automatically pull it for you. The first request may take 1-5 minutes depending on model size, but subsequent requests will be instant.
 
 #### Settings API
 
@@ -400,12 +447,68 @@ curl -X POST http://localhost:8000/settings \
   -H "Content-Type: application/json" \
   -d '{
     "openai_api_key": "sk-...",
-    "default_ai_provider": "openai",
-    "default_ai_model": "gpt-4-turbo-preview",
+    "anthropic_api_key": "sk-ant-...",
+    "ollama_base_url": "http://localhost:11434",
+    "default_ai_provider": "ollama",
+    "default_ai_model": "llama3.2",
     "ai_temperature": 0.7,
     "ai_max_tokens": 8000
   }'
 ```
+
+### Dynamic Model Discovery
+
+ContextPilot features an advanced dynamic model discovery system that automatically detects available AI models from each provider, ensuring you always have access to the latest and working models.
+
+#### How It Works
+
+- **OpenAI**: Fetches available chat models via API (when API key is configured)
+- **Anthropic**: Maintains current model list (Claude 3.5 Sonnet, Opus, etc.)
+- **Ollama**: Automatically detects locally installed models
+
+#### Key Benefits
+
+- ✅ **Always Current**: Shows only working, available models
+- ✅ **Automatic Updates**: Refreshes model lists daily
+- ✅ **Local Model Detection**: Finds Ollama models automatically
+- ✅ **Performance Optimized**: 24-hour caching to minimize API calls
+- ✅ **Robust Fallbacks**: Works even when APIs are unavailable
+
+#### Manual Model Discovery
+
+Refresh available models manually:
+
+```bash
+# Discover and cache all available models
+python3 discover_models.py
+
+# Force refresh (ignore cache)
+python3 refresh_models.py --force
+
+# Quick status check
+python3 demo_dynamic_models.py
+```
+
+#### Scheduled Updates
+
+Set up automatic daily model discovery:
+
+```bash
+# Edit crontab
+crontab -e
+
+# Add this line (runs daily at 6 AM)
+0 6 * * * /path/to/ContextPilot/update_models.sh
+```
+
+#### Current Model Status
+
+As of last discovery, ContextPilot supports:
+- **OpenAI**: GPT-4o, GPT-4o-mini, GPT-4-turbo, GPT-4, GPT-3.5-turbo
+- **Anthropic**: Claude 3.5 Sonnet (latest), Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku
+- **Ollama**: Automatically detected local models (e.g., llama3.2:latest)
+
+> **Note**: Model availability depends on your API access and local Ollama installations. The system automatically updates these lists to match your actual capabilities.
 
 ### Image Display
 
@@ -516,6 +619,7 @@ SQLAlchemy 2.0 (ORM and database toolkit)
 
 - **[Database Setup](backend/docs/DATABASE.md)**: SQLite and PostgreSQL configuration
 - **[AI Integration](backend/docs/AI_INTEGRATION.md)**: OpenAI and Anthropic setup
+- **[Model Discovery](MODEL_DISCOVERY.md)**: Dynamic model discovery system
 - **[API Reference](http://localhost:8000/docs)**: Interactive API documentation (when server is running)
 
 ## 🔮 Future Enhancements

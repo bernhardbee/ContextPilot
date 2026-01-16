@@ -1587,6 +1587,21 @@ select:focus {
   opacity: 0.7;
 }
 
+.message-model {
+  opacity: 0.8;
+  font-size: 0.75rem;
+  background: rgba(0, 0, 0, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  color: #666;
+}
+
+.message-assistant .message-model {
+  background: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+}
+
 .copy-message-btn {
   background: none;
   border: none;

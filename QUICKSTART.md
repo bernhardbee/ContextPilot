@@ -48,6 +48,22 @@ npm start
 cd backend
 python -m pytest  # All tests
 python -m pytest --ignore=test_integration.py  # Unit tests only
+python test_dynamic_models.py  # Test model discovery
+```
+
+### Model Discovery
+```bash
+# Discover available models
+python3 discover_models.py
+
+# Force model refresh
+python3 refresh_models.py --force
+
+# Check current models
+python3 demo_dynamic_models.py
+
+# Set up daily auto-discovery (cron)
+./update_models.sh
 ```
 
 ### Backup Database
@@ -103,6 +119,15 @@ cd backend
 | GET | `/settings` | Get current settings |
 | POST | `/settings` | Update settings |
 | GET | `/` | Root info |
+
+### Model Management
+
+ContextPilot automatically discovers available models from each provider:
+- **OpenAI**: Real-time API discovery (when key configured)
+- **Anthropic**: Curated current model list
+- **Ollama**: Auto-detects locally installed models
+
+Models are cached for 24 hours and refreshed automatically on backend startup.
 
 ## cURL Examples
 

@@ -59,6 +59,22 @@ async def lifespan(app: FastAPI):
     logger.info(f"CORS origins: {settings.cors_origins}")
     logger.info(f"Authentication enabled: {settings.enable_auth}")
     
+    # Refresh model list if needed
+    try:
+        import sys
+        from pathlib import Path
+        
+        # Add parent directory to path to access refresh_models.py
+        parent_path = Path(__file__).parent.parent
+        sys.path.insert(0, str(parent_path))
+        
+        from refresh_models import refresh_models_if_needed
+        refresh_models_if_needed(max_age_hours=24)
+        logger.info("Model list refresh check complete")
+        
+    except Exception as e:
+        logger.warning(f"Model refresh failed (continuing anyway): {e}")
+    
     # Initialize settings store
     settings_store_module.init_settings_store(settings.database_url)
     logger.info("Settings store initialized")
@@ -806,21 +822,26 @@ def ai_chat(
             task=sanitized_task,
             response=response_text,
             provider=conversation.provider,
-            model=conversation.model,
+            model=ai_request.model or conversation.model,  # Use the actual model requested
             context_ids=context_ids,
             prompt_used=generated.generated_prompt
         )
         
     except ValueError as e:
+        # Client errors (bad configuration, missing models, etc.)
+        error_detail = str(e)
+        logger.warning(f"AI generation client error: {error_detail}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
+            detail=error_detail
         )
     except Exception as e:
-        logger.error(f"AI generation error: {e}")
+        # Server errors (unexpected failures)
+        error_detail = str(e)
+        logger.error(f"AI generation error: {error_detail}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to generate AI response"
+            detail=f"Failed to generate AI response: {error_detail}"
         )
 
 
@@ -872,6 +893,8 @@ def get_settings(request: Request):
     return SettingsResponse(
         openai_api_key_set=bool(settings.openai_api_key),
         anthropic_api_key_set=bool(settings.anthropic_api_key),
+        ollama_configured=bool(settings.ollama_base_url),
+        ollama_base_url=settings.ollama_base_url,
         default_ai_provider=settings.default_ai_provider,
         default_ai_model=settings.default_ai_model,
         ai_temperature=settings.ai_temperature,
@@ -909,6 +932,12 @@ def update_settings(request: Request, settings_update: SettingsUpdate):
             settings_store_module.settings_store.set("anthropic_api_key", settings_update.anthropic_api_key)
         updated_fields.append("anthropic_api_key")
     
+    if settings_update.ollama_base_url is not None:
+        settings.ollama_base_url = settings_update.ollama_base_url
+        if settings_store_module.settings_store:
+            settings_store_module.settings_store.set("ollama_base_url", settings_update.ollama_base_url)
+        updated_fields.append("ollama_base_url")
+    
     # Update other AI settings
     if settings_update.default_ai_provider is not None:
         settings.default_ai_provider = settings_update.default_ai_provider
@@ -935,12 +964,12 @@ def update_settings(request: Request, settings_update: SettingsUpdate):
         updated_fields.append("ai_max_tokens")
     
     # Reinitialize AI service with new API keys
-    if any(field in updated_fields for field in ["openai_api_key", "anthropic_api_key"]):
+    if any(field in updated_fields for field in ["openai_api_key", "anthropic_api_key", "ollama_base_url"]):
         try:
             from ai_service import AIService
             global ai_service
             ai_service = AIService()
-            logger.info("AI service reinitialized with updated API keys")
+            logger.info("AI service reinitialized with updated configuration")
         except Exception as e:
             logger.warning(f"Failed to reinitialize AI service: {e}")
     
@@ -950,6 +979,8 @@ def update_settings(request: Request, settings_update: SettingsUpdate):
         "settings": SettingsResponse(
             openai_api_key_set=bool(settings.openai_api_key),
             anthropic_api_key_set=bool(settings.anthropic_api_key),
+            ollama_configured=bool(settings.ollama_base_url),
+            ollama_base_url=settings.ollama_base_url,
             default_ai_provider=settings.default_ai_provider,
             default_ai_model=settings.default_ai_model,
             ai_temperature=settings.ai_temperature,

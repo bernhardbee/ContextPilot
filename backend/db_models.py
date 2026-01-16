@@ -84,6 +84,7 @@ class MessageDB(Base):
     # Metadata
     tokens = Column(Integer, nullable=True)
     finish_reason = Column(String, nullable=True)
+    model = Column(String, nullable=True)  # Track which AI model generated this message
     
     # Relationships
     conversation = relationship("ConversationDB", back_populates="messages")

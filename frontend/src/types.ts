@@ -99,6 +99,7 @@ export interface ConversationMessage {
   timestamp?: string;   // Backwards compatibility
   tokens?: number;
   finish_reason?: string;
+  model?: string;  // Track which AI model generated this message
 }
 
 export interface Conversation {
@@ -114,6 +115,8 @@ export interface Conversation {
 export interface Settings {
   openai_api_key_set: boolean;
   anthropic_api_key_set: boolean;
+  ollama_configured: boolean;
+  ollama_base_url: string;
   default_ai_provider: string;
   default_ai_model: string;
   ai_temperature: number;
@@ -123,6 +126,7 @@ export interface Settings {
 export interface SettingsUpdate {
   openai_api_key?: string;
   anthropic_api_key?: string;
+  ollama_base_url?: string;
   default_ai_provider?: string;
   default_ai_model?: string;
   ai_temperature?: number;

@@ -5,18 +5,27 @@ ContextPilot integrates with multiple AI providers to generate responses using y
 ## Supported Providers
 
 ### OpenAI
-- **Models**: GPT-4 Turbo, GPT-4, GPT-3.5 Turbo
+- **Models**: Dynamically discovered from OpenAI API (GPT-4o, GPT-4o-mini, GPT-4-turbo, GPT-4, GPT-3.5-turbo, etc.)
 - **API**: OpenAI Chat Completions API
 - **Features**: Function calling, streaming, vision (GPT-4V)
+- **Discovery**: Real-time model list via API when key is configured
 
 ### Anthropic
-- **Models**: Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku
+- **Models**: Claude 3.5 Sonnet (latest), Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku
 - **API**: Anthropic Messages API
 - **Features**: Extended context windows, thinking tokens
+- **Discovery**: Curated list of current models (updated regularly)
+
+### Ollama (Local Models)
+- **Models**: Automatically detected from local installation (llama3.2, mistral, codellama, phi3, etc.)
+- **API**: OpenAI-compatible REST API
+- **Features**: Local execution, privacy, no API costs, offline support
+- **Requirements**: Ollama installed locally (https://ollama.ai)
+- **Discovery**: Live detection of installed models via API and CLI
 
 ## Quick Start
 
-### 1. Get API Keys
+### 1. Get API Keys (or Install Ollama)
 
 **OpenAI**:
 1. Visit https://platform.openai.com/api-keys
@@ -28,18 +37,25 @@ ContextPilot integrates with multiple AI providers to generate responses using y
 2. Create a new API key
 3. Copy the key (starts with `sk-ant-`)
 
-### 2. Configure API Keys
+**Ollama (Local)**:
+1. Download and install from https://ollama.ai
+2. Pull a model: `ollama pull llama3.2`
+3. Start Ollama server: `ollama serve` (runs on http://localhost:11434)
+4. No API key required!
+
+### 2. Configure API Keys / Ollama
 
 **Option A: Settings UI (Easiest)**
 
 1. Open the web interface at http://localhost:3000
 2. Click the ⚙️ settings button in the header
-3. Enter your API key(s):
+3. Enter your API key(s) OR configure Ollama:
    - **OpenAI**: Paste your `sk-` key
    - **Anthropic**: Paste your `sk-ant-` key
+   - **Ollama Base URL**: http://localhost:11434 (default)
 4. Configure AI parameters:
-   - Provider: `openai` or `anthropic`
-   - Model: Select from dropdown
+   - Provider: `openai`, `anthropic`, or `ollama`
+   - Model: Select from dropdown based on provider
    - Temperature: 0-2 (default 1.0)
    - Max Tokens: 1-16000 (default 4000)
      - Increase for image-heavy responses (8000+)
@@ -62,6 +78,11 @@ CONTEXTPILOT_DEFAULT_AI_MODEL=gpt-4-turbo-preview
 CONTEXTPILOT_ANTHROPIC_API_KEY=sk-ant-your-anthropic-key
 CONTEXTPILOT_DEFAULT_AI_PROVIDER=anthropic
 CONTEXTPILOT_DEFAULT_AI_MODEL=claude-3-opus-20240229
+
+# Or Ollama Configuration (Local)
+CONTEXTPILOT_OLLAMA_BASE_URL=http://localhost:11434
+CONTEXTPILOT_DEFAULT_AI_PROVIDER=ollama
+CONTEXTPILOT_DEFAULT_AI_MODEL=llama3.2
 
 # AI Parameters
 CONTEXTPILOT_AI_MAX_TOKENS=4000  # Supports up to 16000
@@ -103,8 +124,11 @@ Generate an AI response using relevant context.
 **Parameters**:
 - `task` (required): The question or task for the AI
 - `max_context_units` (optional): Maximum context items to include (default: 10)
-- `provider` (optional): "openai" or "anthropic" (uses default if not specified)
+- `provider` (optional): "openai", "anthropic", or "ollama" (uses default if not specified)
 - `model` (optional): Model name (uses default if not specified)
+  - OpenAI: `gpt-5`, `gpt-4o`, `gpt-4-turbo`, etc.
+  - Anthropic: `claude-3-5-sonnet-20241022`, `claude-3-opus-20240229`, etc.
+  - Ollama: `llama3.2`, `mistral`, `codellama`, `phi3`, etc.
 - `temperature` (optional): 0.0-1.0 (default: 0.7)
 - `max_tokens` (optional): Maximum response length (default: 2000)
 - `use_compact` (optional): Use compact prompt format (default: false)
@@ -180,8 +204,10 @@ Get current AI configuration settings.
 {
   "openai_api_key_set": true,
   "anthropic_api_key_set": false,
-  "ai_provider": "openai",
-  "ai_model": "gpt-4-turbo-preview",
+  "ollama_configured": true,
+  "ollama_base_url": "http://localhost:11434",
+  "ai_provider": "ollama",
+  "ai_model": "llama3.2",
   "temperature": 0.7,
   "max_tokens": 2000
 }
@@ -198,8 +224,9 @@ Update AI configuration settings.
 {
   "openai_api_key": "sk-your-key-here",
   "anthropic_api_key": "sk-ant-your-key-here",
-  "ai_provider": "openai",
-  "ai_model": "gpt-4-turbo-preview",
+  "ollama_base_url": "http://localhost:11434",
+  "ai_provider": "ollama",
+  "ai_model": "llama3.2",
   "temperature": 0.7,
   "max_tokens": 2000
 }
@@ -210,11 +237,62 @@ Update AI configuration settings.
 **Validation**:
 - `temperature`: Must be between 0 and 2
 - `max_tokens`: Must be between 1 and 4000
-- `ai_provider`: Must be "openai" or "anthropic"
+- `ai_provider`: Must be "openai", "anthropic", or "ollama"
 
 **Response**: Same as GET /settings
 
 **Note**: Settings apply immediately - AI service is automatically reinitialized with new credentials.
+
+## Dynamic Model Discovery
+
+ContextPilot features an advanced model discovery system that automatically detects available models from each provider, ensuring you always have access to current, working models.
+
+### How It Works
+
+**OpenAI**: When an API key is configured, the system queries the OpenAI API to fetch available chat models in real-time.
+- Models like `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `gpt-4`, `gpt-3.5-turbo`
+- Automatically filters for chat-compatible models
+- Sorts by capability and recency
+
+**Anthropic**: Maintains a curated list of current Anthropic models since they don't provide a public discovery API.
+- Regularly updated with latest Claude models
+- Includes Claude 3.5 Sonnet, Claude 3 Opus, etc.
+
+**Ollama**: Automatically detects locally installed models via API or CLI.
+- Queries `http://localhost:11434/api/tags` for available models
+- Falls back to `ollama list` command if API unavailable
+- Shows only models you've actually downloaded
+
+### Model Cache & Performance
+
+- **24-Hour Caching**: Model lists are cached for optimal performance
+- **Automatic Refresh**: Backend refreshes models on startup if cache is stale
+- **Manual Refresh**: Use discovery scripts for immediate updates
+- **Fallback Safety**: Uses known working models if discovery fails
+
+### Discovery Commands
+
+```bash
+# Discover all available models
+python3 discover_models.py
+
+# Force refresh (ignore cache)
+python3 refresh_models.py --force
+
+# Check current model status
+python3 demo_dynamic_models.py
+
+# Test the discovery system
+python3 test_dynamic_models.py
+```
+
+### Benefits
+
+✅ **Always Current**: No more invalid model names (like "gpt-5")
+✅ **Local Detection**: Automatically finds Ollama models
+✅ **Performance Optimized**: Smart caching minimizes API calls
+✅ **Robust Fallbacks**: Works even when APIs are unavailable
+✅ **Zero Maintenance**: Updates itself automatically
 
 ## Model Selection Guide
 
@@ -222,17 +300,49 @@ Update AI configuration settings.
 
 | Model | Best For | Context Window | Cost/1M tokens |
 |-------|----------|----------------|----------------|
-| gpt-4-turbo-preview | Complex tasks, accuracy | 128K | $10 / $30 |
+| gpt-4o | Latest, most capable | 128K | $5 / $15 |
+| gpt-4o-mini | Fast, cost-effective | 128K | $0.15 / $0.60 |
+| gpt-4-turbo | Complex tasks, accuracy | 128K | $10 / $30 |
 | gpt-4 | High quality responses | 8K | $30 / $60 |
-| gpt-3.5-turbo | Fast, cost-effective | 16K | $0.50 / $1.50 |
+| gpt-3.5-turbo | Fast, economical | 16K | $0.50 / $1.50 |
+
+*Note: Exact models available depend on your API access level and are auto-discovered*
 
 ### Anthropic Models
 
 | Model | Best For | Context Window | Cost/1M tokens |
 |-------|----------|----------------|----------------|
-| claude-3-opus-20240229 | Most capable | 200K | $15 / $75 |
+| claude-3-5-sonnet-20241022 | Latest, most capable | 200K | $3 / $15 |
+| claude-3-5-sonnet-20240620 | Previous Sonnet version | 200K | $3 / $15 |
+| claude-3-opus-20240229 | Highest capability | 200K | $15 / $75 |
 | claude-3-sonnet-20240229 | Balanced performance | 200K | $3 / $15 |
 | claude-3-haiku-20240307 | Fast, cost-effective | 200K | $0.25 / $1.25 |
+
+### Ollama Models (Local)
+
+| Model | Best For | Size | Requirements |
+|-------|----------|------|--------------|
+| llama3.2 | General purpose, latest | 2-4GB | 8GB RAM |
+| llama3.1 | General purpose | 2-4GB | 8GB RAM |
+| mistral | Fast, efficient | 4GB | 8GB RAM |
+| codellama | Code generation | 4-7GB | 16GB RAM |
+| phi3 | Lightweight, fast | 2GB | 4GB RAM |
+
+**Ollama Benefits**:
+- ✅ **Free**: No API costs
+- ✅ **Private**: Data never leaves your machine
+- ✅ **Offline**: Works without internet
+- ✅ **Fast**: No network latency
+- ✅ **Flexible**: Many models available (https://ollama.ai/library)
+
+**To use Ollama**:
+1. Install Ollama: https://ollama.ai
+2. Start server: `ollama serve`
+3. Configure ContextPilot to use `ollama` provider
+4. Select a model - ContextPilot will automatically download it if needed
+
+**Auto-Download Feature:**
+You don't need to manually pull models! When you select a model that isn't installed yet (like `llama3.2`), ContextPilot will automatically run `ollama pull` for you. The first request will take 1-5 minutes depending on the model size, but subsequent requests will be instant.
 
 ### Choosing a Model
 
@@ -252,6 +362,13 @@ Update AI configuration settings.
 - Balanced price/performance
 - Extended context requirements
 - Conversational applications
+
+**Use Ollama (Local Models) when**:
+- Privacy is a priority
+- No budget for API costs
+- Offline functionality needed
+- Lower latency desired
+- Experimenting with different models
 
 ## Context Integration
 

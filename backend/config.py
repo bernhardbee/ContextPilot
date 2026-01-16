@@ -55,7 +55,9 @@ class Settings(BaseSettings):
     # AI Integration
     openai_api_key: str = Field(default="", description="OpenAI API key")
     anthropic_api_key: str = Field(default="", description="Anthropic API key")
-    default_ai_provider: str = Field(default="openai", description="Default AI provider (openai or anthropic)")
+    ollama_base_url: str = Field(default="http://localhost:11434", description="Ollama API endpoint")
+    ollama_api_key: str = Field(default="ollama", description="Ollama API key (usually not required)")
+    default_ai_provider: str = Field(default="openai", description="Default AI provider (openai, anthropic, or ollama)")
     default_ai_model: str = Field(default="gpt-4-turbo-preview", description="Default AI model")
     ai_max_tokens: int = Field(default=2000, description="Max tokens for AI responses")
     ai_temperature: float = Field(default=0.7, description="AI temperature (0-2)")

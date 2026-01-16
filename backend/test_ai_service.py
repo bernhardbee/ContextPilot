@@ -112,3 +112,144 @@ class TestAIService:
         """Test listing conversations when none exist."""
         conversations = ai_service_instance.list_conversations()
         assert conversations == []
+
+    def test_save_messages_with_model_tracking(self, ai_service_instance):
+        """Test that _save_messages correctly tracks model information."""
+        from db_models import ConversationDB, MessageDB
+        from database import get_db_session
+        
+        # Create a test conversation
+        with get_db_session() as db:
+            conversation = ConversationDB(
+                task="Test task",
+                provider="openai",
+                model="gpt-4",
+                context_ids=[],
+                prompt_type="full"
+            )
+            db.add(conversation)
+            db.flush()  # Get the ID without committing
+            conversation_id = conversation.id
+        
+        # Test messages with different roles
+        test_messages = [
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": "Hello"},
+            {"role": "assistant", "content": "Hi there!", "tokens": 10, "finish_reason": "stop"}
+        ]
+        
+        # Save messages with model tracking
+        ai_service_instance._save_messages(conversation_id, test_messages, "gpt-4")
+        
+        # Verify messages were saved with correct model tracking
+        with get_db_session() as db:
+            messages = db.query(MessageDB).filter(
+                MessageDB.conversation_id == conversation_id
+            ).order_by(MessageDB.created_at).all()
+            
+            assert len(messages) == 3
+            
+            # System message should not have model tracked
+            system_msg = messages[0]
+            assert system_msg.role == "system"
+            assert system_msg.model is None
+            
+            # User message should not have model tracked
+            user_msg = messages[1]
+            assert user_msg.role == "user"
+            assert user_msg.model is None
+            
+            # Assistant message should have model tracked
+            assistant_msg = messages[2]
+            assert assistant_msg.role == "assistant"
+            assert assistant_msg.model == "gpt-4"
+            assert assistant_msg.tokens == 10
+            assert assistant_msg.finish_reason == "stop"
+
+    def test_get_conversation_includes_model_info(self, ai_service_instance):
+        """Test that get_conversation returns model info in messages."""
+        from db_models import ConversationDB, MessageDB
+        from database import get_db_session
+        
+        # Create test conversation and messages
+        with get_db_session() as db:
+            conversation = ConversationDB(
+                task="Test conversation",
+                provider="anthropic", 
+                model="claude-3-sonnet-20240229",
+                context_ids=[],
+                prompt_type="full"
+            )
+            db.add(conversation)
+            db.flush()
+            conversation_id = conversation.id
+            
+            # Add messages with model tracking
+            messages = [
+                MessageDB(
+                    conversation_id=conversation_id,
+                    role="user",
+                    content="Test question",
+                    model=None  # User messages don't track model
+                ),
+                MessageDB(
+                    conversation_id=conversation_id,
+                    role="assistant",
+                    content="Test response",
+                    tokens=25,
+                    finish_reason="stop",
+                    model="claude-3-sonnet-20240229"
+                )
+            ]
+            db.add_all(messages)
+        
+        # Get conversation data
+        conversation_data = ai_service_instance.get_conversation(conversation_id)
+        
+        assert conversation_data is not None
+        assert len(conversation_data["messages"]) == 2
+        
+        # Check user message
+        user_msg = conversation_data["messages"][0]
+        assert user_msg["role"] == "user"
+        assert user_msg["model"] is None
+        
+        # Check assistant message
+        assistant_msg = conversation_data["messages"][1]
+        assert assistant_msg["role"] == "assistant"
+        assert assistant_msg["model"] == "claude-3-sonnet-20240229"
+        assert assistant_msg["tokens"] == 25
+
+    @patch('ai_service.openai')
+    def test_openai_integration_saves_model(self, mock_openai, ai_service_instance, sample_prompt):
+        """Test that OpenAI integration properly saves model information."""
+        from database import get_db_session
+        from db_models import MessageDB
+        
+        # Mock OpenAI response
+        mock_response = Mock()
+        mock_response.choices = [Mock()]
+        mock_response.choices[0].message.content = "Test response"
+        mock_response.choices[0].finish_reason = "stop"
+        mock_response.usage.total_tokens = 50
+        
+        mock_openai.chat.completions.create.return_value = mock_response
+        
+        # Generate response
+        response, conversation = ai_service_instance.generate_response(
+            task="Test task",
+            generated_prompt=sample_prompt,
+            context_ids=[],
+            provider="openai",
+            model="gpt-4"
+        )
+        
+        # Check that messages were saved with model info
+        with get_db_session() as db:
+            assistant_messages = db.query(MessageDB).filter(
+                MessageDB.conversation_id == conversation.id,
+                MessageDB.role == "assistant"
+            ).all()
+            
+            assert len(assistant_messages) >= 1
+            assert assistant_messages[0].model == "gpt-4"
