@@ -2,7 +2,7 @@
 
 ## Overview
 
-ContextPilot is an AI-powered personal context engine with three main layers:
+ContextPilot is a multi-model AI chat interface with context management capabilities, built with three main layers:
 
 1. **Frontend Layer** - React UI for user interaction
 2. **Backend Layer** - FastAPI server with business logic

@@ -26,7 +26,7 @@ code {
 .header {
   text-align: center;
   margin-bottom: 40px;
-  padding: 20px;
+  padding: 10px 20px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border-radius: 8px;
@@ -34,7 +34,7 @@ code {
 }
 
 .header h1 {
-  margin: 0 0 10px 0;
+  margin: 0;
   font-size: 2.5rem;
 }
 
@@ -884,6 +884,49 @@ select:focus {
   background: rgba(255, 255, 255, 0.3);
 }
 
+.title-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.by-signature {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.b-logo {
+  height: 48px;
+  width: auto;
+  vertical-align: middle;
+}
+
+.manage-header {
+  margin-bottom: 20px;
+}
+
+.return-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.return-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1360,6 +1403,26 @@ select:focus {
 .manage-content {
   max-width: 1200px;
   margin: 0 auto;
+}
+
+.manage-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.manage-column-left,
+.manage-column-right {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .manage-columns {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 1200px) {

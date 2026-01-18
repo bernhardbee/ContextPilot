@@ -1,6 +1,6 @@
 # 🧭 ContextPilot
 
-An AI-powered personal context engine that automatically builds and maintains a structured "memory" of a user's projects, decisions, preferences, and knowledge—then injects the right context into future AI prompts, emails, documents, or code tasks.
+A multi-model AI chat interface that lets you create, organize, and inject structured context into conversations with different AI models (OpenAI, Anthropic, Ollama). Maintain your project knowledge, preferences, and decisions in organized contexts that can be selectively applied to enhance AI interactions.
 
 ## 🎯 What is ContextPilot?
 
@@ -42,10 +42,13 @@ Most AI tools are stateless—they forget context between sessions. ContextPilot
 - ✅ **Model attribution** - Shows which AI model generated each response for transparency
 
 ### UI/UX
-- ✅ **Full-width layout** utilizing entire browser window
-- ✅ **Clean React UI** for managing context and viewing prompts
-- ✅ **Mobile Responsive** - Optimized for all screen sizes
+- ✅ **Modern Interface Design** - Clean, professional layout with brand identity
+- ✅ **Simplified Navigation** - Streamlined interface with intuitive return navigation
+- ✅ **2-Column Manage Layout** - Organized context management with responsive grid design
+- ✅ **Custom Branding** - Distinctive "by B" signature with custom fuzzy B logo
+- ✅ **Mobile Responsive** - Optimized for all screen sizes with proper breakpoints
 - ✅ **Enhanced UX** - Loading states, smooth transitions, and improved interactions
+- ✅ **Full-width layout** utilizing entire browser window
 - ✅ **Input clearing** - Automatically clears text box on message send
 - ✅ **Settings Management** - Configure API keys and AI parameters directly in the UI
 - ✅ **Flexible token limits** - Supports up to 16,000 tokens (default: 4000)

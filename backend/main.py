@@ -143,7 +143,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="ContextPilot API",
-    description="AI-powered personal context engine",
+    description="Multi-model AI chat interface with context management",
     version="1.0.0",
     lifespan=lifespan
 )

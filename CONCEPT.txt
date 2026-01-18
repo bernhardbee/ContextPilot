@@ -6,7 +6,7 @@ ContextPilot
 
 One-line Description
 
-An AI-powered personal context engine that automatically builds and maintains a structured “memory” of a user’s projects, decisions, preferences, and knowledge—then injects the right context into future AI prompts, emails, documents, or code tasks.
+A multi-model AI chat interface that lets you create, organize, and inject structured context into conversations with different AI models (OpenAI, Anthropic, Ollama). Maintain your project knowledge, preferences, and decisions in organized contexts that can be selectively applied to enhance AI interactions.
 
 Why It’s Innovative
 
@@ -156,7 +156,7 @@ You are a senior software engineer and AI architect.
 Your task is to design and implement an MVP of a software system called "ContextPilot".
 
 Goal:
-ContextPilot is an AI-powered personal context engine that stores structured user context (preferences, decisions, goals, facts) and automatically injects the most relevant context into future AI prompts.
+ContextPilot is a multi-model AI chat interface that allows users to organize structured context (preferences, decisions, goals, facts) and selectively inject relevant context into conversations with different AI models.
 
 Functional Requirements:
 1. Allow creating, updating, and listing ContextUnits.

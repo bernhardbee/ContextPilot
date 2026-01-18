@@ -12,14 +12,14 @@ import { ContextTemplates } from './ContextTemplates';
 import { ContextTools } from './ContextTools';
 import modelOptions from './model_options.json';
 import {
-  ContextType,
-  ContextUnit,
-  ContextUnitCreate,
-  Conversation,
-  ConversationMessage,
-  Settings,
-  SettingsUpdate,
-  Stats,
+    ContextType,
+    ContextUnit,
+    ContextUnitCreate,
+    Conversation,
+    ConversationMessage,
+    Settings,
+    SettingsUpdate,
+    Stats,
 } from './types';
 
 function App() {
@@ -530,9 +530,11 @@ function App() {
     <div className="app">
       <header className="header">
         <div className="header-content">
-          <div>
+          <div className="title-section">
             <h1>🧭 ContextPilot</h1>
-            <p>AI-powered personal context engine</p>
+            <span className="by-signature">
+              by <img src="b-logo.png" alt="B" className="b-logo" />
+            </span>
           </div>
           <button 
             className="settings-button"
@@ -544,48 +546,8 @@ function App() {
         </div>
       </header>
 
-      {stats && (
-        <div className="stats-bar">
-          <div className="stat">
-            <div className="stat-value">{stats.active_contexts}</div>
-            <div className="stat-label">Active Contexts</div>
-          </div>
-          <div className="stat">
-            <div className="stat-value">{stats.contexts_by_type.preference || 0}</div>
-            <div className="stat-label">Preferences</div>
-          </div>
-          <div className="stat">
-            <div className="stat-value">{stats.contexts_by_type.goal || 0}</div>
-            <div className="stat-label">Goals</div>
-          </div>
-          <div className="stat">
-            <div className="stat-value">{stats.contexts_by_type.decision || 0}</div>
-            <div className="stat-label">Decisions</div>
-          </div>
-          <div className="stat">
-            <div className="stat-value">{stats.contexts_by_type.fact || 0}</div>
-            <div className="stat-label">Facts</div>
-          </div>
-        </div>
-      )}
-
       {error && <div className="error">{error}</div>}
       {success && <div className="success">{success}</div>}
-
-      <div className="tabs">
-        <button
-          className={`tab ${activeTab === 'chat' ? 'active' : ''}`}
-          onClick={() => setActiveTab('chat')}
-        >
-          🤖 AI Workspace
-        </button>
-        <button
-          className={`tab ${activeTab === 'manage' ? 'active' : ''}`}
-          onClick={() => setActiveTab('manage')}
-        >
-          📝 Manage Contexts
-        </button>
-      </div>
 
       <div className="workspace-layout">
         {activeTab === 'chat' && (
@@ -887,15 +849,53 @@ function App() {
 
         {activeTab === 'manage' && (
           <div className="manage-content">
-            <ContextTools
-              onFiltersChange={setFilters}
-              onRefresh={loadContexts}
-            />
-            
-            <ContextTemplates onUseTemplate={handleUseTemplate} />
-            
-            <div className="card">
-              <h2>Add Context</h2>
+            <div className="manage-header">
+              <button 
+                className="return-button"
+                onClick={() => setActiveTab('chat')}
+                title="Return to Chats"
+              >
+                ← Back to Chats
+              </button>
+            </div>
+            {stats && (
+              <div className="stats-bar">
+                <div className="stat">
+                  <div className="stat-value">{stats.active_contexts}</div>
+                  <div className="stat-label">Active Contexts</div>
+                </div>
+                <div className="stat">
+                  <div className="stat-value">{stats.contexts_by_type.preference || 0}</div>
+                  <div className="stat-label">Preferences</div>
+                </div>
+                <div className="stat">
+                  <div className="stat-value">{stats.contexts_by_type.goal || 0}</div>
+                  <div className="stat-label">Goals</div>
+                </div>
+                <div className="stat">
+                  <div className="stat-value">{stats.contexts_by_type.decision || 0}</div>
+                  <div className="stat-label">Decisions</div>
+                </div>
+                <div className="stat">
+                  <div className="stat-value">{stats.contexts_by_type.fact || 0}</div>
+                  <div className="stat-label">Facts</div>
+                </div>
+              </div>
+            )}
+
+            <div className="manage-columns">
+              <div className="manage-column-left">
+                <ContextTools
+                  onFiltersChange={setFilters}
+                  onRefresh={loadContexts}
+                />
+                
+                <ContextTemplates onUseTemplate={handleUseTemplate} />
+              </div>
+              
+              <div className="manage-column-right">
+                <div className="card">
+                  <h2>Add Context</h2>
           <form onSubmit={handleCreateContext}>
             <div className="form-group">
               <label>Type</label>
@@ -1008,7 +1008,9 @@ function App() {
               ))
             )}
           </div>
-        </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -7,6 +7,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **UI/UX Improvements (January 18, 2026)**:
+  - **Brand Identity Enhancement**: Added custom "by B" signature with fuzzy B logo next to ContextPilot header
+  - **Simplified Navigation**: Removed tab navigation bar, replaced with clean return button in manage contexts
+  - **Streamlined Interface**: Removed redundant banner subtitle and relocated stats overview to manage contexts only
+  - **Responsive Layout**: Implemented 2-column grid layout for manage contexts page with mobile responsiveness
+  - **Visual Polish**: Enhanced header styling, button hover effects, and spacing improvements
+
+### Fixed  
+- **Backend API Issues (January 18, 2026)**:
+  - **OpenAI API Compatibility**: Fixed `max_completion_tokens` parameter error by using universal `max_tokens`
+  - **Model Attribution Bug**: Resolved issue where conversation model wasn't updated when switching models mid-conversation
+  - **Comprehensive Testing**: Added `test_model_switching.py` with 4 test cases covering OpenAI/Anthropic model switching
+
+### Changed
+- **Project Description Update**: Updated all documentation to accurately describe ContextPilot as "a multi-model AI chat interface with context management" rather than "automatically builds and maintains structured memory"
+
 - **Dynamic Model Discovery System**: Revolutionary auto-discovery of available AI models
   - **OpenAI Model API Discovery**: Fetches real-time available models from OpenAI API
   - **Anthropic Model Maintenance**: Curated list of current Anthropic models

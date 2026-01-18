@@ -1,6 +1,6 @@
 # ContextPilot Backend
 
-FastAPI backend for ContextPilot - an AI-powered personal context engine.
+FastAPI backend for ContextPilot - a multi-model AI chat interface with context management.
 
 ## Setup
 
