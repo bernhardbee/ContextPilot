@@ -47,3 +47,5 @@ htmlcov/
 *.pid
 backend.pid
 frontend.pid
+# Model discovery cache
+available_models_cache.json

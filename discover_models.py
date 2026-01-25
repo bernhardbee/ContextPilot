@@ -112,13 +112,15 @@ class ModelDiscoveryService:
             
             # Sort models by preference (newer/better models first)
             def model_priority(model_id):
-                # Extract version number for GPT models (e.g., "5" from "gpt-5")
+                # Extract version number for GPT models (e.g., "5.2" from "gpt-5.2", "5" from "gpt-5")
                 import re
-                gpt_match = re.match(r'gpt-(\d+)', model_id)
+                gpt_match = re.match(r'gpt-(\d+)(?:\.(\d+))?', model_id)
                 if gpt_match:
-                    version = int(gpt_match.group(1))
+                    major_version = int(gpt_match.group(1))
+                    minor_version = int(gpt_match.group(2)) if gpt_match.group(2) else 0
                     # Higher version = higher priority (lower number)
-                    base_priority = (10 - version) * 10  # gpt-5 = 50, gpt-4 = 60, etc.
+                    # Use float-like priority: gpt-5.2 = 47.8, gpt-5 = 50, gpt-4 = 60
+                    base_priority = (10 - major_version) * 10 - (minor_version * 0.2)
                     # Prefer 'o' variants and turbo
                     if 'o' in model_id and 'turbo' not in model_id:
                         return base_priority - 2
@@ -144,15 +146,27 @@ class ModelDiscoveryService:
     
     def _get_fallback_openai_models(self) -> List[str]:
         """Fallback OpenAI models when API discovery fails."""
+        print("\n" + "="*60)
+        print("⚠️  WARNING: Using fallback OpenAI model list!")
+        print("="*60)
+        print("Configure CONTEXTPILOT_OPENAI_API_KEY to discover models")
+        print("from the OpenAI API automatically. The fallback list may")
+        print("be outdated and missing newer models.")
+        print("="*60 + "\n")
+        
         # Note: Keep this updated with latest stable models
         return [
-            # Latest models (update as new versions release)
+            # GPT-5 series (latest generation)
+            "gpt-5.2",
+            "gpt-5",
+            "gpt-5-turbo",
+            # GPT-4 series
             "gpt-4o",
             "gpt-4o-mini", 
             "gpt-4-turbo",
             "gpt-4",
+            # GPT-3.5 series
             "gpt-3.5-turbo",
-            # Add gpt-5* models here when they become available
         ]
     
     def _get_anthropic_models(self) -> List[str]:
