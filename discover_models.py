@@ -102,22 +102,38 @@ class ModelDiscoveryService:
             for model in data.get("data", []):
                 model_id = model.get("id", "")
                 
-                # Filter for chat models
-                if any(prefix in model_id for prefix in ["gpt-4", "gpt-3.5", "chatgpt"]):
+                # Filter for chat models - future-proof for any GPT version
+                # Include: gpt-*, chatgpt, o1, o3 (reasoning models)
+                if (model_id.startswith("gpt-") or 
+                    model_id.startswith("chatgpt") or
+                    model_id.startswith("o1") or
+                    model_id.startswith("o3")):
                     chat_models.append(model_id)
             
             # Sort models by preference (newer/better models first)
             def model_priority(model_id):
-                if "gpt-4o" in model_id:
-                    return 0  # Highest priority
-                elif "gpt-4" in model_id and "turbo" in model_id:
-                    return 1
-                elif "gpt-4" in model_id:
-                    return 2
-                elif "gpt-3.5" in model_id and "turbo" in model_id:
-                    return 3
+                # Extract version number for GPT models (e.g., "5" from "gpt-5")
+                import re
+                gpt_match = re.match(r'gpt-(\d+)', model_id)
+                if gpt_match:
+                    version = int(gpt_match.group(1))
+                    # Higher version = higher priority (lower number)
+                    base_priority = (10 - version) * 10  # gpt-5 = 50, gpt-4 = 60, etc.
+                    # Prefer 'o' variants and turbo
+                    if 'o' in model_id and 'turbo' not in model_id:
+                        return base_priority - 2
+                    elif 'turbo' in model_id:
+                        return base_priority - 1
+                    else:
+                        return base_priority
+                # Reasoning models (o1, o3) - high priority
+                elif model_id.startswith(('o1', 'o3')):
+                    return 5
+                # ChatGPT models
+                elif 'chatgpt' in model_id:
+                    return 100
                 else:
-                    return 4
+                    return 200
             
             chat_models.sort(key=model_priority)
             print(f"✅ Found {len(chat_models)} OpenAI chat models")
@@ -128,20 +144,32 @@ class ModelDiscoveryService:
     
     def _get_fallback_openai_models(self) -> List[str]:
         """Fallback OpenAI models when API discovery fails."""
+        # Note: Keep this updated with latest stable models
         return [
+            # Latest models (update as new versions release)
             "gpt-4o",
             "gpt-4o-mini", 
             "gpt-4-turbo",
             "gpt-4",
-            "gpt-3.5-turbo"
+            "gpt-3.5-turbo",
+            # Add gpt-5* models here when they become available
         ]
     
     def _get_anthropic_models(self) -> List[str]:
         """Get Anthropic models (maintained list since no public API)."""
         print("📋 Using maintained Anthropic model list")
+        # Note: Update this list when new Claude versions are released
+        # Format: claude-{version}-{variant}-{date}
         return [
+            # Claude 4 series (add when available)
+            # "claude-4-opus-YYYYMMDD",
+            # "claude-4-sonnet-YYYYMMDD",
+            
+            # Claude 3.5 series
             "claude-3-5-sonnet-20241022",
             "claude-3-5-sonnet-20240620",
+            
+            # Claude 3 series
             "claude-3-opus-20240229", 
             "claude-3-sonnet-20240229",
             "claude-3-haiku-20240307"
