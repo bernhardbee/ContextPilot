@@ -62,8 +62,12 @@ class ModelDiscoveryService:
             print(f"⚠️  OpenAI model discovery failed: {e}")
             models["openai"] = self._get_fallback_openai_models()
             
-        # Discover Anthropic models (maintained list since no public API)
-        models["anthropic"] = self._get_anthropic_models()
+        # Discover Anthropic models
+        try:
+            models["anthropic"] = self._discover_anthropic_models()
+        except Exception as e:
+            print(f"⚠️  Anthropic model discovery failed: {e}")
+            models["anthropic"] = self._get_fallback_anthropic_models()
         
         # Discover Ollama models
         try:
@@ -229,11 +233,60 @@ class ModelDiscoveryService:
             "gpt-3.5-turbo",
         ]
     
-    def _get_anthropic_models(self) -> List[str]:
-        """Get Anthropic models (maintained list since no public API)."""
-        print("📋 Using maintained Anthropic model list")
+    def _discover_anthropic_models(self) -> List[str]:
+        """Discover Anthropic models via API."""
+        print("🔍 Discovering Anthropic models...")
+        
+        # Get API key
+        anthropic_key = os.environ.get('CONTEXTPILOT_ANTHROPIC_API_KEY') or \
+                       os.environ.get('ANTHROPIC_API_KEY') or \
+                       getattr(settings, 'anthropic_api_key', None)
+        
+        if not anthropic_key:
+            raise Exception("No Anthropic API key configured")
+        
+        try:
+            from anthropic import Anthropic
+            
+            client = Anthropic(api_key=anthropic_key)
+            
+            # List all available models
+            response = client.models.list()
+            
+            # Extract model IDs from response
+            all_models = []
+            if hasattr(response, 'data'):
+                for model in response.data:
+                    if hasattr(model, 'id'):
+                        all_models.append(model.id)
+                    elif hasattr(model, 'name'):
+                        all_models.append(model.name)
+                    elif isinstance(model, str):
+                        all_models.append(model)
+                    else:
+                        all_models.append(str(model))
+            
+            if not all_models:
+                raise Exception("No models returned from Anthropic API")
+            
+            print(f"✅ Found {len(all_models)} Anthropic models")
+            return all_models
+            
+        except Exception as e:
+            raise Exception(f"Failed to fetch Anthropic models: {e}")
+    
+    def _get_fallback_anthropic_models(self) -> List[str]:
+        """Fallback Anthropic models when API discovery fails."""
+        print("\n" + "="*60)
+        print("⚠️  WARNING: Using fallback Anthropic model list!")
+        print("="*60)
+        print("Configure CONTEXTPILOT_ANTHROPIC_API_KEY to discover models")
+        print("from the Anthropic API automatically. The fallback list may")
+        print("be outdated and missing newer models.")
+        print("="*60 + "\n")
+        
         # Note: Update this list when new Claude versions are released
-        # Format: claude-{variant}-{version}-{date}
+        # As of Jan 2026, Claude 4.5 models are the latest available
         return [
             # Claude 4.5 series (Latest - 2025)
             "claude-opus-4-5-20251101",
@@ -244,20 +297,6 @@ class ModelDiscoveryService:
             "claude-opus-4-5",
             "claude-sonnet-4-5",
             "claude-haiku-4-5",
-            
-            # Claude 3.5 series
-            "claude-3-5-sonnet-20241022",
-            "claude-3-5-sonnet-20240620",
-            "claude-3-5-haiku-20241022",
-            
-            # Claude 3 series
-            "claude-3-opus-20240229", 
-            "claude-3-sonnet-20240229",
-            "claude-3-haiku-20240307",
-            
-            # Legacy models (for compatibility)
-            "claude-2.1",
-            "claude-2.0"
         ]
     
     def _discover_ollama_models(self) -> List[str]:

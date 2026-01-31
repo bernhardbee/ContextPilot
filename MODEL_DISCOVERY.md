@@ -11,7 +11,7 @@ ContextPilot now features a dynamic model discovery system that automatically de
 The system discovers models from three providers:
 
 - **OpenAI**: Fetches available chat models via API (requires API key)
-- **Anthropic**: Uses maintained list (no public discovery API available)
+- **Anthropic**: Fetches available models via `client.models.list()` API (requires API key)
 - **Ollama**: Detects locally installed models via API or CLI
 
 ### 2. Files Created
@@ -72,10 +72,25 @@ python3 test_dynamic_models.py
 For real-time OpenAI model discovery, set your API key:
 
 ```bash
-export OPENAI_API_KEY="your-key-here"
+export CONTEXTPILOT_OPENAI_API_KEY="your-key-here"
 ```
 
 Without an API key, the system uses fallback models.
+
+### Anthropic API Access
+
+For real-time Anthropic model discovery, set your API key:
+
+```bash
+export CONTEXTPILOT_ANTHROPIC_API_KEY="sk-ant-..."
+```
+
+Or configure it in `backend/.env`:
+```bash
+CONTEXTPILOT_ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Without an API key, the system uses fallback models (Claude 4.5 series).
 
 ### Ollama Detection
 
@@ -131,13 +146,30 @@ crontab -e
 
 1. Verify API key is set:
    ```bash
-   echo $OPENAI_API_KEY
+   echo $CONTEXTPILOT_OPENAI_API_KEY
    ```
 
 2. Test API access:
    ```bash
-   curl -H "Authorization: Bearer $OPENAI_API_KEY" \
+   curl -H "Authorization: Bearer $CONTEXTPILOT_OPENAI_API_KEY" \
         https://api.openai.com/v1/models
+   ```
+
+### Anthropic Models Not Loading
+
+1. Verify API key is set:
+   ```bash
+   echo $CONTEXTPILOT_ANTHROPIC_API_KEY
+   ```
+
+2. Test API access:
+   ```bash
+   python3 -c "from anthropic import Anthropic; import os; client = Anthropic(api_key=os.getenv('CONTEXTPILOT_ANTHROPIC_API_KEY')); print(client.models.list())"
+   ```
+
+3. Check if API key is in cache:
+   ```bash
+   python3 -c "import json; print('Key cached:', bool(json.load(open('available_models_cache.json')).get('anthropic_api_key')))"
    ```
 
 ### Ollama Models Not Detected

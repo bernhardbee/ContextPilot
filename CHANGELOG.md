@@ -7,6 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **Anthropic API Model Discovery (January 31, 2026)**:
+  - **Real-time Model Retrieval**: Implemented `client.models.list()` API integration for Anthropic
+  - **Automatic Updates**: Discovers Claude 4.5, 4.1, 4.0, and 3.x models from Anthropic API
+  - **API Key Caching**: Stores Anthropic API key in cache for persistent access
+  - **Graceful Fallback**: Uses curated Claude 4.5 model list when API unavailable
+  - **Configuration**: Supports `CONTEXTPILOT_ANTHROPIC_API_KEY` environment variable and `.env` file
+
 - **UI/UX Improvements (January 18, 2026)**:
   - **Brand Identity Enhancement**: Added custom "by B" signature with fuzzy B logo next to ContextPilot header
   - **Simplified Navigation**: Removed tab navigation bar, replaced with clean return button in manage contexts
@@ -25,9 +32,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - **Dynamic Model Discovery System**: Revolutionary auto-discovery of available AI models
   - **OpenAI Model API Discovery**: Fetches real-time available models from OpenAI API
-  - **Anthropic Model Maintenance**: Curated list of current Anthropic models
+  - **Anthropic Model API Discovery**: Fetches real-time available models from Anthropic API using `client.models.list()`
   - **Ollama Auto-Detection**: Automatically discovers locally installed Ollama models
   - **24-Hour Intelligent Caching**: Optimized performance with smart cache management
+  - **API Key Persistence**: Caches OpenAI and Anthropic API keys for seamless operation
   - **Robust Fallbacks**: System works even when APIs are unavailable
   - **Startup Integration**: Automatically refreshes model lists when backend starts
   - **Manual Discovery Tools**: Scripts for on-demand model refresh and testing

@@ -399,8 +399,8 @@ ContextPilot provides a settings UI (⚙️ button) where you can configure:
 - **Ollama Base URL**: Local Ollama server endpoint (default: http://localhost:11434)
 - **Default AI Provider**: Choose between `openai`, `anthropic`, or `ollama`
 - **Default AI Model**: Set default model
-  - OpenAI: `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `gpt-4`, etc.
-  - Anthropic: `claude-3-5-sonnet-20241022`, `claude-3-5-haiku-20241022`, etc.
+  - OpenAI: `gpt-5.2`, `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `gpt-4`, etc.
+  - Anthropic: `claude-opus-4-5-20251101`, `claude-sonnet-4-5-20250929`, `claude-haiku-4-5-20251001`, etc.
   - Ollama: `llama3.2`, `mistral`, `codellama`, `phi3`, etc.
 - **Temperature**: Control randomness (0.0-2.0, default: 1.0)
 - **Max Tokens**: Maximum response length (1-16000, default: 4000)
@@ -466,7 +466,7 @@ ContextPilot features an advanced dynamic model discovery system that automatica
 #### How It Works
 
 - **OpenAI**: Fetches available chat models via API (when API key is configured)
-- **Anthropic**: Maintains current model list (Claude 3.5 Sonnet, Opus, etc.)
+- **Anthropic**: Fetches available models via `client.models.list()` API (when API key is configured)
 - **Ollama**: Automatically detects locally installed models
 
 #### Key Benefits
@@ -507,8 +507,8 @@ crontab -e
 #### Current Model Status
 
 As of last discovery, ContextPilot supports:
-- **OpenAI**: GPT-4o, GPT-4o-mini, GPT-4-turbo, GPT-4, GPT-3.5-turbo
-- **Anthropic**: Claude 3.5 Sonnet (latest), Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku
+- **OpenAI**: GPT-5.2, GPT-5, GPT-4o, GPT-4o-mini, GPT-4-turbo, GPT-4, GPT-3.5-turbo
+- **Anthropic**: Claude 4.5 (Opus, Sonnet, Haiku), Claude 4.1 Opus, Claude 4.0, Claude 3 Haiku
 - **Ollama**: Automatically detected local models (e.g., llama3.2:latest)
 
 > **Note**: Model availability depends on your API access and local Ollama installations. The system automatically updates these lists to match your actual capabilities.
