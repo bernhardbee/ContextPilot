@@ -37,6 +37,7 @@ class ModelDiscoveryService:
     def __init__(self):
         self.cache_file = Path(__file__).parent / "available_models_cache.json"
         self.cache_ttl_hours = 24  # Cache models for 24 hours
+        self._load_api_key_from_cache()
         
     def discover_all_models(self) -> Dict[str, List[str]]:
         """Discover available models from all providers."""
@@ -138,6 +139,65 @@ class ModelDiscoveryService:
                     return 200
             
             chat_models.sort(key=model_priority)
+            
+            # Check for newer models before filtering
+            import re
+            all_versions = {}
+            for model_id in chat_models:
+                gpt_match = re.match(r'gpt-(\d+)(?:\.(\d+))?', model_id)
+                if gpt_match:
+                    major = int(gpt_match.group(1))
+                    minor = int(gpt_match.group(2)) if gpt_match.group(2) else 0
+                    version_key = f"{major}.{minor}"
+                    if version_key not in all_versions:
+                        all_versions[version_key] = []
+                    all_versions[version_key].append(model_id)
+            
+            # Filter to keep only best general models: gpt-5.2, gpt-4o, and reasoning models
+            print(f"🎯 Filtering to best general models: GPT-5.2, GPT-4o variants, and reasoning models")
+            
+            filtered_models = []
+            for model_id in chat_models:
+                # Keep gpt-5.2 variants
+                if model_id.startswith('gpt-5.2'):
+                    filtered_models.append(model_id)
+                # Keep gpt-4o variants
+                elif model_id.startswith('gpt-4o'):
+                    filtered_models.append(model_id)
+                # Keep reasoning models (o1, o3)
+                elif model_id.startswith(('o1', 'o3')):
+                    filtered_models.append(model_id)
+                # Keep chatgpt models
+                elif model_id.startswith('chatgpt'):
+                    filtered_models.append(model_id)
+            
+            # Check for newer versions that were filtered out
+            newer_versions = []
+            for version_key in all_versions.keys():
+                try:
+                    major, minor = map(int, version_key.split('.'))
+                    # Check if this is newer than gpt-5.2 (major > 5, or major == 5 and minor > 2)
+                    if major > 5 or (major == 5 and minor > 2):
+                        newer_versions.append((version_key, all_versions[version_key]))
+                except:
+                    pass
+            
+            if newer_versions:
+                print("\n" + "⚠️ " * 20)
+                print("🆕 NEWER MODELS AVAILABLE BUT NOT INCLUDED:")
+                print("=" * 60)
+                for version, models in sorted(newer_versions, reverse=True):
+                    print(f"\n  GPT-{version} series ({len(models)} models):")
+                    for model in models[:3]:  # Show first 3 examples
+                        print(f"    • {model}")
+                    if len(models) > 3:
+                        print(f"    ... and {len(models) - 3} more")
+                print("\n💡 Update the filter in discover_models.py to include these")
+                print("=" * 60 + "\n")
+            
+            chat_models = filtered_models
+
+            
             print(f"✅ Found {len(chat_models)} OpenAI chat models")
             return chat_models
             
@@ -173,20 +233,31 @@ class ModelDiscoveryService:
         """Get Anthropic models (maintained list since no public API)."""
         print("📋 Using maintained Anthropic model list")
         # Note: Update this list when new Claude versions are released
-        # Format: claude-{version}-{variant}-{date}
+        # Format: claude-{variant}-{version}-{date}
         return [
-            # Claude 4 series (add when available)
-            # "claude-4-opus-YYYYMMDD",
-            # "claude-4-sonnet-YYYYMMDD",
+            # Claude 4.5 series (Latest - 2025)
+            "claude-opus-4-5-20251101",
+            "claude-sonnet-4-5-20250929",
+            "claude-haiku-4-5-20251001",
+            
+            # Claude 4.5 aliases (auto-update to latest snapshot)
+            "claude-opus-4-5",
+            "claude-sonnet-4-5",
+            "claude-haiku-4-5",
             
             # Claude 3.5 series
             "claude-3-5-sonnet-20241022",
             "claude-3-5-sonnet-20240620",
+            "claude-3-5-haiku-20241022",
             
             # Claude 3 series
             "claude-3-opus-20240229", 
             "claude-3-sonnet-20240229",
-            "claude-3-haiku-20240307"
+            "claude-3-haiku-20240307",
+            
+            # Legacy models (for compatibility)
+            "claude-2.1",
+            "claude-2.0"
         ]
     
     def _discover_ollama_models(self) -> List[str]:
@@ -251,12 +322,68 @@ class ModelDiscoveryService:
         except Exception:
             return None
     
+    def _load_api_key_from_cache(self) -> None:
+        """Load API keys from cache if not set in environment."""
+        # Load OpenAI API key
+        env_openai_key = os.environ.get('CONTEXTPILOT_OPENAI_API_KEY', '')
+        if env_openai_key:
+            self.cached_openai_key = env_openai_key
+        else:
+            self.cached_openai_key = None
+            
+        # Load Anthropic API key
+        env_anthropic_key = os.environ.get('CONTEXTPILOT_ANTHROPIC_API_KEY', '')
+        if env_anthropic_key:
+            self.cached_anthropic_key = env_anthropic_key
+        else:
+            self.cached_anthropic_key = None
+        
+        # Try to load from cache if env vars not set
+        if not self.cache_file.exists():
+            return
+        
+        try:
+            with open(self.cache_file, 'r') as f:
+                cache_data = json.load(f)
+            
+            # Load OpenAI key from cache if not in env
+            if not env_openai_key:
+                cached_openai = cache_data.get("openai_api_key", "")
+                if cached_openai:
+                    self.cached_openai_key = cached_openai
+                    settings.openai_api_key = cached_openai
+                    print("🔑 Using OpenAI API key from cache")
+            
+            # Load Anthropic key from cache if not in env
+            if not env_anthropic_key:
+                cached_anthropic = cache_data.get("anthropic_api_key", "")
+                if cached_anthropic:
+                    self.cached_anthropic_key = cached_anthropic
+                    settings.anthropic_api_key = cached_anthropic
+                    print("🔑 Using Anthropic API key from cache")
+        except Exception:
+            pass
+    
     def _save_cache(self, models: Dict[str, List[str]]) -> None:
         """Save models to cache."""
         cache_data = {
             "timestamp": datetime.now().isoformat(),
             "models": models
         }
+        
+        # Store OpenAI API key
+        env_openai_key = os.environ.get('CONTEXTPILOT_OPENAI_API_KEY', '')
+        if env_openai_key:
+            cache_data["openai_api_key"] = env_openai_key
+        elif hasattr(self, 'cached_openai_key') and self.cached_openai_key:
+            cache_data["openai_api_key"] = self.cached_openai_key
+        
+        # Store Anthropic API key
+        env_anthropic_key = os.environ.get('CONTEXTPILOT_ANTHROPIC_API_KEY', '')
+        if env_anthropic_key:
+            cache_data["anthropic_api_key"] = env_anthropic_key
+        elif hasattr(self, 'cached_anthropic_key') and self.cached_anthropic_key:
+            cache_data["anthropic_api_key"] = self.cached_anthropic_key
         
         try:
             with open(self.cache_file, 'w') as f:
