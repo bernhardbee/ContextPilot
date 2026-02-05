@@ -91,7 +91,7 @@ sleep 3
 echo ""
 echo "Starting frontend on http://localhost:3000..."
 cd "$SCRIPT_DIR/frontend"
-npm start > /dev/null 2>&1 &
+npm run dev > /dev/null 2>&1 &
 FRONTEND_PID=$!
 echo $FRONTEND_PID > frontend.pid
 

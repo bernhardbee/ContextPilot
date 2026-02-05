@@ -35,7 +35,7 @@ python main.py
 # Or manually:
 cd frontend
 npm install
-npm start
+npm run dev
 ```
 
 ### Run Demo
@@ -324,7 +324,8 @@ ContextPilot/
 │   │   ├── api.ts            # API client
 │   │   ├── types.ts          # TypeScript types
 │   │   └── App.css           # Styles
-│   ├── public/
+│   ├── index.html            # Vite HTML entry point
+│   ├── src/main.tsx          # React entry point
 │   └── package.json          # Dependencies
 ├── ARCHITECTURE.md            # System design
 ├── EXAMPLES.md                # Usage examples

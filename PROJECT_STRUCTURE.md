@@ -99,17 +99,16 @@ ContextPilot/                           # Root directory
     │   │   ├── Context item styles
     │   │   └── Responsive design
     │   │
-    │   └── 📘 index.tsx               # Application entry point
+    │   └── 📘 main.tsx                # Application entry point
     │       └── React root rendering
     │
-    ├── 📁 public/                      # Static assets
-    │   └── 📄 index.html              # HTML template
+    ├── 📄 index.html                  # Vite HTML entry point
     │
     ├── 📄 package.json                 # Node dependencies
     │   ├── react@18.2.0
     │   ├── typescript@4.9.5
     │   ├── axios@1.6.5
-    │   └── react-scripts@5.0.1
+    │   └── vite@7.3.1
     │
     ├── 📄 tsconfig.json                # TypeScript configuration
     └── 📄 .env.example                 # Environment config template
@@ -146,7 +145,7 @@ App.tsx              400 lines    Main component
 App.css              400 lines    Styling
 api.ts                80 lines    API client
 types.ts              80 lines    Type definitions
-index.tsx             20 lines    Entry point
+main.tsx              20 lines    Entry point
 ```
 
 ### Documentation Files Detail
@@ -298,7 +297,7 @@ HTTP:
 └── axios           API client
 
 Build:
-└── react-scripts   Build tooling
+└── vite            Build tooling
 ```
 
 ---
@@ -375,8 +374,8 @@ User Interface
 ### Frontend
 ```bash
 1. npm install                   # Install dependencies
-2. npm start                     # Start dev server
-3. npm build                     # Build for production
+2. npm run dev                   # Start dev server
+3. npm run build                 # Build for production
 ```
 
 ---

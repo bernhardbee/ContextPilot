@@ -18,4 +18,4 @@ echo "Starting frontend on http://localhost:3000"
 echo "Make sure backend is running on http://localhost:8000"
 echo ""
 
-npm start
+npm run dev

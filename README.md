@@ -131,9 +131,8 @@ ContextPilot/
 │   │   ├── api.ts           # API client with all endpoints
 │   │   ├── types.ts         # TypeScript type definitions
 │   │   ├── model_options.json # Dynamic model configuration
-│   │   └── index.tsx        # React entry point
-│   ├── public/
-│   │   └── index.html       # HTML template
+│   │   └── main.tsx         # React entry point
+│   ├── index.html           # Vite HTML entry point
 │   ├── package.json         # Node.js dependencies
 │   └── tsconfig.json        # TypeScript configuration
 ├── LICENSE                  # MIT License
@@ -262,7 +261,7 @@ npm install
 
 3. Start the development server:
 ```bash
-npm start
+npm run dev
 ```
 
 The frontend will be available at **http://localhost:3000**

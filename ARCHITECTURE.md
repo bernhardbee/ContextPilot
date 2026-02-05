@@ -236,10 +236,10 @@ Display in UI
 - **ML Framework**: PyTorch 2.1.2
 
 ### Frontend
-- **Framework**: React 18.2.0
+- **Framework**: React 18.3.1
 - **Language**: TypeScript 4.9.5
 - **HTTP Client**: Axios 1.6.5
-- **Build Tool**: react-scripts 5.0.1
+- **Build Tool**: Vite 7.3.1
 - **Styling**: CSS3
 
 ## Key Design Decisions
