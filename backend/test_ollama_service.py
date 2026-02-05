@@ -169,12 +169,10 @@ class TestOllamaService:
             ai_service = AIService()
             assert ai_service.ollama_client is not None
     
-    @patch('ai_service.AIService._generate_ollama')
     # Integration test removed due to complex mocking requirements
     # The functionality is tested through individual component tests above
     # and will be verified through manual testing with actual Ollama server
     
-    @patch('ai_service.AIService._save_messages')
     def test_ollama_auto_pull_basic_functionality(self, ai_service_instance):
         """Test that the auto-pull helper methods work correctly."""
         # Test _pull_ollama_model with successful mock

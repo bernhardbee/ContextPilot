@@ -94,13 +94,14 @@ def load_valid_models() -> Dict[str, List[str]]:
         # Fallback to hardcoded models if file is missing or invalid
         return {
             "openai": [
-                "gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4-turbo-preview",
-                "gpt-4", "gpt-3.5-turbo", "gpt-3.5-turbo-16k"
+                "gpt-5.2", "gpt-5", "gpt-5-turbo",
+                "gpt-4o", "gpt-4o-mini", "gpt-4-turbo",
+                "gpt-4", "gpt-3.5-turbo"
             ],
             "anthropic": [
-                "claude-3-5-sonnet-20241022", "claude-3-5-sonnet-20240620", 
-                "claude-3-opus-20240229", "claude-3-sonnet-20240229",
-                "claude-3-haiku-20240307"
+                "claude-opus-4-5-20251101", "claude-sonnet-4-5-20250929",
+                "claude-haiku-4-5-20251001", "claude-opus-4-5",
+                "claude-sonnet-4-5", "claude-haiku-4-5"
             ],
             "ollama": []
         }

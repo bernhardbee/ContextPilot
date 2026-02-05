@@ -34,7 +34,7 @@ class TestSettings:
         
         # Verify default values
         assert data["default_ai_provider"] == "openai"
-        assert data["default_ai_model"] == "gpt-4-turbo-preview"
+        assert data["default_ai_model"] == "gpt-4o"
         assert data["ai_temperature"] == 0.7
         assert data["ai_max_tokens"] == 2000
     

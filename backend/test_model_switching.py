@@ -6,14 +6,21 @@ import pytest
 from ai_service import AIService
 from composer import GeneratedPrompt
 from db_models import ConversationDB, MessageDB
-from database import get_db_session
+from database import get_db_session, Base, engine
 
 
 class TestModelSwitching:
     """Test model switching functionality in conversations."""
     
+    @pytest.fixture(scope="function")
+    def setup_db(self):
+        """Create database tables for tests."""
+        Base.metadata.create_all(bind=engine)
+        yield
+        Base.metadata.drop_all(bind=engine)
+    
     @pytest.fixture
-    def ai_service_instance(self):
+    def ai_service_instance(self, setup_db):
         """Create an AI service instance for testing."""
         return AIService()
     

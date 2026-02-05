@@ -226,6 +226,10 @@ class TestAIService:
         from database import get_db_session
         from db_models import MessageDB
         
+        # Mock OpenAI client to be initialized
+        mock_client = Mock()
+        ai_service_instance.openai_client = mock_client
+        
         # Mock OpenAI response
         mock_response = Mock()
         mock_response.choices = [Mock()]
@@ -233,7 +237,7 @@ class TestAIService:
         mock_response.choices[0].finish_reason = "stop"
         mock_response.usage.total_tokens = 50
         
-        mock_openai.chat.completions.create.return_value = mock_response
+        mock_client.chat.completions.create.return_value = mock_response
         
         # Generate response
         response, conversation = ai_service_instance.generate_response(

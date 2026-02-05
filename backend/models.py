@@ -122,7 +122,7 @@ class AIRequest(BaseModel):
                 "task": "Write a Python function to calculate Fibonacci numbers",
                 "max_context_units": 5,
                 "provider": "openai",
-                "model": "gpt-4-turbo-preview",
+                "model": "gpt-4o",
                 "temperature": 0.7,
                 "max_tokens": 2000,
                 "use_compact": False,
