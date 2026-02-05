@@ -59,6 +59,16 @@ async def lifespan(app: FastAPI):
     logger.info(f"CORS origins: {settings.cors_origins}")
     logger.info(f"Authentication enabled: {settings.enable_auth}")
     
+    # Initialize database tables if they don't exist
+    try:
+        from db_models import Base, ContextUnitDB, ConversationDB, MessageDB
+        from settings_store import SettingsModel
+        from database import engine
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables initialized")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {e}", exc_info=True)
+    
     # Refresh model list if needed
     try:
         import sys

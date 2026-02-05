@@ -1,17 +1,16 @@
 """
 Integration tests for ContextPilot end-to-end functionality.
 Tests the full flow from context creation to AI response generation.
+
+NOTE: These tests require a running backend server on http://localhost:8000
+Start the server with: python main.py
+The server should be configured with test API keys in .env or environment.
 """
 import os
 import pytest
 import requests
 import time
 from typing import Dict, Any
-
-# Set environment to use in-memory storage for tests
-os.environ["CONTEXTPILOT_USE_DATABASE"] = "false"
-os.environ["CONTEXTPILOT_OPENAI_API_KEY"] = "test-key"
-os.environ["CONTEXTPILOT_ANTHROPIC_API_KEY"] = "test-key"
 
 BASE_URL = "http://localhost:8000"
 

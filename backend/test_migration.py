@@ -20,13 +20,13 @@ def temp_db():
     temp_file.close()
     db_url = f"sqlite:///{temp_file.name}"
     
-    # Create engine and tables
+    # Create engine WITHOUT creating tables (tests will create them manually)
     engine = create_engine(db_url)
-    Base.metadata.create_all(bind=engine)
     
     yield engine, db_url
     
     # Cleanup
+    engine.dispose()
     os.unlink(temp_file.name)
 
 

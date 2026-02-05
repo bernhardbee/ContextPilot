@@ -2,7 +2,8 @@
 Initialize the database and create tables.
 """
 from database import init_db, engine
-from db_models import Base
+from db_models import Base, ContextUnitDB, ConversationDB, MessageDB
+from settings_store import SettingsModel  # Import to register with Base
 from logger import logger
 
 

@@ -3,12 +3,10 @@ Settings persistence layer for ContextPilot.
 Stores API keys and configuration in database for persistence across restarts.
 """
 from sqlalchemy import Column, String, Float, Integer, create_engine
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from typing import Optional
 from logger import logger
-
-Base = declarative_base()
+from database import Base  # Use the shared Base from database.py
 
 
 class SettingsModel(Base):
@@ -25,7 +23,8 @@ class SettingsStore:
     def __init__(self, database_url: str):
         """Initialize settings store with database connection."""
         self.engine = create_engine(database_url)
-        Base.metadata.create_all(self.engine)
+        # Note: Table creation is handled by init_db.py or database.init_db()
+        # Don't call Base.metadata.create_all here as it may interfere with migrations
         self.SessionLocal = sessionmaker(bind=self.engine)
         logger.info("Settings store initialized")
     

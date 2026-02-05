@@ -14,10 +14,21 @@ class TestModelSwitching:
     
     @pytest.fixture(scope="function")
     def setup_db(self):
-        """Create database tables for tests."""
-        Base.metadata.create_all(bind=engine)
-        yield
-        Base.metadata.drop_all(bind=engine)
+        """Create database tables for tests in a temporary database."""
+        import tempfile
+        import os
+        from sqlalchemy import create_engine
+        
+        # Create temporary database
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.db')
+        temp_file.close()
+        test_engine = create_engine(f"sqlite:///{temp_file.name}")
+        
+        Base.metadata.create_all(bind=test_engine)
+        yield test_engine
+        
+        test_engine.dispose()
+        os.unlink(temp_file.name)
     
     @pytest.fixture
     def ai_service_instance(self, setup_db):

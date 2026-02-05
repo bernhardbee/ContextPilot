@@ -4,23 +4,38 @@ Tests for database storage functionality.
 import pytest
 from datetime import datetime
 import numpy as np
+import tempfile
+import os
+from sqlalchemy import create_engine
 
 from db_storage import DatabaseContextStore
 from models import ContextUnit, ContextType, ContextStatus
-from database import init_db, drop_db, Base, engine
+from database import Base
 
 
 @pytest.fixture(scope="function")
 def db_store():
-    """Create a fresh database for each test."""
-    # Create tables
-    Base.metadata.create_all(bind=engine)
+    """Create a fresh database for each test using a temporary file."""
+    # Create temporary database
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.db')
+    temp_file.close()
+    test_db_url = f"sqlite:///{temp_file.name}"
+    test_engine = create_engine(test_db_url)
     
+    # Create tables in test database
+    Base.metadata.create_all(bind=test_engine)
+    
+    # Create store with test database
     store = DatabaseContextStore()
+    # Override the engine to use test database
+    store.engine = test_engine
+    store.SessionLocal = __import__('sqlalchemy.orm', fromlist=['sessionmaker']).sessionmaker(bind=test_engine)
+    
     yield store
     
-    # Clean up after test
-    Base.metadata.drop_all(bind=engine)
+    # Clean up test database
+    test_engine.dispose()
+    os.unlink(temp_file.name)
 
 
 class TestDatabaseContextStore:
