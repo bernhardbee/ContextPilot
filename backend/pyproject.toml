@@ -6,7 +6,7 @@ testpaths = [
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "-v --tb=short --strict-markers"
+addopts = "-v --tb=short --strict-markers -W ignore::urllib3.exceptions.NotOpenSSLWarning"
 markers = [
     "unit: Unit tests (fast, no external dependencies)",
     "integration: Integration tests (may require running services)",
@@ -15,5 +15,6 @@ markers = [
 ]
 filterwarnings = [
     "ignore::DeprecationWarning",
+    "ignore:.*LibreSSL.*:urllib3.exceptions.NotOpenSSLWarning:urllib3",
 ]
 asyncio_mode = "auto"

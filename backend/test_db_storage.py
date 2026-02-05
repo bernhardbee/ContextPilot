@@ -6,34 +6,48 @@ from datetime import datetime
 import numpy as np
 import tempfile
 import os
+from contextlib import contextmanager
 from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 from db_storage import DatabaseContextStore
 from models import ContextUnit, ContextType, ContextStatus
 from database import Base
+import database
+import db_storage
 
 
 @pytest.fixture(scope="function")
-def db_store():
+def db_store(monkeypatch):
     """Create a fresh database for each test using a temporary file."""
-    # Create temporary database
-    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.db')
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
     temp_file.close()
     test_db_url = f"sqlite:///{temp_file.name}"
     test_engine = create_engine(test_db_url)
-    
-    # Create tables in test database
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+
     Base.metadata.create_all(bind=test_engine)
-    
-    # Create store with test database
+
+    @contextmanager
+    def test_db_session():
+        db = SessionLocal()
+        try:
+            yield db
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            db.close()
+
+    monkeypatch.setattr(database, "engine", test_engine)
+    monkeypatch.setattr(database, "SessionLocal", SessionLocal)
+    monkeypatch.setattr(database, "get_db_session", test_db_session)
+    monkeypatch.setattr(db_storage, "get_db_session", test_db_session)
+
     store = DatabaseContextStore()
-    # Override the engine to use test database
-    store.engine = test_engine
-    store.SessionLocal = __import__('sqlalchemy.orm', fromlist=['sessionmaker']).sessionmaker(bind=test_engine)
-    
     yield store
-    
-    # Clean up test database
+
     test_engine.dispose()
     os.unlink(temp_file.name)
 

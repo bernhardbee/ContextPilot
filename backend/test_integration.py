@@ -9,50 +9,34 @@ The server should be configured with test API keys in .env or environment.
 import os
 import pytest
 import requests
-import time
 from typing import Dict, Any
+from fastapi.testclient import TestClient
+from httpx import HTTPStatusError
 
-BASE_URL = "http://localhost:8000"
-
-def wait_for_server(max_attempts=30, delay=1):
-    """Wait for the server to be ready."""
-    for _ in range(max_attempts):
-        try:
-            response = requests.get(f"{BASE_URL}/health", timeout=2)
-            if response.status_code == 200:
-                return True
-        except requests.RequestException:
-            time.sleep(delay)
-    return False
-
-@pytest.fixture(scope="module", autouse=True)
-def ensure_server():
-    """Ensure the server is running before tests."""
-    if not wait_for_server():
-        pytest.skip("Server not running. Start with: python main.py")
+from main import app
 
 @pytest.fixture
 def api_client():
-    """Fixture providing API client with base URL."""
+    """Fixture providing API client using FastAPI TestClient."""
     class APIClient:
-        def __init__(self, base_url: str):
-            self.base_url = base_url
+        def __init__(self, client: TestClient):
+            self.client = client
         
         def get(self, endpoint: str, **kwargs) -> Dict[str, Any]:
-            response = requests.get(f"{self.base_url}{endpoint}", **kwargs)
+            response = self.client.get(endpoint, **kwargs)
             response.raise_for_status()
             return response.json()
         
         def post(self, endpoint: str, **kwargs) -> Dict[str, Any]:
-            response = requests.post(f"{self.base_url}{endpoint}", **kwargs)
+            response = self.client.post(endpoint, **kwargs)
             response.raise_for_status()
             return response.json()
         
         def delete(self, endpoint: str, **kwargs) -> None:
-            response = requests.delete(f"{self.base_url}{endpoint}", **kwargs)
+            response = self.client.delete(endpoint, **kwargs)
             response.raise_for_status()
     
-    return APIClient(BASE_URL)
+    return APIClient(TestClient(app))
 
 class TestHealthAndStats:
     """Test basic health and statistics endpoints."""
@@ -72,6 +56,17 @@ class TestHealthAndStats:
 
 class TestContextCRUD:
     """Test context CRUD operations."""
+
+    def _create_context(self, api_client) -> str:
+        """Helper to create a context and return its ID."""
+        context_data = {
+            "type": "preference",
+            "content": "I prefer functional programming style",
+            "confidence": 0.9,
+            "tags": ["programming", "style"]
+        }
+        result = api_client.post("/contexts", json=context_data)
+        return result["id"]
     
     def test_create_context(self, api_client):
         """Test creating a new context."""
@@ -90,7 +85,7 @@ class TestContextCRUD:
     def test_list_contexts(self, api_client):
         """Test listing all contexts."""
         # Create a context first
-        self.test_create_context(api_client)
+        self._create_context(api_client)
         
         # List contexts
         result = api_client.get("/contexts")
@@ -100,7 +95,7 @@ class TestContextCRUD:
     def test_get_specific_context(self, api_client):
         """Test retrieving a specific context."""
         # Create a context
-        context_id = self.test_create_context(api_client)
+        context_id = self._create_context(api_client)
         
         # Get it back
         result = api_client.get(f"/contexts/{context_id}")
@@ -110,13 +105,13 @@ class TestContextCRUD:
     def test_delete_context(self, api_client):
         """Test deleting a context."""
         # Create a context
-        context_id = self.test_create_context(api_client)
+        context_id = self._create_context(api_client)
         
         # Delete it
         api_client.delete(f"/contexts/{context_id}")
         
         # Verify it's gone
-        with pytest.raises(requests.HTTPError):
+        with pytest.raises(HTTPStatusError):
             api_client.get(f"/contexts/{context_id}")
 
 class TestPromptGeneration:
@@ -242,7 +237,7 @@ class TestAIIntegration:
             result = api_client.post("/ai/chat", json=task_data)
             # If it succeeds, check structure
             assert "conversation_id" in result or "detail" in result
-        except requests.HTTPError as e:
+        except HTTPStatusError as e:
             # Expected if no valid API key (can be 400, 500, 401, 403)
             assert e.response.status_code in [400, 500, 401, 403]
     
@@ -323,7 +318,7 @@ class TestErrorHandling:
             "confidence": 0.9
         }
         
-        with pytest.raises(requests.HTTPError) as exc_info:
+        with pytest.raises(HTTPStatusError) as exc_info:
             api_client.post("/contexts", json=context_data)
         assert exc_info.value.response.status_code == 422
     
@@ -335,19 +330,19 @@ class TestErrorHandling:
             "confidence": 1.5  # Invalid: must be 0-1
         }
         
-        with pytest.raises(requests.HTTPError) as exc_info:
+        with pytest.raises(HTTPStatusError) as exc_info:
             api_client.post("/contexts", json=context_data)
         assert exc_info.value.response.status_code == 422
     
     def test_get_nonexistent_context(self, api_client):
         """Test retrieving a context that doesn't exist."""
-        with pytest.raises(requests.HTTPError) as exc_info:
+        with pytest.raises(HTTPStatusError) as exc_info:
             api_client.get("/contexts/nonexistent-id-12345")
         assert exc_info.value.response.status_code == 404
     
     def test_generate_prompt_empty_task(self, api_client):
         """Test generating prompt with empty task."""
-        with pytest.raises(requests.HTTPError) as exc_info:
+        with pytest.raises(HTTPStatusError) as exc_info:
             api_client.post("/generate-prompt", json={"task": ""})
         # Can be 400 or 422 depending on validation layer
         assert exc_info.value.response.status_code in [400, 422]
