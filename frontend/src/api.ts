@@ -16,7 +16,8 @@ import {
     TaskRequest,
 } from './types';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+// Use Vite environment variable convention
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -115,9 +116,12 @@ export const contextAPI = {
 
   // AI Integration
   chatWithAI: async (data: AIRequest): Promise<AIResponse> => {
+    // eslint-disable-next-line no-console
     console.log('API Request:', data);
     const response = await api.post<AIResponse>('/ai/chat', data);
+    // eslint-disable-next-line no-console
     console.log('API Raw Response:', response);
+    // eslint-disable-next-line no-console
     console.log('API Response Data:', response.data);
     return response.data;
   },
@@ -138,6 +142,7 @@ export const contextAPI = {
     return response.data;
   },
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   updateSettings: async (settings: SettingsUpdate): Promise<any> => {
     const response = await api.post('/settings', settings);
     return response.data;

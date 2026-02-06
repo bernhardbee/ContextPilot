@@ -100,6 +100,7 @@ export function ContextTools({ onFiltersChange, onRefresh }: ContextToolsProps) 
       setTimeout(() => setSuccess(null), 5000);
       
       onRefresh();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       const errorMsg = err.response?.data?.detail || 'Failed to import contexts';
       setError(errorMsg);

@@ -928,24 +928,24 @@ def update_settings(request: Request, settings_update: SettingsUpdate):
     
     updated_fields = []
     
-    # Update API keys if provided
-    if settings_update.openai_api_key is not None:
-        settings.openai_api_key = settings_update.openai_api_key
+    # Update API keys if provided and non-empty
+    if settings_update.openai_api_key is not None and settings_update.openai_api_key.strip():
+        settings.openai_api_key = settings_update.openai_api_key.strip()
         if settings_store_module.settings_store:
-            settings_store_module.settings_store.set("openai_api_key", settings_update.openai_api_key)
+            settings_store_module.settings_store.set("openai_api_key", settings_update.openai_api_key.strip())
             logger.info("OpenAI API key saved to database")
         updated_fields.append("openai_api_key")
     
-    if settings_update.anthropic_api_key is not None:
-        settings.anthropic_api_key = settings_update.anthropic_api_key
+    if settings_update.anthropic_api_key is not None and settings_update.anthropic_api_key.strip():
+        settings.anthropic_api_key = settings_update.anthropic_api_key.strip()
         if settings_store_module.settings_store:
-            settings_store_module.settings_store.set("anthropic_api_key", settings_update.anthropic_api_key)
+            settings_store_module.settings_store.set("anthropic_api_key", settings_update.anthropic_api_key.strip())
         updated_fields.append("anthropic_api_key")
     
-    if settings_update.ollama_base_url is not None:
-        settings.ollama_base_url = settings_update.ollama_base_url
+    if settings_update.ollama_base_url is not None and settings_update.ollama_base_url.strip():
+        settings.ollama_base_url = settings_update.ollama_base_url.strip()
         if settings_store_module.settings_store:
-            settings_store_module.settings_store.set("ollama_base_url", settings_update.ollama_base_url)
+            settings_store_module.settings_store.set("ollama_base_url", settings_update.ollama_base_url.strip())
         updated_fields.append("ollama_base_url")
     
     # Update other AI settings
