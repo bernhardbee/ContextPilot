@@ -143,7 +143,36 @@ function App() {
     e.preventDefault();
     try {
       setLoading(true);
-      await contextAPI.updateSettings(settingsForm);
+      
+      // Build settings update - only include fields that were actually changed/filled
+      const updateData: SettingsUpdate = {};
+      
+      // Only send API keys if they have values (non-empty strings)
+      if (settingsForm.openai_api_key?.trim()) {
+        updateData.openai_api_key = settingsForm.openai_api_key.trim();
+      }
+      if (settingsForm.anthropic_api_key?.trim()) {
+        updateData.anthropic_api_key = settingsForm.anthropic_api_key.trim();
+      }
+      if (settingsForm.ollama_base_url?.trim()) {
+        updateData.ollama_base_url = settingsForm.ollama_base_url.trim();
+      }
+      
+      // Always include AI settings if they exist
+      if (settingsForm.default_ai_provider !== undefined) {
+        updateData.default_ai_provider = settingsForm.default_ai_provider;
+      }
+      if (settingsForm.default_ai_model !== undefined) {
+        updateData.default_ai_model = settingsForm.default_ai_model;
+      }
+      if (settingsForm.ai_temperature !== undefined) {
+        updateData.ai_temperature = settingsForm.ai_temperature;
+      }
+      if (settingsForm.ai_max_tokens !== undefined) {
+        updateData.ai_max_tokens = settingsForm.ai_max_tokens;
+      }
+      
+      await contextAPI.updateSettings(updateData);
       setSuccess('Settings updated successfully!');
       setSettingsModal(false);
       setSettingsForm({});
