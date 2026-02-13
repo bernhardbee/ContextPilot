@@ -168,11 +168,13 @@ class AIService:
             }
             
             # Handle token parameter based on model type
-            # For now, use max_tokens for all models to avoid compatibility issues
-            # TODO: Add max_completion_tokens support for specific models when confirmed
-            api_params["max_tokens"] = max_tokens
+            # O-series models (o1, o3, o1-mini, o3-mini) use max_completion_tokens
+            if model.startswith(('o1', 'o3')):
+                api_params["max_completion_tokens"] = max_tokens
+            else:
+                api_params["max_tokens"] = max_tokens
             
-            # Some models (like o1, o3) only support default temperature
+            # O-series models don't support temperature parameter
             if not model.startswith(('o1', 'o3')):
                 api_params["temperature"] = temperature
                 
