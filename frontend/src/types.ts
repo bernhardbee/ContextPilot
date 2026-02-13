@@ -132,3 +132,23 @@ export interface SettingsUpdate {
   ai_temperature?: number;
   ai_max_tokens?: number;
 }
+
+export interface ProviderInfo {
+  name: string;
+  display_name: string;
+  description: string;
+  requires_api_key: boolean;
+  supports_local: boolean;
+  homepage_url: string;
+  documentation_url: string;
+  configured: boolean;
+  api_key_set?: boolean;
+  base_url?: string;
+  available_models: string[];
+}
+
+export interface ProvidersResponse {
+  providers: ProviderInfo[];
+  default_provider: string;
+  default_model: string;
+}

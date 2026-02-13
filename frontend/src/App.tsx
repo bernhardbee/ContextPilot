@@ -17,6 +17,8 @@ import {
   ContextUnitCreate,
   Conversation,
   ConversationMessage,
+  ProviderInfo,
+  ProvidersResponse,
   Settings,
   SettingsUpdate,
   Stats,
@@ -65,14 +67,17 @@ function App() {
 
   // Settings states
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [providers, setProviders] = useState<ProviderInfo[]>([]);
   const [settingsModal, setSettingsModal] = useState(false);
   const [settingsForm, setSettingsForm] = useState<SettingsUpdate>({});
+  const [settingsTab, setSettingsTab] = useState<string>('openai');
 
   // Load contexts and stats on mount
   useEffect(() => {
     loadContexts();
     loadStats();
     loadSettings();
+    loadProviders();
     loadConversations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -139,6 +144,19 @@ function App() {
     }
   };
 
+  const loadProviders = async () => {
+    try {
+      const data: ProvidersResponse = await contextAPI.getProviders();
+      setProviders(data.providers);
+      // Set initial settings tab to the default provider
+      if (data.default_provider) {
+        setSettingsTab(data.default_provider);
+      }
+    } catch (err) {
+      console.error('Failed to load providers:', err);
+    }
+  };
+
   const handleUpdateSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -177,6 +195,7 @@ function App() {
       setSettingsModal(false);
       setSettingsForm({});
       loadSettings(); // Reload settings to get updated status
+      loadProviders(); // Reload providers to update configuration status
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to update settings');
@@ -1058,9 +1077,9 @@ function App() {
       {/* Settings Modal */}
       {settingsModal && (
         <div className="modal-overlay" onClick={() => setSettingsModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal modal-large" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>⚙️ Settings</h2>
+              <h2>⚙️ Provider Settings</h2>
               <button 
                 className="modal-close"
                 onClick={() => setSettingsModal(false)}
@@ -1070,60 +1089,145 @@ function App() {
             </div>
             
             <form onSubmit={handleUpdateSettings} className="settings-form">
-              <div className="form-section">
-                <h3>API Keys</h3>
-                <div className="form-group">
-                  <label>OpenAI API Key:</label>
-                  <input
-                    type="password"
-                    placeholder={settings?.openai_api_key_set ? "••••••••••••••••" : "Enter OpenAI API key"}
-                    value={settingsForm.openai_api_key || ''}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, openai_api_key: e.target.value })}
-                  />
-                  {settings?.openai_api_key_set && (
-                    <span className="api-key-status">✅ Set</span>
-                  )}
-                </div>
-                
-                <div className="form-group">
-                  <label>Anthropic API Key:</label>
-                  <input
-                    type="password"
-                    placeholder={settings?.anthropic_api_key_set ? "••••••••••••••••" : "Enter Anthropic API key"}
-                    value={settingsForm.anthropic_api_key || ''}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, anthropic_api_key: e.target.value })}
-                  />
-                  {settings?.anthropic_api_key_set && (
-                    <span className="api-key-status">✅ Set</span>
-                  )}
-                </div>
-                
-                <div className="form-group">
-                  <label>Ollama Base URL:</label>
-                  <input
-                    type="text"
-                    placeholder="http://localhost:11434"
-                    value={settingsForm.ollama_base_url || settings?.ollama_base_url || ''}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, ollama_base_url: e.target.value })}
-                  />
-                  {settings?.ollama_configured && (
-                    <span className="api-key-status">✅ Configured</span>
-                  )}
-                  <small>Local Ollama server endpoint (default: http://localhost:11434)</small>
-                </div>
+              {/* Provider Tabs */}
+              <div className="provider-tabs">
+                {providers.map((provider) => (
+                  <button
+                    key={provider.name}
+                    type="button"
+                    className={`provider-tab ${settingsTab === provider.name ? 'active' : ''}`}
+                    onClick={() => setSettingsTab(provider.name)}
+                  >
+                    {provider.display_name}
+                    {provider.configured && <span className="tab-indicator">●</span>}
+                  </button>
+                ))}
               </div>
-              
+
+              {/* Provider Settings Content */}
+              <div className="provider-settings-content">
+                {providers.map((provider) => (
+                  <div 
+                    key={provider.name}
+                    className={`provider-panel ${settingsTab === provider.name ? 'active' : ''}`}
+                  >
+                    <div className="provider-header">
+                      <h3>{provider.display_name}</h3>
+                      <p className="provider-description">{provider.description}</p>
+                      {provider.homepage_url && (
+                        <a 
+                          href={provider.homepage_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="provider-link"
+                        >
+                          🔗 {provider.homepage_url}
+                        </a>
+                      )}
+                    </div>
+
+                    {/* OpenAI Settings */}
+                    {provider.name === 'openai' && (
+                      <>
+                        <div className="form-group">
+                          <label>API Key:</label>
+                          <input
+                            type="password"
+                            placeholder={settings?.openai_api_key_set ? "••••••••••••••••" : "Enter OpenAI API key"}
+                            value={settingsForm.openai_api_key || ''}
+                            onChange={(e) => setSettingsForm({ ...settingsForm, openai_api_key: e.target.value })}
+                          />
+                          {settings?.openai_api_key_set && (
+                            <span className="api-key-status">✅ Set</span>
+                          )}
+                          <small>Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">OpenAI Platform</a></small>
+                        </div>
+                        
+                        <div className="form-group">
+                          <label>Available Models:</label>
+                          <div className="model-list">
+                            {provider.available_models.map((model) => (
+                              <span key={model} className="model-badge">{model}</span>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Anthropic Settings */}
+                    {provider.name === 'anthropic' && (
+                      <>
+                        <div className="form-group">
+                          <label>API Key:</label>
+                          <input
+                            type="password"
+                            placeholder={settings?.anthropic_api_key_set ? "••••••••••••••••" : "Enter Anthropic API key"}
+                            value={settingsForm.anthropic_api_key || ''}
+                            onChange={(e) => setSettingsForm({ ...settingsForm, anthropic_api_key: e.target.value })}
+                          />
+                          {settings?.anthropic_api_key_set && (
+                            <span className="api-key-status">✅ Set</span>
+                          )}
+                          <small>Get your API key from <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer">Anthropic Console</a></small>
+                        </div>
+                        
+                        <div className="form-group">
+                          <label>Available Models:</label>
+                          <div className="model-list">
+                            {provider.available_models.map((model) => (
+                              <span key={model} className="model-badge">{model}</span>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Ollama Settings */}
+                    {provider.name === 'ollama' && (
+                      <>
+                        <div className="form-group">
+                          <label>Base URL:</label>
+                          <input
+                            type="text"
+                            placeholder="http://localhost:11434"
+                            value={settingsForm.ollama_base_url || settings?.ollama_base_url || ''}
+                            onChange={(e) => setSettingsForm({ ...settingsForm, ollama_base_url: e.target.value })}
+                          />
+                          {settings?.ollama_configured && (
+                            <span className="api-key-status">✅ Configured</span>
+                          )}
+                          <small>Local Ollama server endpoint. <a href="https://ollama.ai/download" target="_blank" rel="noopener noreferrer">Download Ollama</a></small>
+                        </div>
+                        
+                        <div className="form-group">
+                          <label>Common Models:</label>
+                          <div className="model-list">
+                            {provider.available_models.map((model) => (
+                              <span key={model} className="model-badge">{model}</span>
+                            ))}
+                          </div>
+                          <small>Models will be automatically downloaded when first used</small>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Global AI Settings */}
               <div className="form-section">
-                <h3>AI Settings</h3>
+                <h3>Default Settings</h3>
                 <div className="form-group">
                   <label>Default Provider:</label>
                   <select
                     value={settingsForm.default_ai_provider || settings?.default_ai_provider || 'openai'}
                     onChange={(e) => setSettingsForm({ ...settingsForm, default_ai_provider: e.target.value })}
                   >
-                    <option value="openai">OpenAI</option>
-                    <option value="anthropic">Anthropic</option>
-                    <option value="ollama">Ollama (Local)</option>
+                    {providers.map((provider) => (
+                      <option key={provider.name} value={provider.name}>
+                        {provider.display_name}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 
@@ -1148,10 +1252,6 @@ function App() {
                          model}
                       </option>
                     ))}
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {((modelOptions as any)[(settingsForm.default_ai_provider || settings?.default_ai_provider || 'openai')] || []).length === 0 && (
-                      <option value="" disabled>No models available</option>
-                    )}
                   </select>
                 </div>
                 
@@ -1165,6 +1265,7 @@ function App() {
                     value={settingsForm.ai_temperature ?? settings?.ai_temperature ?? 0.7}
                     onChange={(e) => setSettingsForm({ ...settingsForm, ai_temperature: parseFloat(e.target.value) })}
                   />
+                  <small>Controls randomness (0 = focused, 2 = creative)</small>
                 </div>
                 
                 <div className="form-group">
@@ -1176,6 +1277,7 @@ function App() {
                     value={settingsForm.ai_max_tokens ?? settings?.ai_max_tokens ?? 4000}
                     onChange={(e) => setSettingsForm({ ...settingsForm, ai_max_tokens: parseInt(e.target.value) })}
                   />
+                  <small>Maximum length of AI response</small>
                 </div>
               </div>
               

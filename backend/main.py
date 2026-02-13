@@ -891,6 +891,62 @@ def get_conversation(
 
 # Settings Endpoints
 
+@app.get("/providers")
+@limiter.limit("30/minute")
+def get_providers(request: Request):
+    """
+    Get information about all available LLM providers.
+    
+    Returns:
+        List of available providers with metadata and configuration status
+    """
+    from providers.provider_registry import list_providers
+    from providers.openai_provider import OpenAIProvider
+    from providers.anthropic_provider import AnthropicProvider
+    from providers.ollama_provider import OllamaProvider
+    
+    providers_info = []
+    
+    # Get base provider list
+    providers = list_providers()
+    
+    for provider in providers:
+        provider_name = provider['name']
+        provider_info = {
+            "name": provider_name,
+            "display_name": provider['display_name'],
+            "description": provider['description'],
+            "requires_api_key": provider['requires_api_key'],
+            "supports_local": provider['supports_local'],
+            "homepage_url": provider['homepage_url'],
+            "documentation_url": provider['documentation_url'],
+            "configured": False,
+            "available_models": []
+        }
+        
+        # Add provider-specific configuration status
+        if provider_name == "openai":
+            provider_info["configured"] = bool(settings.openai_api_key)
+            provider_info["api_key_set"] = bool(settings.openai_api_key)
+            provider_info["available_models"] = list(OpenAIProvider.MODEL_INFO.keys())
+        elif provider_name == "anthropic":
+            provider_info["configured"] = bool(settings.anthropic_api_key)
+            provider_info["api_key_set"] = bool(settings.anthropic_api_key)
+            provider_info["available_models"] = list(AnthropicProvider.MODEL_INFO.keys())
+        elif provider_name == "ollama":
+            provider_info["configured"] = bool(settings.ollama_base_url)
+            provider_info["base_url"] = settings.ollama_base_url
+            provider_info["available_models"] = ["llama2", "mistral", "codellama", "phi"]  # Common models
+        
+        providers_info.append(provider_info)
+    
+    return {
+        "providers": providers_info,
+        "default_provider": settings.default_ai_provider,
+        "default_model": settings.default_ai_model
+    }
+
+
 @app.get("/settings", response_model=SettingsResponse)
 @limiter.limit("30/minute")  
 def get_settings(request: Request):

@@ -951,6 +951,10 @@ select:focus {
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 }
 
+.modal-large {
+  max-width: 800px;
+}
+
 .modal-header {
   display: flex;
   justify-content: space-between;
@@ -1032,6 +1036,120 @@ select:focus {
   margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid #eee;
+}
+
+/* Provider Settings Tabs */
+.provider-tabs {
+  display: flex;
+  border-bottom: 2px solid #eee;
+  background: #f8f9fa;
+  padding: 0;
+  margin: 0;
+}
+
+.provider-tab {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 15px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  border-bottom: 3px solid transparent;
+}
+
+.provider-tab:hover {
+  background: #e9ecef;
+  color: #333;
+}
+
+.provider-tab.active {
+  color: #667eea;
+  background: white;
+  border-bottom-color: #667eea;
+}
+
+.provider-tab .tab-indicator {
+  color: #28a745;
+  margin-left: 6px;
+  font-size: 10px;
+}
+
+.provider-settings-content {
+  padding: 20px;
+}
+
+.provider-panel {
+  display: none;
+}
+
+.provider-panel.active {
+  display: block;
+}
+
+.provider-header {
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.provider-header h3 {
+  margin: 0 0 8px 0;
+  color: #333;
+  font-size: 1.3rem;
+}
+
+.provider-description {
+  margin: 0 0 10px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.provider-link {
+  font-size: 13px;
+  color: #667eea;
+  text-decoration: none;
+}
+
+.provider-link:hover {
+  text-decoration: underline;
+}
+
+.model-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.model-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: #e9ecef;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #495057;
+  font-family: 'Courier New', monospace;
+}
+
+.form-group small {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.form-group small a {
+  color: #667eea;
+  text-decoration: none;
+}
+
+.form-group small a:hover {
+  text-decoration: underline;
 }
 
 .button-secondary {

@@ -10,6 +10,7 @@ import {
     ContextUnitUpdate,
     Conversation,
     GeneratedPrompt,
+    ProvidersResponse,
     Settings,
     SettingsUpdate,
     Stats,
@@ -145,6 +146,12 @@ export const contextAPI = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   updateSettings: async (settings: SettingsUpdate): Promise<any> => {
     const response = await api.post('/settings', settings);
+    return response.data;
+  },
+
+  // Provider management
+  getProviders: async (): Promise<ProvidersResponse> => {
+    const response = await api.get<ProvidersResponse>('/providers');
     return response.data;
   },
 };
