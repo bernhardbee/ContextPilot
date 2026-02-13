@@ -26,7 +26,7 @@ code {
 .header {
   text-align: center;
   margin-bottom: 40px;
-  padding: 10px 20px;
+  padding: 6px 15px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border-radius: 8px;
@@ -35,7 +35,7 @@ code {
 
 .header h1 {
   margin: 0;
-  font-size: 2.5rem;
+  font-size: 1.8rem;
 }
 
 .header p {
@@ -536,13 +536,13 @@ code {
 }
 
 .message-user {
-  background: #e3f2fd;
-  border-left-color: #1976d2;
+  background: #f3e5f5;
+  border-left-color: #7b1fa2;
 }
 
 .message-assistant {
-  background: #f3e5f5;
-  border-left-color: #7b1fa2;
+  background: #e3f2fd;
+  border-left-color: #1976d2;
 }
 
 .message-system {
@@ -899,7 +899,7 @@ select:focus {
 }
 
 .b-logo {
-  height: 48px;
+  height: 32px;
   width: auto;
   vertical-align: middle;
 }
@@ -1580,7 +1580,7 @@ select:focus {
   gap: 12px;
 }
 
-.message-assistant {
+.message-user {
   flex-direction: row-reverse;
 }
 
@@ -1606,8 +1606,8 @@ select:focus {
   position: relative;
 }
 
-.message-assistant .message-bubble {
-  background: #667eea;
+.message-user .message-bubble {
+  background: #7f8cff;
   color: white;
 }
 
@@ -1628,7 +1628,7 @@ select:focus {
   font-size: 0.9em;
 }
 
-.message-assistant .message-content code {
+.message-user .message-content code {
   background: rgba(255, 255, 255, 0.2);
 }
 
@@ -1642,7 +1642,7 @@ select:focus {
   font-size: 0.8rem;
 }
 
-.message-assistant .message-actions {
+.message-user .message-actions {
   border-top-color: rgba(255, 255, 255, 0.3);
 }
 
@@ -1660,7 +1660,7 @@ select:focus {
   color: #666;
 }
 
-.message-assistant .message-model {
+.message-user .message-model {
   background: rgba(255, 255, 255, 0.2);
   color: rgba(255, 255, 255, 0.9);
 }
