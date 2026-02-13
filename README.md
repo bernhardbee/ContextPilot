@@ -94,10 +94,26 @@ Most AI tools are stateless—they forget context between sessions. ContextPilot
 │  └───────────┘  │
 │                 │
 │  ┌───────────┐  │
-│  │AI Service │  │  ← OpenAI / Anthropic
+│  │Modular AI │  │  ← OpenAI / Anthropic / Ollama
+│  │ Providers │  │     (Pluggable architecture)
 │  └───────────┘  │
 └─────────────────┘
 ```
+
+### 🔌 Modular Provider Architecture
+
+ContextPilot now features a **modular, plugin-like architecture** for LLM integrations:
+
+- **Extensible Design**: Each provider (OpenAI, Anthropic, Ollama) is a separate module
+- **Provider-Specific Features**: Auto-pull for Ollama, cost estimation for OpenAI/Anthropic
+- **Easy to Add**: Add new providers without modifying core code
+- **Health Monitoring**: Built-in health checks and capability detection
+- **Type-Safe**: Full type hints and clear interfaces
+
+**Documentation:**
+- [PROVIDER_ARCHITECTURE.md](PROVIDER_ARCHITECTURE.md) - Complete architecture guide
+- [PROVIDER_INTEGRATION.md](PROVIDER_INTEGRATION.md) - Migration and integration guide
+- [backend/providers/README.md](backend/providers/README.md) - Provider module reference
 
 ## 📁 Project Structure
 
@@ -112,14 +128,25 @@ ContextPilot/
 │   ├── storage_interface.py # Storage abstraction layer
 │   ├── relevance.py         # Semantic search & ranking
 │   ├── composer.py          # Prompt composition engine
-│   ├── ai_service.py        # OpenAI/Anthropic integration
+│   ├── ai_service.py        # Legacy AI service (still supported)
+│   ├── ai_service_modular.py# New modular AI service
+│   ├── providers/           # 🆕 Modular LLM provider system
+│   │   ├── __init__.py      # Provider exports
+│   │   ├── base_provider.py # Abstract base class & interfaces
+│   │   ├── provider_registry.py # Provider registry & factory
+│   │   ├── openai_provider.py   # OpenAI integration
+│   │   ├── anthropic_provider.py # Anthropic/Claude integration
+│   │   ├── ollama_provider.py   # Ollama local LLM integration
+│   │   └── README.md        # Provider documentation
 │   ├── config.py            # Configuration management
 │   ├── security.py          # Authentication & validation
 │   ├── validators.py        # Dynamic model validation
 │   ├── database.py          # Database session management
 │   ├── valid_models.json    # Dynamic model validation rules
 │   ├── alembic/             # Database migration scripts
-│   ├── test_*.py            # Comprehensive test suite (107 tests)
+│   ├── test_*.py            # Comprehensive test suite (205 tests)
+│   ├── test_providers.py    # 🆕 Provider system tests (22 tests)
+│   ├── example_providers.py # 🆕 Provider usage examples
 │   ├── requirements.txt     # Python dependencies
 │   └── README.md            # Backend documentation
 ├── frontend/                # React TypeScript frontend
