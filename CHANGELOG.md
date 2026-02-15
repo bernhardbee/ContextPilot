@@ -7,6 +7,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **Model Synchronization System (February 2026)**:
+  - **Single Source of Truth**: Centralized model catalog in `backend/valid_models.json`
+  - **Dynamic Model Loading**: Providers load models from JSON at startup with resilient fallback
+  - **Automatic Synchronization**: New `sync_models.py` script keeps frontend/backend models in sync
+  - **Model Loader Utilities**: New `model_loader.py` module with centralized utilities for model metadata generation
+  - **Provider-Specific Settings**: Temperature, top_p, top_k, max_tokens overrides per provider per instance
+  - **CI/CD Ready**: Sync script with `--check` flag and exit codes for automated validation
+  - **Model Metadata**: Consistent context window and feature support information across providers
+  - **DATABASE PERSISTENCE**: Settings stored and retrieved from database with automatic fallback behavior
+
 - **Anthropic API Model Discovery (January 31, 2026)**:
   - **Real-time Model Retrieval**: Implemented `client.models.list()` API integration for Anthropic
   - **Automatic Updates**: Discovers Claude 4.5, 4.1, 4.0, and 3.x models from Anthropic API
