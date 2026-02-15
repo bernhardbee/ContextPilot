@@ -169,11 +169,26 @@ function App() {
       if (settingsForm.openai_api_key?.trim()) {
         updateData.openai_api_key = settingsForm.openai_api_key.trim();
       }
+      if (settingsForm.openai_base_url?.trim()) {
+        updateData.openai_base_url = settingsForm.openai_base_url.trim();
+      }
+      if (settingsForm.openai_default_model?.trim()) {
+        updateData.openai_default_model = settingsForm.openai_default_model.trim();
+      }
       if (settingsForm.anthropic_api_key?.trim()) {
         updateData.anthropic_api_key = settingsForm.anthropic_api_key.trim();
       }
+      if (settingsForm.anthropic_default_model?.trim()) {
+        updateData.anthropic_default_model = settingsForm.anthropic_default_model.trim();
+      }
       if (settingsForm.ollama_base_url?.trim()) {
         updateData.ollama_base_url = settingsForm.ollama_base_url.trim();
+      }
+      if (settingsForm.ollama_default_model?.trim()) {
+        updateData.ollama_default_model = settingsForm.ollama_default_model.trim();
+      }
+      if (settingsForm.ollama_keep_alive?.trim()) {
+        updateData.ollama_keep_alive = settingsForm.ollama_keep_alive.trim();
       }
       
       // Always include AI settings if they exist
@@ -188,6 +203,39 @@ function App() {
       }
       if (settingsForm.ai_max_tokens !== undefined) {
         updateData.ai_max_tokens = settingsForm.ai_max_tokens;
+      }
+      if (settingsForm.openai_temperature !== undefined) {
+        updateData.openai_temperature = settingsForm.openai_temperature;
+      }
+      if (settingsForm.openai_top_p !== undefined) {
+        updateData.openai_top_p = settingsForm.openai_top_p;
+      }
+      if (settingsForm.openai_max_tokens !== undefined) {
+        updateData.openai_max_tokens = settingsForm.openai_max_tokens;
+      }
+      if (settingsForm.anthropic_temperature !== undefined) {
+        updateData.anthropic_temperature = settingsForm.anthropic_temperature;
+      }
+      if (settingsForm.anthropic_top_p !== undefined) {
+        updateData.anthropic_top_p = settingsForm.anthropic_top_p;
+      }
+      if (settingsForm.anthropic_top_k !== undefined) {
+        updateData.anthropic_top_k = settingsForm.anthropic_top_k;
+      }
+      if (settingsForm.anthropic_max_tokens !== undefined) {
+        updateData.anthropic_max_tokens = settingsForm.anthropic_max_tokens;
+      }
+      if (settingsForm.ollama_temperature !== undefined) {
+        updateData.ollama_temperature = settingsForm.ollama_temperature;
+      }
+      if (settingsForm.ollama_top_p !== undefined) {
+        updateData.ollama_top_p = settingsForm.ollama_top_p;
+      }
+      if (settingsForm.ollama_num_predict !== undefined) {
+        updateData.ollama_num_predict = settingsForm.ollama_num_predict;
+      }
+      if (settingsForm.ollama_num_ctx !== undefined) {
+        updateData.ollama_num_ctx = settingsForm.ollama_num_ctx;
       }
       
       await contextAPI.updateSettings(updateData);
@@ -211,6 +259,23 @@ function App() {
       default_ai_model: settings?.default_ai_model,
       ai_temperature: settings?.ai_temperature,
       ai_max_tokens: settings?.ai_max_tokens,
+      openai_base_url: settings?.openai_base_url,
+      openai_default_model: settings?.openai_default_model,
+      openai_temperature: settings?.openai_temperature ?? undefined,
+      openai_top_p: settings?.openai_top_p ?? undefined,
+      openai_max_tokens: settings?.openai_max_tokens ?? undefined,
+      anthropic_default_model: settings?.anthropic_default_model,
+      anthropic_temperature: settings?.anthropic_temperature ?? undefined,
+      anthropic_top_p: settings?.anthropic_top_p ?? undefined,
+      anthropic_top_k: settings?.anthropic_top_k ?? undefined,
+      anthropic_max_tokens: settings?.anthropic_max_tokens ?? undefined,
+      ollama_base_url: settings?.ollama_base_url,
+      ollama_default_model: settings?.ollama_default_model,
+      ollama_temperature: settings?.ollama_temperature ?? undefined,
+      ollama_top_p: settings?.ollama_top_p ?? undefined,
+      ollama_num_predict: settings?.ollama_num_predict ?? undefined,
+      ollama_num_ctx: settings?.ollama_num_ctx ?? undefined,
+      ollama_keep_alive: settings?.ollama_keep_alive,
     });
     setSettingsModal(true);
   };
@@ -1142,6 +1207,75 @@ function App() {
                           )}
                           <small>Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">OpenAI Platform</a></small>
                         </div>
+
+                        <div className="form-group">
+                          <label>Base URL (optional):</label>
+                          <input
+                            type="text"
+                            placeholder="https://api.openai.com/v1"
+                            value={settingsForm.openai_base_url || settings?.openai_base_url || ''}
+                            onChange={(e) => setSettingsForm({ ...settingsForm, openai_base_url: e.target.value })}
+                          />
+                          <small>Override for compatible gateways (leave blank for default)</small>
+                        </div>
+
+                        <div className="form-group">
+                          <label>Default Model Override:</label>
+                          <select
+                            value={settingsForm.openai_default_model || settings?.openai_default_model || ''}
+                            onChange={(e) => setSettingsForm({ ...settingsForm, openai_default_model: e.target.value })}
+                          >
+                            <option value="">Use global default</option>
+                            {provider.available_models.map((model) => (
+                              <option key={model} value={model}>{model}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="form-group">
+                          <label>Temperature Override:</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="2"
+                            step="0.1"
+                            value={settingsForm.openai_temperature ?? settings?.openai_temperature ?? ''}
+                            onChange={(e) => setSettingsForm({
+                              ...settingsForm,
+                              openai_temperature: e.target.value === '' ? undefined : parseFloat(e.target.value)
+                            })}
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label>Top P Override:</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={settingsForm.openai_top_p ?? settings?.openai_top_p ?? ''}
+                            onChange={(e) => setSettingsForm({
+                              ...settingsForm,
+                              openai_top_p: e.target.value === '' ? undefined : parseFloat(e.target.value)
+                            })}
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label>Max Completion Tokens Override:</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="16000"
+                            value={settingsForm.openai_max_tokens ?? settings?.openai_max_tokens ?? ''}
+                            onChange={(e) => setSettingsForm({
+                              ...settingsForm,
+                              openai_max_tokens: e.target.value === '' ? undefined : parseInt(e.target.value)
+                            })}
+                          />
+                          <small>Uses max_completion_tokens for o-series models</small>
+                        </div>
                         
                         <div className="form-group">
                           <label>Available Models:</label>
@@ -1170,6 +1304,77 @@ function App() {
                           )}
                           <small>Get your API key from <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer">Anthropic Console</a></small>
                         </div>
+
+                        <div className="form-group">
+                          <label>Default Model Override:</label>
+                          <select
+                            value={settingsForm.anthropic_default_model || settings?.anthropic_default_model || ''}
+                            onChange={(e) => setSettingsForm({ ...settingsForm, anthropic_default_model: e.target.value })}
+                          >
+                            <option value="">Use global default</option>
+                            {provider.available_models.map((model) => (
+                              <option key={model} value={model}>{model}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="form-group">
+                          <label>Temperature Override:</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="2"
+                            step="0.1"
+                            value={settingsForm.anthropic_temperature ?? settings?.anthropic_temperature ?? ''}
+                            onChange={(e) => setSettingsForm({
+                              ...settingsForm,
+                              anthropic_temperature: e.target.value === '' ? undefined : parseFloat(e.target.value)
+                            })}
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label>Top P Override:</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={settingsForm.anthropic_top_p ?? settings?.anthropic_top_p ?? ''}
+                            onChange={(e) => setSettingsForm({
+                              ...settingsForm,
+                              anthropic_top_p: e.target.value === '' ? undefined : parseFloat(e.target.value)
+                            })}
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label>Top K Override:</label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={settingsForm.anthropic_top_k ?? settings?.anthropic_top_k ?? ''}
+                            onChange={(e) => setSettingsForm({
+                              ...settingsForm,
+                              anthropic_top_k: e.target.value === '' ? undefined : parseInt(e.target.value)
+                            })}
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label>Max Tokens Override:</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="16000"
+                            value={settingsForm.anthropic_max_tokens ?? settings?.anthropic_max_tokens ?? ''}
+                            onChange={(e) => setSettingsForm({
+                              ...settingsForm,
+                              anthropic_max_tokens: e.target.value === '' ? undefined : parseInt(e.target.value)
+                            })}
+                          />
+                        </div>
                         
                         <div className="form-group">
                           <label>Available Models:</label>
@@ -1197,6 +1402,84 @@ function App() {
                             <span className="api-key-status">✅ Configured</span>
                           )}
                           <small>Local Ollama server endpoint. <a href="https://ollama.ai/download" target="_blank" rel="noopener noreferrer">Download Ollama</a></small>
+                        </div>
+
+                        <div className="form-group">
+                          <label>Default Model Override:</label>
+                          <input
+                            type="text"
+                            placeholder="llama3.2"
+                            value={settingsForm.ollama_default_model || settings?.ollama_default_model || ''}
+                            onChange={(e) => setSettingsForm({ ...settingsForm, ollama_default_model: e.target.value })}
+                          />
+                          <small>Leave blank to use global default model</small>
+                        </div>
+
+                        <div className="form-group">
+                          <label>Temperature Override:</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="2"
+                            step="0.1"
+                            value={settingsForm.ollama_temperature ?? settings?.ollama_temperature ?? ''}
+                            onChange={(e) => setSettingsForm({
+                              ...settingsForm,
+                              ollama_temperature: e.target.value === '' ? undefined : parseFloat(e.target.value)
+                            })}
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label>Top P Override:</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={settingsForm.ollama_top_p ?? settings?.ollama_top_p ?? ''}
+                            onChange={(e) => setSettingsForm({
+                              ...settingsForm,
+                              ollama_top_p: e.target.value === '' ? undefined : parseFloat(e.target.value)
+                            })}
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label>Num Predict Override:</label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={settingsForm.ollama_num_predict ?? settings?.ollama_num_predict ?? ''}
+                            onChange={(e) => setSettingsForm({
+                              ...settingsForm,
+                              ollama_num_predict: e.target.value === '' ? undefined : parseInt(e.target.value)
+                            })}
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label>Context Size Override:</label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={settingsForm.ollama_num_ctx ?? settings?.ollama_num_ctx ?? ''}
+                            onChange={(e) => setSettingsForm({
+                              ...settingsForm,
+                              ollama_num_ctx: e.target.value === '' ? undefined : parseInt(e.target.value)
+                            })}
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label>Keep Alive Override:</label>
+                          <input
+                            type="text"
+                            placeholder="5m"
+                            value={settingsForm.ollama_keep_alive || settings?.ollama_keep_alive || ''}
+                            onChange={(e) => setSettingsForm({ ...settingsForm, ollama_keep_alive: e.target.value })}
+                          />
+                          <small>Controls how long models stay loaded (e.g., 5m, 1h, 0)</small>
                         </div>
                         
                         <div className="form-group">

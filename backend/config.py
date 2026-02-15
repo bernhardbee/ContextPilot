@@ -2,7 +2,7 @@
 Configuration management for ContextPilot backend.
 """
 import os
-from typing import List
+from typing import List, Optional
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
@@ -54,9 +54,25 @@ class Settings(BaseSettings):
     
     # AI Integration
     openai_api_key: str = Field(default="", description="OpenAI API key")
+    openai_base_url: str = Field(default="", description="OpenAI base URL override")
+    openai_default_model: str = Field(default="", description="OpenAI default model override")
+    openai_temperature: Optional[float] = Field(default=None, description="OpenAI temperature override")
+    openai_top_p: Optional[float] = Field(default=None, description="OpenAI top_p override")
+    openai_max_tokens: Optional[int] = Field(default=None, description="OpenAI max tokens override")
     anthropic_api_key: str = Field(default="", description="Anthropic API key")
+    anthropic_default_model: str = Field(default="", description="Anthropic default model override")
+    anthropic_temperature: Optional[float] = Field(default=None, description="Anthropic temperature override")
+    anthropic_top_p: Optional[float] = Field(default=None, description="Anthropic top_p override")
+    anthropic_top_k: Optional[int] = Field(default=None, description="Anthropic top_k override")
+    anthropic_max_tokens: Optional[int] = Field(default=None, description="Anthropic max tokens override")
     ollama_base_url: str = Field(default="http://localhost:11434", description="Ollama API endpoint")
     ollama_api_key: str = Field(default="ollama", description="Ollama API key (usually not required)")
+    ollama_default_model: str = Field(default="", description="Ollama default model override")
+    ollama_temperature: Optional[float] = Field(default=None, description="Ollama temperature override")
+    ollama_top_p: Optional[float] = Field(default=None, description="Ollama top_p override")
+    ollama_num_predict: Optional[int] = Field(default=None, description="Ollama num_predict override")
+    ollama_num_ctx: Optional[int] = Field(default=None, description="Ollama num_ctx override")
+    ollama_keep_alive: str = Field(default="", description="Ollama keep_alive override")
     default_ai_provider: str = Field(default="openai", description="Default AI provider (openai, anthropic, or ollama)")
     default_ai_model: str = Field(default="gpt-4o", description="Default AI model")
     ai_max_tokens: int = Field(default=2000, description="Max tokens for AI responses")

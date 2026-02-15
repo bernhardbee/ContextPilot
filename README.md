@@ -421,8 +421,12 @@ ContextPilot provides a settings UI (⚙️ button) where you can configure:
 
 #### AI Configuration
 - **OpenAI API Key**: Required for using GPT models
+- **OpenAI Base URL**: Optional override for compatible gateways
+- **OpenAI Overrides**: Default model, temperature, top_p, max tokens
 - **Anthropic API Key**: Required for using Claude models
+- **Anthropic Overrides**: Default model, temperature, top_p, top_k, max tokens
 - **Ollama Base URL**: Local Ollama server endpoint (default: http://localhost:11434)
+- **Ollama Overrides**: Default model, temperature, top_p, num_predict, num_ctx, keep_alive
 - **Default AI Provider**: Choose between `openai`, `anthropic`, or `ollama`
 - **Default AI Model**: Set default model
   - OpenAI: `gpt-5.2`, `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `gpt-4`, etc.
@@ -471,13 +475,32 @@ You can also configure settings via API:
 # Get current settings
 curl http://localhost:8000/settings
 
+# List providers and model metadata
+curl http://localhost:8000/providers
+
 # Update settings
 curl -X POST http://localhost:8000/settings \
   -H "Content-Type: application/json" \
   -d '{
     "openai_api_key": "sk-...",
+    "openai_base_url": "https://api.openai.com/v1",
+    "openai_default_model": "gpt-4o",
+    "openai_temperature": 0.7,
+    "openai_top_p": 0.9,
+    "openai_max_tokens": 2000,
     "anthropic_api_key": "sk-ant-...",
+    "anthropic_default_model": "claude-3-5-sonnet-20241022",
+    "anthropic_temperature": 0.7,
+    "anthropic_top_p": 0.9,
+    "anthropic_top_k": 40,
+    "anthropic_max_tokens": 2000,
     "ollama_base_url": "http://localhost:11434",
+    "ollama_default_model": "llama3.2",
+    "ollama_temperature": 0.7,
+    "ollama_top_p": 0.9,
+    "ollama_num_predict": 2000,
+    "ollama_num_ctx": 4096,
+    "ollama_keep_alive": "5m",
     "default_ai_provider": "ollama",
     "default_ai_model": "llama3.2",
     "ai_temperature": 0.7,

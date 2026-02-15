@@ -92,7 +92,24 @@ async def lifespan(app: FastAPI):
     # Load persisted API keys from database
     if settings_store_module.settings_store:
         stored_openai_key = settings_store_module.settings_store.get("openai_api_key")
+        stored_openai_base_url = settings_store_module.settings_store.get("openai_base_url")
+        stored_openai_default_model = settings_store_module.settings_store.get("openai_default_model")
+        stored_openai_temperature = settings_store_module.settings_store.get("openai_temperature")
+        stored_openai_top_p = settings_store_module.settings_store.get("openai_top_p")
+        stored_openai_max_tokens = settings_store_module.settings_store.get("openai_max_tokens")
         stored_anthropic_key = settings_store_module.settings_store.get("anthropic_api_key")
+        stored_anthropic_default_model = settings_store_module.settings_store.get("anthropic_default_model")
+        stored_anthropic_temperature = settings_store_module.settings_store.get("anthropic_temperature")
+        stored_anthropic_top_p = settings_store_module.settings_store.get("anthropic_top_p")
+        stored_anthropic_top_k = settings_store_module.settings_store.get("anthropic_top_k")
+        stored_anthropic_max_tokens = settings_store_module.settings_store.get("anthropic_max_tokens")
+        stored_ollama_base_url = settings_store_module.settings_store.get("ollama_base_url")
+        stored_ollama_default_model = settings_store_module.settings_store.get("ollama_default_model")
+        stored_ollama_temperature = settings_store_module.settings_store.get("ollama_temperature")
+        stored_ollama_top_p = settings_store_module.settings_store.get("ollama_top_p")
+        stored_ollama_num_predict = settings_store_module.settings_store.get("ollama_num_predict")
+        stored_ollama_num_ctx = settings_store_module.settings_store.get("ollama_num_ctx")
+        stored_ollama_keep_alive = settings_store_module.settings_store.get("ollama_keep_alive")
         stored_provider = settings_store_module.settings_store.get("default_ai_provider")
         stored_model = settings_store_module.settings_store.get("default_ai_model")
         stored_temperature = settings_store_module.settings_store.get("ai_temperature")
@@ -101,10 +118,77 @@ async def lifespan(app: FastAPI):
         if stored_openai_key:
             settings.openai_api_key = stored_openai_key
             logger.info("Loaded OpenAI API key from database")
+        if stored_openai_base_url:
+            settings.openai_base_url = stored_openai_base_url
+        if stored_openai_default_model:
+            settings.openai_default_model = stored_openai_default_model
+        if stored_openai_temperature:
+            try:
+                settings.openai_temperature = float(stored_openai_temperature)
+            except ValueError:
+                pass
+        if stored_openai_top_p:
+            try:
+                settings.openai_top_p = float(stored_openai_top_p)
+            except ValueError:
+                pass
+        if stored_openai_max_tokens:
+            try:
+                settings.openai_max_tokens = int(stored_openai_max_tokens)
+            except ValueError:
+                pass
         
         if stored_anthropic_key:
             settings.anthropic_api_key = stored_anthropic_key
             logger.info("Loaded Anthropic API key from database")
+        if stored_anthropic_default_model:
+            settings.anthropic_default_model = stored_anthropic_default_model
+        if stored_anthropic_temperature:
+            try:
+                settings.anthropic_temperature = float(stored_anthropic_temperature)
+            except ValueError:
+                pass
+        if stored_anthropic_top_p:
+            try:
+                settings.anthropic_top_p = float(stored_anthropic_top_p)
+            except ValueError:
+                pass
+        if stored_anthropic_top_k:
+            try:
+                settings.anthropic_top_k = int(stored_anthropic_top_k)
+            except ValueError:
+                pass
+        if stored_anthropic_max_tokens:
+            try:
+                settings.anthropic_max_tokens = int(stored_anthropic_max_tokens)
+            except ValueError:
+                pass
+        if stored_ollama_base_url:
+            settings.ollama_base_url = stored_ollama_base_url
+        if stored_ollama_default_model:
+            settings.ollama_default_model = stored_ollama_default_model
+        if stored_ollama_temperature:
+            try:
+                settings.ollama_temperature = float(stored_ollama_temperature)
+            except ValueError:
+                pass
+        if stored_ollama_top_p:
+            try:
+                settings.ollama_top_p = float(stored_ollama_top_p)
+            except ValueError:
+                pass
+        if stored_ollama_num_predict:
+            try:
+                settings.ollama_num_predict = int(stored_ollama_num_predict)
+            except ValueError:
+                pass
+        if stored_ollama_num_ctx:
+            try:
+                settings.ollama_num_ctx = int(stored_ollama_num_ctx)
+            except ValueError:
+                pass
+        if stored_ollama_keep_alive:
+            settings.ollama_keep_alive = stored_ollama_keep_alive
             
         if stored_provider:
             settings.default_ai_provider = stored_provider
@@ -958,9 +1042,25 @@ def get_settings(request: Request):
     """
     return SettingsResponse(
         openai_api_key_set=bool(settings.openai_api_key),
+        openai_base_url=settings.openai_base_url,
+        openai_default_model=settings.openai_default_model,
+        openai_temperature=settings.openai_temperature,
+        openai_top_p=settings.openai_top_p,
+        openai_max_tokens=settings.openai_max_tokens,
         anthropic_api_key_set=bool(settings.anthropic_api_key),
+        anthropic_default_model=settings.anthropic_default_model,
+        anthropic_temperature=settings.anthropic_temperature,
+        anthropic_top_p=settings.anthropic_top_p,
+        anthropic_top_k=settings.anthropic_top_k,
+        anthropic_max_tokens=settings.anthropic_max_tokens,
         ollama_configured=bool(settings.ollama_base_url),
         ollama_base_url=settings.ollama_base_url,
+        ollama_default_model=settings.ollama_default_model,
+        ollama_temperature=settings.ollama_temperature,
+        ollama_top_p=settings.ollama_top_p,
+        ollama_num_predict=settings.ollama_num_predict,
+        ollama_num_ctx=settings.ollama_num_ctx,
+        ollama_keep_alive=settings.ollama_keep_alive,
         default_ai_provider=settings.default_ai_provider,
         default_ai_model=settings.default_ai_model,
         ai_temperature=settings.ai_temperature,
@@ -991,18 +1091,98 @@ def update_settings(request: Request, settings_update: SettingsUpdate):
             settings_store_module.settings_store.set("openai_api_key", settings_update.openai_api_key.strip())
             logger.info("OpenAI API key saved to database")
         updated_fields.append("openai_api_key")
+    if settings_update.openai_base_url is not None and settings_update.openai_base_url.strip():
+        settings.openai_base_url = settings_update.openai_base_url.strip()
+        if settings_store_module.settings_store:
+            settings_store_module.settings_store.set("openai_base_url", settings_update.openai_base_url.strip())
+        updated_fields.append("openai_base_url")
+    if settings_update.openai_default_model is not None and settings_update.openai_default_model.strip():
+        settings.openai_default_model = settings_update.openai_default_model.strip()
+        if settings_store_module.settings_store:
+            settings_store_module.settings_store.set("openai_default_model", settings_update.openai_default_model.strip())
+        updated_fields.append("openai_default_model")
+    if settings_update.openai_temperature is not None:
+        settings.openai_temperature = settings_update.openai_temperature
+        if settings_store_module.settings_store:
+            settings_store_module.settings_store.set("openai_temperature", str(settings_update.openai_temperature))
+        updated_fields.append("openai_temperature")
+    if settings_update.openai_top_p is not None:
+        settings.openai_top_p = settings_update.openai_top_p
+        if settings_store_module.settings_store:
+            settings_store_module.settings_store.set("openai_top_p", str(settings_update.openai_top_p))
+        updated_fields.append("openai_top_p")
+    if settings_update.openai_max_tokens is not None:
+        settings.openai_max_tokens = settings_update.openai_max_tokens
+        if settings_store_module.settings_store:
+            settings_store_module.settings_store.set("openai_max_tokens", str(settings_update.openai_max_tokens))
+        updated_fields.append("openai_max_tokens")
     
     if settings_update.anthropic_api_key is not None and settings_update.anthropic_api_key.strip():
         settings.anthropic_api_key = settings_update.anthropic_api_key.strip()
         if settings_store_module.settings_store:
             settings_store_module.settings_store.set("anthropic_api_key", settings_update.anthropic_api_key.strip())
         updated_fields.append("anthropic_api_key")
+    if settings_update.anthropic_default_model is not None and settings_update.anthropic_default_model.strip():
+        settings.anthropic_default_model = settings_update.anthropic_default_model.strip()
+        if settings_store_module.settings_store:
+            settings_store_module.settings_store.set("anthropic_default_model", settings_update.anthropic_default_model.strip())
+        updated_fields.append("anthropic_default_model")
+    if settings_update.anthropic_temperature is not None:
+        settings.anthropic_temperature = settings_update.anthropic_temperature
+        if settings_store_module.settings_store:
+            settings_store_module.settings_store.set("anthropic_temperature", str(settings_update.anthropic_temperature))
+        updated_fields.append("anthropic_temperature")
+    if settings_update.anthropic_top_p is not None:
+        settings.anthropic_top_p = settings_update.anthropic_top_p
+        if settings_store_module.settings_store:
+            settings_store_module.settings_store.set("anthropic_top_p", str(settings_update.anthropic_top_p))
+        updated_fields.append("anthropic_top_p")
+    if settings_update.anthropic_top_k is not None:
+        settings.anthropic_top_k = settings_update.anthropic_top_k
+        if settings_store_module.settings_store:
+            settings_store_module.settings_store.set("anthropic_top_k", str(settings_update.anthropic_top_k))
+        updated_fields.append("anthropic_top_k")
+    if settings_update.anthropic_max_tokens is not None:
+        settings.anthropic_max_tokens = settings_update.anthropic_max_tokens
+        if settings_store_module.settings_store:
+            settings_store_module.settings_store.set("anthropic_max_tokens", str(settings_update.anthropic_max_tokens))
+        updated_fields.append("anthropic_max_tokens")
     
     if settings_update.ollama_base_url is not None and settings_update.ollama_base_url.strip():
         settings.ollama_base_url = settings_update.ollama_base_url.strip()
         if settings_store_module.settings_store:
             settings_store_module.settings_store.set("ollama_base_url", settings_update.ollama_base_url.strip())
         updated_fields.append("ollama_base_url")
+    if settings_update.ollama_default_model is not None and settings_update.ollama_default_model.strip():
+        settings.ollama_default_model = settings_update.ollama_default_model.strip()
+        if settings_store_module.settings_store:
+            settings_store_module.settings_store.set("ollama_default_model", settings_update.ollama_default_model.strip())
+        updated_fields.append("ollama_default_model")
+    if settings_update.ollama_temperature is not None:
+        settings.ollama_temperature = settings_update.ollama_temperature
+        if settings_store_module.settings_store:
+            settings_store_module.settings_store.set("ollama_temperature", str(settings_update.ollama_temperature))
+        updated_fields.append("ollama_temperature")
+    if settings_update.ollama_top_p is not None:
+        settings.ollama_top_p = settings_update.ollama_top_p
+        if settings_store_module.settings_store:
+            settings_store_module.settings_store.set("ollama_top_p", str(settings_update.ollama_top_p))
+        updated_fields.append("ollama_top_p")
+    if settings_update.ollama_num_predict is not None:
+        settings.ollama_num_predict = settings_update.ollama_num_predict
+        if settings_store_module.settings_store:
+            settings_store_module.settings_store.set("ollama_num_predict", str(settings_update.ollama_num_predict))
+        updated_fields.append("ollama_num_predict")
+    if settings_update.ollama_num_ctx is not None:
+        settings.ollama_num_ctx = settings_update.ollama_num_ctx
+        if settings_store_module.settings_store:
+            settings_store_module.settings_store.set("ollama_num_ctx", str(settings_update.ollama_num_ctx))
+        updated_fields.append("ollama_num_ctx")
+    if settings_update.ollama_keep_alive is not None and settings_update.ollama_keep_alive.strip():
+        settings.ollama_keep_alive = settings_update.ollama_keep_alive.strip()
+        if settings_store_module.settings_store:
+            settings_store_module.settings_store.set("ollama_keep_alive", settings_update.ollama_keep_alive.strip())
+        updated_fields.append("ollama_keep_alive")
     
     # Update other AI settings
     if settings_update.default_ai_provider is not None:
@@ -1030,7 +1210,7 @@ def update_settings(request: Request, settings_update: SettingsUpdate):
         updated_fields.append("ai_max_tokens")
     
     # Reinitialize AI service with new API keys
-    if any(field in updated_fields for field in ["openai_api_key", "anthropic_api_key", "ollama_base_url"]):
+    if any(field in updated_fields for field in ["openai_api_key", "openai_base_url", "anthropic_api_key", "ollama_base_url"]):
         try:
             from ai_service import AIService
             global ai_service
@@ -1044,9 +1224,25 @@ def update_settings(request: Request, settings_update: SettingsUpdate):
         "updated_fields": updated_fields,
         "settings": SettingsResponse(
             openai_api_key_set=bool(settings.openai_api_key),
+            openai_base_url=settings.openai_base_url,
+            openai_default_model=settings.openai_default_model,
+            openai_temperature=settings.openai_temperature,
+            openai_top_p=settings.openai_top_p,
+            openai_max_tokens=settings.openai_max_tokens,
             anthropic_api_key_set=bool(settings.anthropic_api_key),
+            anthropic_default_model=settings.anthropic_default_model,
+            anthropic_temperature=settings.anthropic_temperature,
+            anthropic_top_p=settings.anthropic_top_p,
+            anthropic_top_k=settings.anthropic_top_k,
+            anthropic_max_tokens=settings.anthropic_max_tokens,
             ollama_configured=bool(settings.ollama_base_url),
             ollama_base_url=settings.ollama_base_url,
+            ollama_default_model=settings.ollama_default_model,
+            ollama_temperature=settings.ollama_temperature,
+            ollama_top_p=settings.ollama_top_p,
+            ollama_num_predict=settings.ollama_num_predict,
+            ollama_num_ctx=settings.ollama_num_ctx,
+            ollama_keep_alive=settings.ollama_keep_alive,
             default_ai_provider=settings.default_ai_provider,
             default_ai_model=settings.default_ai_model,
             ai_temperature=settings.ai_temperature,

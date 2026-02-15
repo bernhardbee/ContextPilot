@@ -114,9 +114,25 @@ export interface Conversation {
 
 export interface Settings {
   openai_api_key_set: boolean;
+  openai_base_url: string;
+  openai_default_model: string;
+  openai_temperature: number | null;
+  openai_top_p: number | null;
+  openai_max_tokens: number | null;
   anthropic_api_key_set: boolean;
+  anthropic_default_model: string;
+  anthropic_temperature: number | null;
+  anthropic_top_p: number | null;
+  anthropic_top_k: number | null;
+  anthropic_max_tokens: number | null;
   ollama_configured: boolean;
   ollama_base_url: string;
+  ollama_default_model: string;
+  ollama_temperature: number | null;
+  ollama_top_p: number | null;
+  ollama_num_predict: number | null;
+  ollama_num_ctx: number | null;
+  ollama_keep_alive: string;
   default_ai_provider: string;
   default_ai_model: string;
   ai_temperature: number;
@@ -125,8 +141,24 @@ export interface Settings {
 
 export interface SettingsUpdate {
   openai_api_key?: string;
+  openai_base_url?: string;
+  openai_default_model?: string;
+  openai_temperature?: number;
+  openai_top_p?: number;
+  openai_max_tokens?: number;
   anthropic_api_key?: string;
+  anthropic_default_model?: string;
+  anthropic_temperature?: number;
+  anthropic_top_p?: number;
+  anthropic_top_k?: number;
+  anthropic_max_tokens?: number;
   ollama_base_url?: string;
+  ollama_default_model?: string;
+  ollama_temperature?: number;
+  ollama_top_p?: number;
+  ollama_num_predict?: number;
+  ollama_num_ctx?: number;
+  ollama_keep_alive?: string;
   default_ai_provider?: string;
   default_ai_model?: string;
   ai_temperature?: number;

@@ -30,8 +30,15 @@ class AIService:
         
         if settings.openai_api_key:
             openai.api_key = settings.openai_api_key
-            self.openai_client = openai
-            logger.info("OpenAI client initialized")
+            if settings.openai_base_url:
+                self.openai_client = OpenAI(
+                    api_key=settings.openai_api_key,
+                    base_url=settings.openai_base_url
+                )
+                logger.info(f"OpenAI client initialized with base URL: {settings.openai_base_url}")
+            else:
+                self.openai_client = OpenAI(api_key=settings.openai_api_key)
+                logger.info("OpenAI client initialized")
         
         if settings.anthropic_api_key:
             self.anthropic_client = Anthropic(api_key=settings.anthropic_api_key)
@@ -77,13 +84,37 @@ class AIService:
             Tuple of (response_text, conversation_record)
         """
         provider = provider or settings.default_ai_provider
-        model = model or settings.default_ai_model
+        if model is None:
+            if provider == "openai" and settings.openai_default_model:
+                model = settings.openai_default_model
+            elif provider == "anthropic" and settings.anthropic_default_model:
+                model = settings.anthropic_default_model
+            elif provider == "ollama" and settings.ollama_default_model:
+                model = settings.ollama_default_model
+            else:
+                model = settings.default_ai_model
         
         # Validate model for the provider
         if provider != "ollama":  # Skip validation for Ollama as models are dynamic
             validate_ai_model(provider, model)
-        temperature = temperature if temperature is not None else settings.ai_temperature
-        max_tokens = max_tokens or settings.ai_max_tokens
+        if temperature is None:
+            if provider == "openai" and settings.openai_temperature is not None:
+                temperature = settings.openai_temperature
+            elif provider == "anthropic" and settings.anthropic_temperature is not None:
+                temperature = settings.anthropic_temperature
+            elif provider == "ollama" and settings.ollama_temperature is not None:
+                temperature = settings.ollama_temperature
+            else:
+                temperature = settings.ai_temperature
+        if max_tokens is None:
+            if provider == "openai" and settings.openai_max_tokens is not None:
+                max_tokens = settings.openai_max_tokens
+            elif provider == "anthropic" and settings.anthropic_max_tokens is not None:
+                max_tokens = settings.anthropic_max_tokens
+            elif provider == "ollama" and settings.ollama_num_predict is not None:
+                max_tokens = settings.ollama_num_predict
+            else:
+                max_tokens = settings.ai_max_tokens
         
         if provider == "openai":
             return self._generate_openai(
@@ -177,6 +208,8 @@ class AIService:
             # O-series models don't support temperature parameter
             if not model.startswith(('o1', 'o3')):
                 api_params["temperature"] = temperature
+            if settings.openai_top_p is not None:
+                api_params["top_p"] = settings.openai_top_p
                 
             response = self.openai_client.chat.completions.create(**api_params)
             
@@ -262,12 +295,17 @@ class AIService:
             messages.append({"role": "user", "content": generated_prompt.generated_prompt})
             
             # Call Anthropic API
-            response = self.anthropic_client.messages.create(
-                model=model,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                messages=messages
-            )
+            anthropic_params = {
+                "model": model,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+                "messages": messages
+            }
+            if settings.anthropic_top_p is not None:
+                anthropic_params["top_p"] = settings.anthropic_top_p
+            if settings.anthropic_top_k is not None:
+                anthropic_params["top_k"] = settings.anthropic_top_k
+            response = self.anthropic_client.messages.create(**anthropic_params)
             
             # Extract response
             assistant_message = response.content[0].text
