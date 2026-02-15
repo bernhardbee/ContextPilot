@@ -14,7 +14,7 @@ import sys
 import os
 
 # Add backend to path for imports
-backend_path = Path(__file__).parent / "backend"
+backend_path = Path(__file__).parent.parent / "backend"
 sys.path.insert(0, str(backend_path))
 
 try:
@@ -35,7 +35,7 @@ class ModelDiscoveryService:
     """Service to discover available models from AI providers."""
     
     def __init__(self):
-        self.cache_file = Path(__file__).parent / "available_models_cache.json"
+        self.cache_file = Path(__file__).parent.parent / "available_models_cache.json"
         self.cache_ttl_hours = 24  # Cache models for 24 hours
         self._load_api_key_from_cache()
         

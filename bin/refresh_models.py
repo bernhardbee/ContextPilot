@@ -11,7 +11,7 @@ import json
 
 def should_refresh_models(max_age_hours: int = 24) -> bool:
     """Check if models should be refreshed based on cache age."""
-    cache_file = Path(__file__).parent / "available_models_cache.json"
+    cache_file = Path(__file__).parent.parent / "available_models_cache.json"
     
     if not cache_file.exists():
         return True
@@ -36,8 +36,8 @@ def refresh_models_if_needed(max_age_hours: int = 24, force: bool = False) -> bo
         
         try:
             # Import and run model discovery
-            sys.path.insert(0, str(Path(__file__).parent))
-            from discover_models import ModelDiscoveryService
+            sys.path.insert(0, str(Path(__file__).parent.parent))
+            from bin.discover_models import ModelDiscoveryService
             
             discovery = ModelDiscoveryService()
             models = discovery.discover_all_models()

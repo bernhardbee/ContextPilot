@@ -81,8 +81,8 @@ def main():
     
     args = parser.parse_args()
     
-    # Determine paths (script is in root of ContextPilot)
-    root_dir = Path(__file__).parent  # ContextPilot root
+    # Determine paths (script is in bin/ subdirectory, need to go up to ContextPilot root)
+    root_dir = Path(__file__).parent.parent  # ContextPilot root
     backend_file = root_dir / 'backend' / 'valid_models.json'
     frontend_file = root_dir / 'frontend' / 'src' / 'model_options.json'
     
