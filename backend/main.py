@@ -74,9 +74,9 @@ async def lifespan(app: FastAPI):
         import sys
         from pathlib import Path
         
-        # Add parent directory to path to access refresh_models.py
-        parent_path = Path(__file__).parent.parent
-        sys.path.insert(0, str(parent_path))
+        # Add bin directory to path to access refresh_models.py (moved to bin/)
+        bin_path = Path(__file__).parent.parent / "bin"
+        sys.path.insert(0, str(bin_path))
         
         from refresh_models import refresh_models_if_needed
         refresh_models_if_needed(max_age_hours=24)
