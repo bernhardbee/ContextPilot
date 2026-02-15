@@ -396,7 +396,7 @@ git add backend/valid_models.json frontend/src/model_options.json
 git commit -m "chore: update model catalog"
 ```
 
-For detailed information, see [MODEL_SYNCHRONIZATION.md](MODEL_SYNCHRONIZATION.md).
+For detailed information, see [MODEL_SYNCHRONIZATION.md](./MODEL_SYNCHRONIZATION.md).
 
 ## Adding a New Provider
 

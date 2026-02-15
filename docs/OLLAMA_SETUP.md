@@ -164,7 +164,7 @@ All models (including Ollama) are managed through a centralized system:
    python sync_models.py --check
    ```
 
-For detailed synchronization documentation, see [MODEL_SYNCHRONIZATION.md](MODEL_SYNCHRONIZATION.md).
+For detailed synchronization documentation, see [MODEL_SYNCHRONIZATION.md](./MODEL_SYNCHRONIZATION.md).
 
 ## Advanced Usage
 

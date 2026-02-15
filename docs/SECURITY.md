@@ -135,7 +135,7 @@ The `backend/valid_models.json` file defines available models but does **not** c
 - Used by sync_models.py to keep lists in sync
 - Contains only model names and metadata, no API keys
 
-See [MODEL_SYNCHRONIZATION.md](MODEL_SYNCHRONIZATION.md) for details.
+See [MODEL_SYNCHRONIZATION.md](./MODEL_SYNCHRONIZATION.md) for details.
 
 ## Production Deployment Checklist
 

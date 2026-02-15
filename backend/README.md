@@ -109,7 +109,7 @@ python sync_models.py --check      # Validate synchronization
 python sync_models.py --frontend   # Sync backend ← frontend
 ```
 
-See [MODEL_SYNCHRONIZATION.md](../MODEL_SYNCHRONIZATION.md) for details.
+See [MODEL_SYNCHRONIZATION.md](../docs/MODEL_SYNCHRONIZATION.md) for details.
 
 ### Provider Integration
 
@@ -122,7 +122,7 @@ provider = OpenAIProvider(api_key="sk-...")
 models = provider.MODEL_INFO  # Dynamically loaded from valid_models.json
 ```
 
-See [PROVIDER_INTEGRATION.md](../PROVIDER_INTEGRATION.md) for configuration details.
+See [PROVIDER_INTEGRATION.md](../docs/PROVIDER_INTEGRATION.md) for configuration details.
 
 ## Project Structure
 

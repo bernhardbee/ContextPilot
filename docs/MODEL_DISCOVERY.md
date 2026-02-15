@@ -221,8 +221,8 @@ python3 sync_models.py --check
 
 ### See Also
 
-- [MODEL_SYNCHRONIZATION.md](MODEL_SYNCHRONIZATION.md) - Keeping frontend/backend in sync
-- [PROVIDER_INTEGRATION.md](PROVIDER_INTEGRATION.md) - Provider-specific configuration
+- [MODEL_SYNCHRONIZATION.md](./MODEL_SYNCHRONIZATION.md) - Keeping frontend/backend in sync
+- [PROVIDER_INTEGRATION.md](./PROVIDER_INTEGRATION.md) - Provider-specific configuration
 
 ## Integration Points
 

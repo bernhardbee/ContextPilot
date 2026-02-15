@@ -374,8 +374,8 @@ Add to your GitHub Actions, GitLab CI, or similar:
 
 ### See Also
 
-- [MODEL_SYNCHRONIZATION.md](MODEL_SYNCHRONIZATION.md) - Complete synchronization documentation
-- [PROVIDER_INTEGRATION.md](PROVIDER_INTEGRATION.md) - Provider-specific settings
+- [MODEL_SYNCHRONIZATION.md](./MODEL_SYNCHRONIZATION.md) - Complete synchronization documentation
+- [PROVIDER_INTEGRATION.md](./PROVIDER_INTEGRATION.md) - Provider-specific settings
 
 ## Production Checklist
 
@@ -397,7 +397,7 @@ Add to your GitHub Actions, GitLab CI, or similar:
 For deployment issues:
 - Check logs: `sudo journalctl -u contextpilot`
 - Review [SECURITY.md](SECURITY.md)
-- Check [ARCHITECTURE.md](ARCHITECTURE.md)
+- Check [ARCHITECTURE.md](./ARCHITECTURE.md)
 
 ## Additional Resources
 

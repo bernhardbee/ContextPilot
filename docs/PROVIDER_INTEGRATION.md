@@ -167,7 +167,7 @@ python -m pytest test_providers.py -v
 
 ### Add a New Provider
 
-See [PROVIDER_ARCHITECTURE.md](../PROVIDER_ARCHITECTURE.md#adding-a-new-provider) for detailed instructions.
+See [PROVIDER_ARCHITECTURE.md](./PROVIDER_ARCHITECTURE.md#adding-a-new-provider) for detailed instructions.
 
 Quick summary:
 1. Create `your_provider.py` inheriting from `BaseLLMProvider`
@@ -399,7 +399,7 @@ Examples include:
 
 Complete documentation available:
 
-- **[PROVIDER_ARCHITECTURE.md](../PROVIDER_ARCHITECTURE.md)** - Architecture overview
+- **[PROVIDER_ARCHITECTURE.md](./PROVIDER_ARCHITECTURE.md)** - Architecture overview
 - **[providers/README.md](../backend/providers/README.md)** - Provider module guide
 - **[example_providers.py](../backend/example_providers.py)** - Code examples
 - Individual provider modules have inline documentation

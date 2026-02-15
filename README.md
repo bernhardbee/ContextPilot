@@ -114,9 +114,8 @@ ContextPilot now features a **modular, plugin-like architecture** for LLM integr
 - **Type-Safe**: Full type hints and clear interfaces
 
 **Documentation:**
-- [PROVIDER_ARCHITECTURE.md](PROVIDER_ARCHITECTURE.md) - Complete architecture guide
-- [PROVIDER_INTEGRATION.md](PROVIDER_INTEGRATION.md) - Migration and integration guide
-- [backend/providers/README.md](backend/providers/README.md) - Provider module reference
+- [PROVIDER_ARCHITECTURE.md](docs/PROVIDER_ARCHITECTURE.md) - Complete architecture guide
+- [PROVIDER_INTEGRATION.md](docs/PROVIDER_INTEGRATION.md) - Migration and integration guide
 
 ## 📁 Project Structure
 
@@ -165,13 +164,10 @@ ContextPilot/
 │   ├── index.html           # Vite HTML entry point
 │   ├── package.json         # Node.js dependencies
 │   └── tsconfig.json        # TypeScript configuration
+├── docs/                    # Documentation (see below)
 ├── LICENSE                  # MIT License
 ├── THIRD_PARTY_NOTICES      # Third-party dependency licenses
 ├── QUICKSTART.md            # Quick reference guide
-├── ARCHITECTURE.md          # System architecture documentation
-├── SECURITY.md              # Security guidelines
-├── DEPLOYMENT.md            # Production deployment guide
-├── MODEL_DISCOVERY.md       # Dynamic model discovery documentation
 ├── discover_models.py       # Model discovery script
 ├── refresh_models.py        # Startup model refresh integration
 ├── update_models.sh         # Manual model update script
@@ -678,7 +674,7 @@ SQLAlchemy 2.0 (ORM and database toolkit)
 
 - **[Database Setup](backend/docs/DATABASE.md)**: SQLite and PostgreSQL configuration
 - **[AI Integration](backend/docs/AI_INTEGRATION.md)**: OpenAI and Anthropic setup
-- **[Model Discovery](MODEL_DISCOVERY.md)**: Dynamic model discovery system
+- **[Model Discovery](docs/MODEL_DISCOVERY.md)**: Dynamic model discovery system
 - **[API Reference](http://localhost:8000/docs)**: Interactive API documentation (when server is running)
 
 ## 🔮 Future Enhancements

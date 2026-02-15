@@ -67,7 +67,7 @@ ContextPilot is a multi-model AI chat interface with context management capabili
   - Update models once in valid_models.json, applies everywhere
   - Automatic fallback to hardcoded models if JSON fails
   - CI/CD ready with exit codes for automation
-  - See [MODEL_SYNCHRONIZATION.md](MODEL_SYNCHRONIZATION.md) for full documentation
+  - See [MODEL_SYNCHRONIZATION.md](./MODEL_SYNCHRONIZATION.md) for full documentation
 
 ### 7. Provider-Specific Settings
 - **Implementation**: Database persistence of per-provider configuration overrides
@@ -75,7 +75,7 @@ ContextPilot is a multi-model AI chat interface with context management capabili
 - **Fallback Chain**: Provider override → Global default → Hardcoded default
 - **UI**: Modal-based configuration with validation
 - **API**: Settings persisted to database, returned via `/providers` endpoint
-- **See**: [PROVIDER_INTEGRATION.md](PROVIDER_INTEGRATION.md) for configuration details
+- **See**: [PROVIDER_INTEGRATION.md](./PROVIDER_INTEGRATION.md) for configuration details
 
 ## System Components
 
