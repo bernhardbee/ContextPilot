@@ -50,5 +50,7 @@ frontend/coverage/
 *.pid
 backend.pid
 frontend.pid
+# Local database
+contextpilot.db
 # Model discovery cache
 available_models_cache.json
