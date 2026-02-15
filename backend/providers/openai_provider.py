@@ -16,6 +16,24 @@ class OpenAIProvider(BaseLLMProvider):
     
     # Known OpenAI models with their properties
     MODEL_INFO = {
+        "gpt-5.2": {
+            "name": "GPT-5.2",
+            "context_window": 128000,
+            "supports_temperature": True,
+            "description": "Latest GPT-5.2 model with enhanced capabilities"
+        },
+        "gpt-5": {
+            "name": "GPT-5",
+            "context_window": 128000,
+            "supports_temperature": True,
+            "description": "Latest GPT-5 model"
+        },
+        "gpt-5-turbo": {
+            "name": "GPT-5 Turbo",
+            "context_window": 128000,
+            "supports_temperature": True,
+            "description": "Optimized GPT-5 model for speed"
+        },
         "gpt-4o": {
             "name": "GPT-4 Optimized",
             "context_window": 128000,

@@ -1020,7 +1020,7 @@ def get_providers(request: Request):
         elif provider_name == "ollama":
             provider_info["configured"] = bool(settings.ollama_base_url)
             provider_info["base_url"] = settings.ollama_base_url
-            provider_info["available_models"] = ["llama2", "mistral", "codellama", "phi"]  # Common models
+            provider_info["available_models"] = ["llama3.2:latest"]
         
         providers_info.append(provider_info)
     

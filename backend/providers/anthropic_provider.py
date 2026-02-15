@@ -15,6 +15,36 @@ class AnthropicProvider(BaseLLMProvider):
     
     # Known Claude models with their properties
     MODEL_INFO = {
+        "claude-opus-4-5-20251101": {
+            "name": "Claude Opus 4.5",
+            "context_window": 200000,
+            "description": "Latest Claude Opus with enhanced reasoning"
+        },
+        "claude-sonnet-4-5-20250929": {
+            "name": "Claude Sonnet 4.5",
+            "context_window": 200000,
+            "description": "Balanced Claude Sonnet with strong capabilities"
+        },
+        "claude-haiku-4-5-20251001": {
+            "name": "Claude Haiku 4.5",
+            "context_window": 200000,
+            "description": "Fast, efficient Claude model"
+        },
+        "claude-opus-4-5": {
+            "name": "Claude Opus 4.5 (Latest)",
+            "context_window": 200000,
+            "description": "Latest Claude Opus model"
+        },
+        "claude-sonnet-4-5": {
+            "name": "Claude Sonnet 4.5 (Latest)",
+            "context_window": 200000,
+            "description": "Latest Claude Sonnet model"
+        },
+        "claude-haiku-4-5": {
+            "name": "Claude Haiku 4.5 (Latest)",
+            "context_window": 200000,
+            "description": "Latest Claude Haiku model"
+        },
         "claude-3-7-sonnet-20250219": {
             "name": "Claude 3.7 Sonnet",
             "context_window": 200000,
