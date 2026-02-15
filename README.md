@@ -165,14 +165,19 @@ ContextPilot/
 │   ├── package.json         # Node.js dependencies
 │   └── tsconfig.json        # TypeScript configuration
 ├── docs/                    # Documentation (see below)
+├── bin/                     # Utility scripts
+│   ├── discover_models.py   # Model discovery script
+│   ├── refresh_models.py    # Startup model refresh integration
+│   ├── update_models.sh     # Manual model update script
+│   └── sync_models.py       # Model synchronization utility
+├── test/                    # Test and demo scripts
+│   ├── test_dynamic_models.py
+│   ├── demo_dynamic_models.py
+│   ├── test_model_*.py      # Model validation tests
+│   └── demo.sh              # API demo script
 ├── LICENSE                  # MIT License
 ├── THIRD_PARTY_NOTICES      # Third-party dependency licenses
 ├── QUICKSTART.md            # Quick reference guide
-├── discover_models.py       # Model discovery script
-├── refresh_models.py        # Startup model refresh integration
-├── update_models.sh         # Manual model update script
-├── test_dynamic_models.py   # Model discovery test suite
-├── demo_dynamic_models.py   # Model discovery demo script
 ├── setup.sh                 # Automated environment setup
 ├── start.sh                 # Start both backend & frontend (with auto-setup)
 ├── stop.sh                  # Stop all services
@@ -535,13 +540,16 @@ Refresh available models manually:
 
 ```bash
 # Discover and cache all available models
-python3 discover_models.py
+python3 bin/discover_models.py
 
 # Force refresh (ignore cache)
-python3 refresh_models.py --force
+python3 bin/refresh_models.py --force
 
 # Quick status check
-python3 demo_dynamic_models.py
+python3 test/demo_dynamic_models.py
+
+# Verify model synchronization
+python3 bin/sync_models.py --check
 ```
 
 #### Scheduled Updates
@@ -553,7 +561,7 @@ Set up automatic daily model discovery:
 crontab -e
 
 # Add this line (runs daily at 6 AM)
-0 6 * * * /path/to/ContextPilot/update_models.sh
+0 6 * * * /path/to/ContextPilot/bin/update_models.sh
 ```
 
 #### Current Model Status

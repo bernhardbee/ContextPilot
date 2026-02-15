@@ -104,9 +104,9 @@ Keep frontend and backend in sync:
 
 ```bash
 # From repository root
-python sync_models.py              # Sync frontend ← backend
-python sync_models.py --check      # Validate synchronization
-python sync_models.py --frontend   # Sync backend ← frontend
+python bin/sync_models.py              # Sync frontend ← backend
+python bin/sync_models.py --check      # Validate synchronization
+python bin/sync_models.py --frontend   # Sync backend ← frontend
 ```
 
 See [MODEL_SYNCHRONIZATION.md](../docs/MODEL_SYNCHRONIZATION.md) for details.

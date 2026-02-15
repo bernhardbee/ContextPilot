@@ -48,6 +48,12 @@ frontend/coverage/
 
 # Runtime files
 *.pid
+
+# Local development artifacts
+contextpilot.db
+*.sqlite
+*.sqlite3
+available_models_cache.json
 backend.pid
 frontend.pid
 # Local database

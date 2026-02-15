@@ -48,34 +48,34 @@ npm run dev
 cd backend
 python -m pytest  # All tests
 python -m pytest --ignore=test_integration.py  # Unit tests only
-python test_dynamic_models.py  # Test model discovery
+python test/test_dynamic_models.py  # Test model discovery
 ```
 
 ### Model Discovery & Synchronization
 ```bash
 # Sync frontend models with backend
-python sync_models.py
+python bin/sync_models.py
 
 # Check if models are in sync
-python sync_models.py --check
+python bin/sync_models.py --check
 
 # Sync backend with frontend (if frontend is source)
-python sync_models.py --frontend
+python bin/sync_models.py --frontend
 
 # Discover available models
-python3 discover_models.py
+python3 bin/discover_models.py
 
 # Force model refresh
-python3 refresh_models.py --force
+python3 bin/refresh_models.py --force
 
 # Check current models
-python3 demo_dynamic_models.py
+python3 test/demo_dynamic_models.py
 
 # Set up daily auto-discovery (cron)
-./update_models.sh
+./bin/update_models.sh
 ```
 
-**Important**: Edit `backend/valid_models.json` to add new models, then run `sync_models.py` to update frontend.
+**Important**: Edit `backend/valid_models.json` to add new models, then run `python bin/sync_models.py` to update frontend.
 
 ### Backup Database
 ```bash
