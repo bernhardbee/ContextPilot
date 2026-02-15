@@ -433,7 +433,7 @@ class ModelDiscoveryService:
     
     def update_frontend_models(self, models: Dict[str, List[str]]) -> None:
         """Update frontend model options."""
-        frontend_file = Path(__file__).parent / "frontend" / "src" / "model_options.json"
+        frontend_file = Path(__file__).parent.parent / "frontend" / "src" / "model_options.json"
         
         try:
             with open(frontend_file, 'w') as f:
@@ -444,7 +444,7 @@ class ModelDiscoveryService:
     
     def update_backend_validation(self, models: Dict[str, List[str]]) -> None:
         """Update backend model validation."""
-        validation_file = Path(__file__).parent / "backend" / "valid_models.json"
+        validation_file = Path(__file__).parent.parent / "backend" / "valid_models.json"
         
         try:
             with open(validation_file, 'w') as f:

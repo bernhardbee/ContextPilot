@@ -11,7 +11,7 @@ import sys
 
 def start_backend():
     """Start backend with proper error handling."""
-    backend_dir = Path(__file__).parent / "backend"
+    backend_dir = Path(__file__).parent.parent / "backend"
     cmd = [sys.executable, "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
     
     env = {"PYTHONPATH": str(backend_dir)}

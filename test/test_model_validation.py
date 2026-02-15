@@ -11,7 +11,7 @@ from pathlib import Path
 
 def start_backend():
     """Start the backend server."""
-    backend_dir = Path(__file__).parent / "backend"
+    backend_dir = Path(__file__).parent.parent / "backend"
     cmd = [
         sys.executable, "-m", "uvicorn", "main:app", 
         "--host", "0.0.0.0", "--port", "8000"
