@@ -9,86 +9,78 @@ from openai import OpenAI, APIConnectionError, APIStatusError
 
 from .base_provider import BaseLLMProvider, ProviderConfig, ProviderCapabilities
 from logger import logger
+from model_loader import load_models_from_json, build_model_info
+
+
+def _load_openai_models() -> Dict[str, Dict[str, Any]]:
+    """
+    Load OpenAI models from valid_models.json.
+    Falls back to hardcoded models if file not found.
+    """
+    try:
+        models_json = load_models_from_json()
+        openai_models = models_json.get("openai", [])
+        return build_model_info("openai", openai_models)
+    except Exception as e:
+        logger.warning(f"Failed to load OpenAI models from JSON, using defaults: {e}")
+        # Fallback to hardcoded models
+        return {
+            "gpt-5.2": {
+                "name": "GPT-5.2",
+                "context_window": 128000,
+                "supports_temperature": True,
+                "description": "Latest GPT-5.2 model with enhanced capabilities"
+            },
+            "gpt-5": {
+                "name": "GPT-5",
+                "context_window": 128000,
+                "supports_temperature": True,
+                "description": "Latest GPT-5 model"
+            },
+            "gpt-5-turbo": {
+                "name": "GPT-5 Turbo",
+                "context_window": 128000,
+                "supports_temperature": True,
+                "description": "Optimized GPT-5 model for speed"
+            },
+            "gpt-4o": {
+                "name": "GPT-4 Optimized",
+                "context_window": 128000,
+                "supports_temperature": True,
+                "description": "Most capable GPT-4 model, optimized for speed and cost"
+            },
+            "gpt-4o-mini": {
+                "name": "GPT-4 Optimized Mini",
+                "context_window": 128000,
+                "supports_temperature": True,
+                "description": "Smaller, faster GPT-4 model"
+            },
+            "gpt-4-turbo": {
+                "name": "GPT-4 Turbo",
+                "context_window": 128000,
+                "supports_temperature": True,
+                "description": "Enhanced GPT-4 with vision capabilities"
+            },
+            "gpt-4": {
+                "name": "GPT-4",
+                "context_window": 8192,
+                "supports_temperature": True,
+                "description": "Standard GPT-4 model"
+            },
+            "gpt-3.5-turbo": {
+                "name": "GPT-3.5 Turbo",
+                "context_window": 16385,
+                "supports_temperature": True,
+                "description": "Fast and efficient model"
+            },
+        }
 
 
 class OpenAIProvider(BaseLLMProvider):
     """OpenAI provider implementation supporting GPT models."""
     
-    # Known OpenAI models with their properties
-    MODEL_INFO = {
-        "gpt-5.2": {
-            "name": "GPT-5.2",
-            "context_window": 128000,
-            "supports_temperature": True,
-            "description": "Latest GPT-5.2 model with enhanced capabilities"
-        },
-        "gpt-5": {
-            "name": "GPT-5",
-            "context_window": 128000,
-            "supports_temperature": True,
-            "description": "Latest GPT-5 model"
-        },
-        "gpt-5-turbo": {
-            "name": "GPT-5 Turbo",
-            "context_window": 128000,
-            "supports_temperature": True,
-            "description": "Optimized GPT-5 model for speed"
-        },
-        "gpt-4o": {
-            "name": "GPT-4 Optimized",
-            "context_window": 128000,
-            "supports_temperature": True,
-            "description": "Most capable GPT-4 model, optimized for speed and cost"
-        },
-        "gpt-4o-mini": {
-            "name": "GPT-4 Optimized Mini",
-            "context_window": 128000,
-            "supports_temperature": True,
-            "description": "Smaller, faster GPT-4 model"
-        },
-        "gpt-4-turbo": {
-            "name": "GPT-4 Turbo",
-            "context_window": 128000,
-            "supports_temperature": True,
-            "description": "Enhanced GPT-4 with vision capabilities"
-        },
-        "gpt-4": {
-            "name": "GPT-4",
-            "context_window": 8192,
-            "supports_temperature": True,
-            "description": "Standard GPT-4 model"
-        },
-        "gpt-3.5-turbo": {
-            "name": "GPT-3.5 Turbo",
-            "context_window": 16385,
-            "supports_temperature": True,
-            "description": "Fast and efficient model"
-        },
-        "o1": {
-            "name": "O1 (Reasoning)",
-            "context_window": 200000,
-            "supports_temperature": False,
-            "description": "Advanced reasoning model with fixed temperature"
-        },
-        "o1-mini": {
-            "name": "O1 Mini",
-            "context_window": 128000,
-            "supports_temperature": False,
-            "description": "Smaller reasoning model"
-        },
-        "o3": {
-            "name": "O3 (Advanced Reasoning)",
-            "context_window": 200000,
-            "supports_temperature": False,
-            "description": "Next-generation reasoning model"
-        },
-        "o3-mini": {
-            "name": "O3 Mini",
-            "context_window": 128000,
-            "supports_temperature": False,
-            "description": "Efficient reasoning model"
-        }
-    }
+    # Dynamically loaded models (populated on first access)
+    MODEL_INFO = _load_openai_models()
     
     def __init__(self, config: ProviderConfig):
         """Initialize OpenAI provider with configuration."""

@@ -8,74 +8,60 @@ from anthropic import Anthropic, APIConnectionError, APIStatusError
 
 from .base_provider import BaseLLMProvider, ProviderConfig, ProviderCapabilities
 from logger import logger
+from model_loader import load_models_from_json, build_model_info
+
+
+def _load_anthropic_models() -> Dict[str, Dict[str, Any]]:
+    """
+    Load Anthropic models from valid_models.json.
+    Falls back to hardcoded models if file not found.
+    """
+    try:
+        models_json = load_models_from_json()
+        anthropic_models = models_json.get("anthropic", [])
+        return build_model_info("anthropic", anthropic_models)
+    except Exception as e:
+        logger.warning(f"Failed to load Anthropic models from JSON, using defaults: {e}")
+        # Fallback to hardcoded models
+        return {
+            "claude-opus-4-5-20251101": {
+                "name": "Claude Opus 4.5",
+                "context_window": 200000,
+                "description": "Latest Claude Opus with enhanced reasoning"
+            },
+            "claude-sonnet-4-5-20250929": {
+                "name": "Claude Sonnet 4.5",
+                "context_window": 200000,
+                "description": "Balanced Claude Sonnet with strong capabilities"
+            },
+            "claude-haiku-4-5-20251001": {
+                "name": "Claude Haiku 4.5",
+                "context_window": 200000,
+                "description": "Fast, efficient Claude model"
+            },
+            "claude-opus-4-5": {
+                "name": "Claude Opus 4.5 (Latest)",
+                "context_window": 200000,
+                "description": "Latest Claude Opus model"
+            },
+            "claude-sonnet-4-5": {
+                "name": "Claude Sonnet 4.5 (Latest)",
+                "context_window": 200000,
+                "description": "Latest Claude Sonnet model"
+            },
+            "claude-haiku-4-5": {
+                "name": "Claude Haiku 4.5 (Latest)",
+                "context_window": 200000,
+                "description": "Latest Claude Haiku model"
+            },
+        }
 
 
 class AnthropicProvider(BaseLLMProvider):
     """Anthropic provider implementation for Claude models."""
     
-    # Known Claude models with their properties
-    MODEL_INFO = {
-        "claude-opus-4-5-20251101": {
-            "name": "Claude Opus 4.5",
-            "context_window": 200000,
-            "description": "Latest Claude Opus with enhanced reasoning"
-        },
-        "claude-sonnet-4-5-20250929": {
-            "name": "Claude Sonnet 4.5",
-            "context_window": 200000,
-            "description": "Balanced Claude Sonnet with strong capabilities"
-        },
-        "claude-haiku-4-5-20251001": {
-            "name": "Claude Haiku 4.5",
-            "context_window": 200000,
-            "description": "Fast, efficient Claude model"
-        },
-        "claude-opus-4-5": {
-            "name": "Claude Opus 4.5 (Latest)",
-            "context_window": 200000,
-            "description": "Latest Claude Opus model"
-        },
-        "claude-sonnet-4-5": {
-            "name": "Claude Sonnet 4.5 (Latest)",
-            "context_window": 200000,
-            "description": "Latest Claude Sonnet model"
-        },
-        "claude-haiku-4-5": {
-            "name": "Claude Haiku 4.5 (Latest)",
-            "context_window": 200000,
-            "description": "Latest Claude Haiku model"
-        },
-        "claude-3-7-sonnet-20250219": {
-            "name": "Claude 3.7 Sonnet",
-            "context_window": 200000,
-            "description": "Most balanced Claude model with extended context"
-        },
-        "claude-3-5-sonnet-20241022": {
-            "name": "Claude 3.5 Sonnet",
-            "context_window": 200000,
-            "description": "Advanced reasoning and coding capabilities"
-        },
-        "claude-3-5-haiku-20241022": {
-            "name": "Claude 3.5 Haiku",
-            "context_window": 200000,
-            "description": "Fast, efficient model for everyday tasks"
-        },
-        "claude-3-opus-20240229": {
-            "name": "Claude 3 Opus",
-            "context_window": 200000,
-            "description": "Most capable Claude model for complex tasks"
-        },
-        "claude-3-sonnet-20240229": {
-            "name": "Claude 3 Sonnet",
-            "context_window": 200000,
-            "description": "Balanced performance and speed"
-        },
-        "claude-3-haiku-20240307": {
-            "name": "Claude 3 Haiku",
-            "context_window": 200000,
-            "description": "Fast responses for simple tasks"
-        }
-    }
+    # Dynamically loaded models (populated on first access)
+    MODEL_INFO = _load_anthropic_models()
     
     def __init__(self, config: ProviderConfig):
         """Initialize Anthropic provider with configuration."""
