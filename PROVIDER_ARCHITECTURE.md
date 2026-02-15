@@ -325,6 +325,79 @@ response3, _ = modular_ai_service.generate_response(
 )
 ```
 
+## Dynamic Model Loading with model_loader.py
+
+### Overview
+
+As of January 2026, all providers now support dynamic model loading from a centralized source: `backend/valid_models.json`. This eliminates the need for hardcoded model lists and ensures models are always in sync across frontend and backend.
+
+### How It Works
+
+**Providers:**
+1. At initialization, providers load models from `valid_models.json` using `model_loader.py` utilities
+2. If JSON loading fails, providers fall back to hardcoded model lists
+3. Models are processed to generate consistent metadata (context windows, feature support, etc.)
+
+**Example: OpenAI Provider**
+```python
+from model_loader import load_models_from_json, build_model_info
+
+class OpenAIProvider(BaseLLMProvider):
+    def _load_openai_models(self):
+        models = load_models_from_json()
+        # Filter to OpenAI models only
+        openai_models = [m for m in models if m['provider'] == 'openai']
+        # Build MODEL_INFO with metadata
+        return build_model_info(openai_models)
+    
+    def __init__(self, config):
+        super().__init__(config)
+        # Load models dynamically
+        self.MODEL_INFO = self._load_openai_models()
+        # Fallback to hardcoded if JSON fails
+        if not self.MODEL_INFO:
+            self.MODEL_INFO = {
+                "gpt-4o": {"context_window": 128000},
+                # ... hardcoded fallback
+            }
+```
+
+### Model Loading Utilities
+
+**`model_loader.py` provides:**
+- `load_models_from_json()` - Load model catalog from JSON
+- `build_model_info()` - Generate MODEL_INFO dict with metadata
+- `format_model_name()` - Consistent name formatting for display
+- `get_context_window()` - Get context window for a model
+- `supports_temperature()` - Check if model supports temperature parameter
+- `get_model_description()` - Get friendly description for a model
+
+### Synchronizing Models Across Layers
+
+The system keeps frontend and backend in sync:
+
+1. **Single Source of Truth**: `backend/valid_models.json`
+2. **Backend Providers**: Dynamically load from JSON with fallback
+3. **Frontend Sync**: `sync_models.py` script keeps frontend updated
+4. **CI/CD Ready**: `sync_models.py --check` validates sync status
+
+**Workflow:**
+```bash
+# 1. Edit model catalog
+nano backend/valid_models.json
+
+# 2. Providers load on restart (automatic)
+
+# 3. Sync frontend model list
+python sync_models.py
+
+# 4. Commit and deploy
+git add backend/valid_models.json frontend/src/model_options.json
+git commit -m "chore: update model catalog"
+```
+
+For detailed information, see [MODEL_SYNCHRONIZATION.md](MODEL_SYNCHRONIZATION.md).
+
 ## Adding a New Provider
 
 To add a new LLM provider (e.g., Google Gemini, Cohere, etc.):
