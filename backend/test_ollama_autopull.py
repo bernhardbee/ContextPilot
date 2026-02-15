@@ -2,12 +2,20 @@
 """
 Test script to verify Ollama auto-pull functionality.
 """
-import requests
 import json
 import sys
 
+import pytest
+import requests
+
 def test_ollama_autopull():
     """Test that Ollama automatically pulls missing models."""
+    try:
+        health = requests.get("http://localhost:8000/health", timeout=2)
+        if health.status_code != 200:
+            pytest.skip("Backend not running on localhost:8000")
+    except requests.RequestException:
+        pytest.skip("Backend not running on localhost:8000")
     
     print("🧪 Testing Ollama Auto-Pull Feature\n")
     
@@ -20,7 +28,8 @@ def test_ollama_autopull():
             "provider": "ollama",
             "model": "llama3.2",
             "max_context_units": 0
-        }
+        },
+        timeout=10
     )
     
     if response.status_code == 400:
@@ -32,6 +41,7 @@ def test_ollama_autopull():
             print(f"❌ Unexpected error: {error}\n")
     else:
         print(f"❌ Expected 400, got {response.status_code}\n")
+        assert response.status_code == 400
     
     # Test 2: Check if Ollama is actually running
     print("Test 2: Checking if Ollama is installed...")

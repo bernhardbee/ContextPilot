@@ -46,7 +46,6 @@ class AIService:
         
         # Ollama uses OpenAI-compatible API
         if settings.ollama_base_url:
-            from openai import OpenAI
             self.ollama_client = OpenAI(
                 base_url=f"{settings.ollama_base_url}/v1",
                 api_key=settings.ollama_api_key  # Usually not required but needed for API compatibility
@@ -94,6 +93,14 @@ class AIService:
             else:
                 model = settings.default_ai_model
         
+        # Fail fast on missing provider configuration
+        if provider == "openai" and not self.openai_client:
+            raise ValueError("OpenAI API key not configured")
+        if provider == "anthropic" and not self.anthropic_client:
+            raise ValueError("Anthropic API key not configured")
+        if provider == "ollama" and not self.ollama_client:
+            raise ValueError("Ollama not configured. Set CONTEXTPILOT_OLLAMA_BASE_URL environment variable.")
+
         # Validate model for the provider
         if provider != "ollama":  # Skip validation for Ollama as models are dynamic
             validate_ai_model(provider, model)
