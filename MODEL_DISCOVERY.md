@@ -192,7 +192,39 @@ rm available_models_cache.json
 python3 discover_models.py
 ```
 
-## Development Notes
+## Integration with Model Synchronization System
+
+As of January 2026, the model discovery system works with the new model synchronization system:
+
+### Workflow
+
+1. **Discover Models**: Use `discover_models.py` to fetch available models from APIs and populate `valid_models.json`
+2. **Validate Models**: Edit `valid_models.json` to keep the models you want to support
+3. **Synchronize**: Run `sync_models.py` to keep the frontend model list in sync with backend
+4. **Deploy**: Commit changes and deploy - models are now synchronized everywhere
+
+### Commands
+
+```bash
+# Step 1: Discover available models from providers
+python3 discover_models.py
+
+# Step 2: Review and edit valid_models.json as needed
+nano backend/valid_models.json
+
+# Step 3: Synchronize frontend with backend
+python3 sync_models.py
+
+# Step 4: Verify synchronization
+python3 sync_models.py --check
+```
+
+### See Also
+
+- [MODEL_SYNCHRONIZATION.md](MODEL_SYNCHRONIZATION.md) - Keeping frontend/backend in sync
+- [PROVIDER_INTEGRATION.md](PROVIDER_INTEGRATION.md) - Provider-specific configuration
+
+## Integration Points
 
 ### Adding New Providers
 
