@@ -85,6 +85,58 @@ CONTEXTPILOT_MAX_CONTENT_LENGTH=10000
 CONTEXTPILOT_MAX_CONTEXTS_PER_REQUEST=20
 ```
 
+### Secrets Management (IMPORTANT)
+
+#### Protecting LLM Provider Keys
+
+Never commit API keys or secrets to version control:
+
+```bash
+# .gitignore example
+.env              # Contains API keys, never commit
+.env.local        # Local overrides
+backend/.env      # Backend-specific secrets
+```
+
+**If you accidentally commit secrets:**
+
+1. Immediately rotate the compromised key in the provider's dashboard
+2. Scan git history to ensure previous commits are clean:
+   ```bash
+   git log --all -- .env | head -20  # View history
+   ```
+3. Remove the file from git history (if committed):
+   ```bash
+   git filter-branch --tree-filter 'rm -f .env' -- --all
+   git push origin --force --all
+   ```
+
+#### Provider API Keys
+
+Ensure these sensitive items are never in version control:
+
+- **OpenAI API Key**: Used for GPT models
+- **Anthropic API Key**: Used for Claude models  
+- **Ollama URL**: If hosting remote Ollama instance
+
+Store these in:
+- Environment variables (development)
+- `.env` file (local development only - .gitignored)
+- Secrets management system (production):
+  - AWS Secrets Manager
+  - HashiCorp Vault
+  - GitHub Secrets
+  - GitLab CI/CD Secrets
+
+#### Model Catalog Security
+
+The `backend/valid_models.json` file defines available models but does **not** contain any secrets:
+- Safe to commit to version control
+- Used by sync_models.py to keep lists in sync
+- Contains only model names and metadata, no API keys
+
+See [MODEL_SYNCHRONIZATION.md](MODEL_SYNCHRONIZATION.md) for details.
+
 ## Production Deployment Checklist
 
 - [ ] Enable authentication (`ENABLE_AUTH=true`)

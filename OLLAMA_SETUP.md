@@ -130,6 +130,42 @@ If Ollama is running on a different port or remote machine:
 ✅ **Offline**: Works without internet  
 ✅ **Unlimited**: No rate limits or quotas  
 
+## Model Synchronization
+
+All models (including Ollama) are managed through a centralized system:
+
+### Adding New Ollama Models
+
+1. **Edit the model catalog**:
+   ```bash
+   nano backend/valid_models.json
+   ```
+
+2. **Add your new Ollama model**:
+   ```json
+   {
+     "name": "my-custom-model",
+     "provider": "ollama",
+     "features": {
+       "temperature": true,
+       "top_p": true,
+       "max_tokens": true
+     }
+   }
+   ```
+
+3. **Synchronize frontend and backend**:
+   ```bash
+   python sync_models.py
+   ```
+
+4. **Verify synchronization**:
+   ```bash
+   python sync_models.py --check
+   ```
+
+For detailed synchronization documentation, see [MODEL_SYNCHRONIZATION.md](MODEL_SYNCHRONIZATION.md).
+
 ## Advanced Usage
 
 ### Custom Ollama Configuration

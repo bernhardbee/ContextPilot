@@ -64,6 +64,9 @@ Most AI tools are stateless—they forget context between sessions. ContextPilot
 - ✅ **Structured logging** with JSON output option
 - ✅ **Database migrations** with Alembic
 - ✅ **No external dependencies** for embeddings (uses local models)
+- ✅ **Provider-specific settings** - Override temperature, context window, and API params per provider
+- ✅ **Model synchronization** - Keep frontend/backend models in sync automatically
+- ✅ **Latest models** - GPT-5, GPT-5.2, Claude 4.5, Claude Haiku 4.5 support
 
 ## 🏗️ Architecture
 
@@ -298,7 +301,11 @@ The frontend will be available at **http://localhost:3000**
 ### 1. Using the Web UI
 
 1. Open http://localhost:3000
-2. **Configure API Keys**: Click the ⚙️ settings button to configure your OpenAI or Anthropic API keys for AI chat functionality
+2. **Configure API Keys & Provider Settings**: Click the ⚙️ settings button to:
+   - Configure your OpenAI, Anthropic, or Ollama API keys
+   - Set provider-specific defaults (model, temperature, max tokens)
+   - Override global settings per provider for fine-tuned control
+   - For Ollama: Set the base URL (default: http://localhost:11434)
 3. **Add Context**: Add context units (preferences, decisions, facts, goals) using templates or manual entry in the left sidebar
 4. **Start a Chat**: 
    - Select a previous conversation from the list, or

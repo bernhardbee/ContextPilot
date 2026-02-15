@@ -5,23 +5,25 @@ ContextPilot integrates with multiple AI providers to generate responses using y
 ## Supported Providers
 
 ### OpenAI
-- **Models**: Dynamically discovered from OpenAI API (GPT-4o, GPT-4o-mini, GPT-4-turbo, GPT-4, GPT-3.5-turbo, etc.)
+- **Latest Models**: GPT-5.2, GPT-5, GPT-5-Turbo, GPT-4o, GPT-4o-mini, GPT-4-Turbo, GPT-4, GPT-3.5-Turbo
+- **Reasoning Models**: O1, O1-mini, O3, O3-mini (fixed temperature, advanced reasoning)
 - **API**: OpenAI Chat Completions API
-- **Features**: Function calling, streaming, vision (GPT-4V)
-- **Discovery**: Real-time model list via API when key is configured
+- **Features**: Function calling, streaming, vision (GPT-4V), reasoning modes
+- **Model Source**: Dynamically loaded from `backend/valid_models.json`
 
 ### Anthropic
-- **Models**: Claude 3.5 Sonnet (latest), Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku
+- **Latest Models**: Claude Opus 4.5, Claude Sonnet 4.5, Claude Haiku 4.5
+- **Dated Versions**: Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku
 - **API**: Anthropic Messages API
-- **Features**: Extended context windows, thinking tokens
-- **Discovery**: Curated list of current models (updated regularly)
+- **Features**: Extended context windows (200K), thinking tokens, tool use
+- **Model Source**: Dynamically loaded from `backend/valid_models.json`
 
 ### Ollama (Local Models)
-- **Models**: Automatically detected from local installation (llama3.2, mistral, codellama, phi3, etc.)
-- **API**: OpenAI-compatible REST API
-- **Features**: Local execution, privacy, no API costs, offline support
+- **Supported Models**: llama3.2, llama2, mistral, neural-chat, dolphin-mixtral, and many others
+- **API**: OpenAI-compatible REST API (local)
+- **Features**: Local execution, privacy, no API costs, offline support, auto-pull
+- **Model Source**: Dynamically loaded from `backend/valid_models.json`
 - **Requirements**: Ollama installed locally (https://ollama.ai)
-- **Discovery**: Live detection of installed models via API and CLI
 
 ## Quick Start
 

@@ -301,6 +301,82 @@ Provider modules include security best practices:
 - Request timeouts
 - Error messages sanitized
 
+## Provider-Specific Settings
+
+### Overview
+
+ContextPilot supports per-provider settings overrides, allowing you to customize behavior for each AI provider without affecting others.
+
+### Available Overrides
+
+**OpenAI Provider:**
+- `openai_base_url` - Override API endpoint (for compatible gateways like Azure)
+- `openai_default_model` - Default model for this provider
+- `openai_temperature` - Temperature (0-2)
+- `openai_top_p` - Top-P sampling parameter
+- `openai_max_tokens` - Maximum tokens in response
+
+**Anthropic Provider:**
+- `anthropic_default_model` - Default model for this provider
+- `anthropic_temperature` - Temperature (0-2)
+- `anthropic_top_p` - Top-P sampling parameter
+- `anthropic_top_k` - Top-K sampling parameter
+- `anthropic_max_tokens` - Maximum tokens in response
+
+**Ollama Provider:**
+- `ollama_default_model` - Default model for this provider
+- `ollama_temperature` - Temperature (0-2)
+- `ollama_top_p` - Top-P sampling parameter
+- `ollama_num_predict` - Number of tokens to predict
+- `ollama_num_ctx` - Context window size
+- `ollama_keep_alive` - How long to keep model loaded
+
+### Configuration Via UI
+
+Settings are configured in the web UI ⚙️ (Settings Modal):
+1. Provider tabs show provider-specific options
+2. Leave fields blank to use global defaults
+3. Settings persist automatically in the database
+4. No restart required
+
+### Configuration Via API
+
+**Get current settings:**
+```bash
+curl http://localhost:8000/settings
+```
+
+**Update provider overrides:**
+```bash
+curl -X POST http://localhost:8000/settings \
+  -H "Content-Type: application/json" \
+  -d '{
+    "openai_temperature": 0.7,
+    "openai_default_model": "gpt-5",
+    "anthropic_temperature": 0.8,
+    "anthropic_default_model": "claude-opus-4-5"
+  }'
+```
+
+### Configuration Via Environment Variables
+
+Set environment variable with `CONTEXTPILOT_` prefix:
+
+```bash
+CONTEXTPILOT_OPENAI_TEMPERATURE=0.5
+CONTEXTPILOT_ANTHROPIC_TOP_K=40
+CONTEXTPILOT_OLLAMA_NUM_PREDICT=500
+```
+
+### Fallback Behavior
+
+Settings priority (highest to lowest):
+1. Provider-specific override (if set)
+2. Global default setting
+3. Provider hardcoded default
+
+This ensures the application works even if overrides aren't configured.
+
 ## Examples
 
 See `backend/example_providers.py` for complete working examples:

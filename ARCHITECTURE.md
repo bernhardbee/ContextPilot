@@ -56,6 +56,27 @@ ContextPilot is a multi-model AI chat interface with context management capabili
 - **Implementation**: Changed from `async def` to `def` for clarity
 - **Documentation**: Added notes explaining synchronous design choice
 
+### 6. Model Synchronization System
+- **Problem**: Model lists in frontend, backend hardcoded providers, and valid_models.json were out of sync
+- **Solution**: Unified on single source of truth (valid_models.json) with dynamic loading
+- **Components**:
+  - `backend/model_loader.py`: Utilities for loading models and generating metadata
+  - `backend/providers/`: Dynamic model loading in OpenAIProvider and AnthropicProvider
+  - `sync_models.py`: CLI utility to synchronize frontend/backend model lists
+- **Benefits**:
+  - Update models once in valid_models.json, applies everywhere
+  - Automatic fallback to hardcoded models if JSON fails
+  - CI/CD ready with exit codes for automation
+  - See [MODEL_SYNCHRONIZATION.md](MODEL_SYNCHRONIZATION.md) for full documentation
+
+### 7. Provider-Specific Settings
+- **Implementation**: Database persistence of per-provider configuration overrides
+- **Scope**: temperature, top_p, top_k, max_tokens, per-provider model overrides
+- **Fallback Chain**: Provider override → Global default → Hardcoded default
+- **UI**: Modal-based configuration with validation
+- **API**: Settings persisted to database, returned via `/providers` endpoint
+- **See**: [PROVIDER_INTEGRATION.md](PROVIDER_INTEGRATION.md) for configuration details
+
 ## System Components
 
 ### 1. Frontend (React + TypeScript)
@@ -131,6 +152,57 @@ ContextPilot is a multi-model AI chat interface with context management capabili
 │  └───────────────────────────────┘  │
 └─────────────────────────────────────┘
 ```
+
+### 3.5. Provider Architecture
+
+```
+┌───────────────────────────────────────────────────────┐
+│           LLM Provider System (Pluggable)            │
+├───────────────────────────────────────────────────────┤
+│                                                       │
+│  ┌─────────────────────────────────────────────────┐ │
+│  │          Model Catalog (Single Source)          │ │
+│  │      /backend/valid_models.json                 │ │
+│  │  - OpenAI: GPT-5.2, GPT-5, O1, O3, etc.        │ │
+│  │  - Anthropic: Claude Opus/Sonnet/Haiku 4.5    │ │
+│  │  - Ollama: llama3.2:latest                      │ │
+│  └─────────────────────────────────────────────────┘ │
+│         │                                             │
+│         │ loaded by                                   │
+│  ┌──────▼─────────────────────────────────────────┐ │
+│  │       backend/model_loader.py                   │ │
+│  │  - load_models_from_json()                      │ │
+│  │  - build_model_info()                           │ │
+│  │  - get_context_window()                         │ │
+│  │  - supports_temperature()                       │ │
+│  └──────┬─────────────────────────────────────────┘ │
+│         │ utilized by                                 │
+│    ┌────┴──────────────┬─────────────────┐          │
+│    │                   │                 │          │
+│  ┌─▼──────────────┐ ┌─▼──────────┐ ┌────▼───────┐   │
+│  │OpenAIProvider  │ │Anthropic   │ │   Ollama   │   │
+│  │                │ │Provider    │ │  Provider  │   │
+│  │- GPT-5.2       │ │            │ │            │   │
+│  │- GPT-5         │ │- Claude    │ │- Local LLM │   │
+│  │- O1/O3         │ │  Opus 4.5  │ │            │   │
+│  │- Dynamic load  │ │- Dynamic   │ │- Settings  │   │
+│  │- Settings DB   │ │  load      │ │  support   │   │
+│  │- Fallback      │ │- Settings  │ │            │   │
+│  │  hardcoded     │ │  DB        │ └────────────┘   │
+│  │- Sync script   │ │- Fallback  │                   │
+│  └────────────────┘ │  hardcoded │                   │
+│                     │- Sync      │                   │
+│                     │  script    │                   │
+│                     └────────────┘                   │
+└───────────────────────────────────────────────────────┘
+```
+
+**Key Features:**
+- **Single Source of Truth**: Models defined in `valid_models.json`
+- **Dynamic Loading**: Models loaded from JSON at provider initialization
+- **Provider-Specific Settings**: Temperature, top_p, top_k, max_tokens overrides per provider
+- **Resilient Fallback**: Uses hardcoded models if JSON loading fails
+- **Model Synchronization**: `sync_models.py` keeps frontend model lists in sync (CI/CD ready)
 
 ### 3. Storage Layer
 

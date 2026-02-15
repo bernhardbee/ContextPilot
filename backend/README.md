@@ -63,14 +63,73 @@ Backup and restore database:
 - **Database Storage**: SQLite/PostgreSQL with Alembic migrations
 - **Import/Export**: JSON and CSV import/export functionality
 - **Settings Management**: API key and AI configuration (max 16K tokens)
+- **Dynamic Model Loading**: Single source of truth for model lists (valid_models.json)
+- **Provider-Specific Settings**: Temperature, top_p, max_tokens overrides per provider
+- **Model Synchronization**: Automatic frontend/backend sync with sync_models.py
 - **Security**: API key authentication, input validation, CORS, rate limiting
-- **Testing**: 135+ comprehensive unit tests across multiple suites
+- **Testing**: 204 comprehensive unit and integration tests
+
+## Model System
+
+### Dynamic Model Loading
+
+All models are loaded dynamically from a single source of truth:
+
+```
+backend/valid_models.json (Single Source)
+    ↓
+backend/model_loader.py (Loading Utilities)
+    ↓
+backend/providers/* (OpenAI, Anthropic, Ollama)
+    ↓
+Frontend (via /providers endpoint)
+```
+
+**Files:**
+- `model_loader.py`: Utilities for loading models and building metadata
+- `valid_models.json`: Master model catalog (safe to commit)
+- `providers/openai_provider.py`: Dynamic OpenAI model loading
+- `providers/anthropic_provider.py`: Dynamic Anthropic model loading
+- `providers/ollama_provider.py`: Ollama local model support
+
+**Key Features:**
+- Models update automatically when valid_models.json changes
+- Fallback to hardcoded models if JSON loading fails
+- Provider-specific settings (temperature, top_p, max_tokens, etc.)
+- Model metadata (context windows, naming conventions, feature support)
+
+### Synchronization
+
+Keep frontend and backend in sync:
+
+```bash
+# From repository root
+python sync_models.py              # Sync frontend ← backend
+python sync_models.py --check      # Validate synchronization
+python sync_models.py --frontend   # Sync backend ← frontend
+```
+
+See [MODEL_SYNCHRONIZATION.md](../MODEL_SYNCHRONIZATION.md) for details.
+
+### Provider Integration
+
+Each provider implements dynamic model loading:
+
+```python
+# OpenAI Provider
+from providers.openai_provider import OpenAIProvider
+provider = OpenAIProvider(api_key="sk-...")
+models = provider.MODEL_INFO  # Dynamically loaded from valid_models.json
+```
+
+See [PROVIDER_INTEGRATION.md](../PROVIDER_INTEGRATION.md) for configuration details.
 
 ## Project Structure
 
 ```
 backend/
 ├── main.py                  # FastAPI application entry point
+├── model_loader.py          # Dynamic model loading utilities
 ├── models.py                # Pydantic data models
 ├── db_models.py             # SQLAlchemy database models
 ├── storage.py               # In-memory storage implementation
@@ -94,10 +153,15 @@ backend/
 ├── init_db.py               # Database initialization
 ├── migrate.py               # Database migration utilities
 ├── migrate_to_db.py         # Migration from in-memory to DB
+├── valid_models.json        # Model catalog (single source of truth)
+├── providers/               # LLM provider implementations
+│   ├── openai_provider.py   # OpenAI with dynamic model loading
+│   ├── anthropic_provider.py # Anthropic with dynamic model loading
+│   └── ollama_provider.py   # Ollama local provider
 ├── alembic/                 # Database migration scripts
 ├── alembic.ini              # Alembic configuration
 ├── docs/                    # API documentation
-├── test_*.py                # Test suites (107 tests)
+├── test_*.py                # Test suites (204 tests)
 ├── requirements.txt         # Python dependencies
 ├── pyproject.toml           # Project configuration
 └── .env.example             # Environment variables template

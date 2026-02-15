@@ -16,6 +16,8 @@ ContextPilot/                           # Root directory
 ├── 🔧 start-backend.sh                 # Start backend only (executable)
 ├── 🔧 start-frontend.sh                # Start frontend only (executable)
 ├── 🔧 demo.sh                          # API demo script (executable)
+├── 🐍 sync_models.py                   # Model synchronization utility (checks/syncs model lists)
+├── 📄 MODEL_SYNCHRONIZATION.md         # Model sync system documentation
 │
 ├── 📁 backend/                         # FastAPI backend
 │   ├── 🐍 main.py                     # FastAPI application (300+ lines)
@@ -24,6 +26,12 @@ ContextPilot/                           # Root directory
 │   │   ├── Context CRUD operations
 │   │   ├── Prompt generation endpoints
 │   │   └── Statistics endpoint
+│   │
+│   ├── 🐍 model_loader.py             # Dynamic model loading utilities
+│   │   ├── load_models_from_json()
+│   │   ├── build_model_info()
+│   │   ├── Model metadata generation
+│   │   └── Fallback handling
 │   │
 │   ├── 🐍 models.py                   # Pydantic data models (100+ lines)
 │   │   ├── ContextUnit
@@ -54,7 +62,17 @@ ContextPilot/                           # Root directory
 │   ├── 🐍 example_data.py             # Example data loader (70+ lines)
 │   │   └── 10 pre-configured contexts
 │   │
-│   ├── 🐍 test_api.py                 # Test script (80+ lines)
+│   ├── � valid_models.json            # Model catalog (single source of truth)
+│   │   ├── OpenAI models list
+│   │   ├── Anthropic models list
+│   │   └── Ollama models list
+│   │
+│   ├── 📁 providers/                   # LLM provider implementations
+│   │   ├── 🐍 openai_provider.py      # OpenAI provider with dynamic model loading
+│   │   ├── 🐍 anthropic_provider.py   # Anthropic provider with dynamic model loading
+│   │   └── 🐍 ollama_provider.py      # Ollama local provider
+│   │
+│   ├── �🐍 test_api.py                 # Test script (80+ lines)
 │   │   ├── Data loading tests
 │   │   ├── Relevance engine tests
 │   │   └── Prompt composer tests
@@ -121,22 +139,31 @@ ContextPilot/                           # Root directory
 ### Source Code Files
 | Category | Files | Lines | Language |
 |----------|-------|-------|----------|
-| Backend | 7 | ~850 | Python |
+| Backend | 9 | ~950 | Python |
 | Frontend | 5 | ~960 | TypeScript/CSS |
-| Scripts | 4 | ~150 | Bash |
-| Documentation | 6 | ~1,900 | Markdown |
+| Scripts | 5 | ~200 | Python/Bash |
+| Documentation | 7 | ~2,200 | Markdown |
 | Config | 6 | ~50 | JSON/Text |
-| **Total** | **28** | **~3,900+** | **Mixed** |
+| **Total** | **32** | **~4,400+** | **Mixed** |
 
 ### Backend Files Detail
 ```
 main.py              300 lines    FastAPI application
+model_loader.py      100 lines    Dynamic model loading
 models.py            100 lines    Data models
 relevance.py         120 lines    Relevance engine
 composer.py          100 lines    Prompt composer
 storage.py            80 lines    Storage layer
 example_data.py       70 lines    Example data
 test_api.py           80 lines    Tests
+valid_models.json     ~15 lines   Model catalog
+```
+
+### Root Scripts Detail
+```
+sync_models.py       200 lines    Model synchronization utility
+start.sh              50 lines    Startup script
+demo.sh              100 lines    API demo
 ```
 
 ### Frontend Files Detail
@@ -150,11 +177,12 @@ main.tsx              20 lines    Entry point
 
 ### Documentation Files Detail
 ```
-README.md            500 lines    Main documentation
-ARCHITECTURE.md      600 lines    System architecture
-EXAMPLES.md          400 lines    Usage examples
-QUICKSTART.md        400 lines    Quick reference
-IMPLEMENTATION_SUMMARY.md  600 lines  Summary
+README.md                  500 lines    Main documentation
+ARCHITECTURE.md            600 lines    System architecture
+MODEL_SYNCHRONIZATION.md   250 lines    Model sync system docs
+EXAMPLES.md                400 lines    Usage examples
+QUICKSTART.md              400 lines    Quick reference
+IMPLEMENTATION_SUMMARY.md  600 lines    Summary
 ```
 
 ---
@@ -410,19 +438,31 @@ Tests:
 ## Summary
 
 **Total Project:**
-- 28 files created
-- ~3,900+ lines of code
-- 6 major components
+- 32 files created
+- ~4,400+ lines of code
+- 8 major components (including model synchronization system)
 - 9 API endpoints
-- 5 documentation files
-- 4 executable scripts
-- Full working MVP
+- 7 documentation files
+- 5 executable/utility scripts
+- Dynamic model loading for OpenAI, Anthropic, Ollama
+- Provider-specific settings support
+- Automatic model synchronization
+- Full working MVP with continuous deployment support
+
+**Key Features:**
+- ✅ Single source of truth for models (valid_models.json)
+- ✅ Dynamic model loading at startup
+- ✅ Provider-specific configuration options
+- ✅ Automatic model list synchronization (sync_models.py)
+- ✅ Fallback behavior for resilience
+- ✅ CI/CD ready with exit codes
 
 **Ready to:**
 - ✅ Run immediately
 - ✅ Demonstrate functionality
 - ✅ Extend with new features
 - ✅ Deploy to production
+- ✅ Add new models with single edit
 
 **Start now:**
 ```bash

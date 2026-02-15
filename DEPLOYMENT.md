@@ -323,6 +323,60 @@ sudo lsof -i :8000
 - Consider caching frequently used contexts
 - Monitor with: `time curl https://yourdomain.com/health`
 
+## Model Synchronization (CI/CD Integration)
+
+### Overview
+
+ContextPilot uses a single source of truth for models: `backend/valid_models.json`. The model synchronization system ensures frontend and backend stay in sync automatically.
+
+### Deployment Workflow
+
+**When updating models:**
+
+```bash
+# 1. Edit the model catalog
+nano backend/valid_models.json
+
+# 2. Validate synchronization
+python sync_models.py --check
+
+# 3. If out of sync, synchronize
+python sync_models.py
+
+# 4. Commit changes
+git add backend/valid_models.json frontend/src/model_options.json
+git commit -m "chore: update model catalog"
+```
+
+### CI/CD Pipeline Integration
+
+Add to your GitHub Actions, GitLab CI, or similar:
+
+```yaml
+# Example: GitHub Actions
+- name: Check Model Synchronization
+  run: |
+    cd /path/to/ContextPilot
+    python sync_models.py --check
+    if [ $? -ne 0 ]; then
+      echo "Error: Model lists are out of sync!"
+      python sync_models.py
+      exit 1
+    fi
+```
+
+### Benefits
+
+- **Single Edit Location**: Update `valid_models.json` once
+- **Automatic Propagation**: Scripts propagate changes to frontend
+- **Validation**: `--check` flag validates synchronization before deployment
+- **CI/CD Ready**: Exit codes allow automation (0 = in sync, 1 = out of sync/error)
+
+### See Also
+
+- [MODEL_SYNCHRONIZATION.md](MODEL_SYNCHRONIZATION.md) - Complete synchronization documentation
+- [PROVIDER_INTEGRATION.md](PROVIDER_INTEGRATION.md) - Provider-specific settings
+
 ## Production Checklist
 
 - [ ] Environment variables configured
