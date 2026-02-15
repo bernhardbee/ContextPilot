@@ -12,16 +12,16 @@ import { ContextTemplates } from './ContextTemplates';
 import { ContextTools } from './ContextTools';
 import modelOptions from './model_options.json';
 import {
-  ContextType,
-  ContextUnit,
-  ContextUnitCreate,
-  Conversation,
-  ConversationMessage,
-  ProviderInfo,
-  ProvidersResponse,
-  Settings,
-  SettingsUpdate,
-  Stats,
+    ContextType,
+    ContextUnit,
+    ContextUnitCreate,
+    Conversation,
+    ConversationMessage,
+    ProviderInfo,
+    ProvidersResponse,
+    Settings,
+    SettingsUpdate,
+    Stats,
 } from './types';
 
 function App() {
