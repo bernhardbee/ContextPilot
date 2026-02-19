@@ -11,7 +11,7 @@ import {
     Conversation,
     GeneratedPrompt,
     ProvidersResponse,
-      ProviderValidationResponse,
+    ProviderValidationResponse,
     Settings,
     SettingsUpdate,
     Stats,
