@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **Sidebar & Settings UX Regression Coverage (February 20, 2026)**:
+  - Added frontend integration test for left conversation sidebar collapse/expand behavior (button-only collapsed state)
+  - Added README feature updates for tabbed settings (General first) and collapsible side panels
+
 - **Attribution Integrity Regression Coverage (February 19, 2026)**:
   - Added backend API integrity test (`backend/test_ai_attribution_integrity.py`) ensuring `/ai/chat` response provider/model reflects executed provider/model, not merely requested inputs
   - Added provider-switch metadata persistence test in `backend/test_model_switching.py`
