@@ -24,6 +24,15 @@ import {
   Stats,
 } from './types';
 
+type InteractionChannel = 'User ↔ Frontend' | 'Frontend ↔ Backend';
+
+interface InteractionLogEntry {
+  id: string;
+  timestamp: string;
+  channel: InteractionChannel;
+  message: string;
+}
+
 function App() {
   const [contexts, setContexts] = useState<ContextUnit[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -71,6 +80,35 @@ function App() {
   const [settingsModal, setSettingsModal] = useState(false);
   const [settingsForm, setSettingsForm] = useState<SettingsUpdate>({});
   const [settingsTab, setSettingsTab] = useState<string>('openai');
+  const [interactionLogs, setInteractionLogs] = useState<InteractionLogEntry[]>([]);
+
+  const appendInteractionLog = (channel: InteractionChannel, message: string) => {
+    const entry: InteractionLogEntry = {
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      timestamp: new Date().toISOString(),
+      channel,
+      message,
+    };
+
+    setInteractionLogs((previousLogs) => {
+      const nextLogs = [...previousLogs, entry];
+      return nextLogs.slice(-200);
+    });
+  };
+
+  useEffect(() => {
+    if (error) {
+      appendInteractionLog('User ↔ Frontend', `Status error: ${error}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error]);
+
+  useEffect(() => {
+    if (success) {
+      appendInteractionLog('User ↔ Frontend', `Status success: ${success}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [success]);
 
   // Load contexts and stats on mount
   useEffect(() => {
@@ -112,7 +150,6 @@ function App() {
       
       const data = await contextAPI.listContexts(false, apiFilters);
       setContexts(data);
-      setError(null);
     } catch (err) {
       setError('Failed to load contexts');
       console.error(err);
@@ -159,6 +196,7 @@ function App() {
 
   const handleUpdateSettings = async (e: React.FormEvent) => {
     e.preventDefault();
+    appendInteractionLog('User ↔ Frontend', 'User submitted settings update.');
     try {
       setLoading(true);
       
@@ -238,7 +276,9 @@ function App() {
         updateData.ollama_num_ctx = settingsForm.ollama_num_ctx;
       }
       
+      appendInteractionLog('Frontend ↔ Backend', 'Sending settings update request to backend.');
       await contextAPI.updateSettings(updateData);
+      appendInteractionLog('Frontend ↔ Backend', 'Settings update completed successfully.');
       setSuccess('Settings updated successfully!');
       setSettingsModal(false);
       setSettingsForm({});
@@ -246,6 +286,7 @@ function App() {
       loadProviders(); // Reload providers to update configuration status
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
+      appendInteractionLog('Frontend ↔ Backend', `Settings update failed: ${err?.response?.data?.message || err?.response?.data?.detail || 'unknown error'}`);
       setError(err.response?.data?.message || err.response?.data?.detail || 'Failed to update settings');
       console.error(err);
     } finally {
@@ -369,6 +410,8 @@ function App() {
       return;
     }
 
+    appendInteractionLog('User ↔ Frontend', `User sent chat message (${aiTask.trim().length} chars).`);
+
     // Create user message immediately
     const userMessage: ConversationMessage = {
       role: 'user',
@@ -403,6 +446,7 @@ function App() {
         setRefreshContexts(false);
       }
       
+      appendInteractionLog('Frontend ↔ Backend', `Sending chat request to backend (provider: ${aiProvider}, model: ${aiModel}).`);
       const result = await contextAPI.chatWithAI({
         task: taskToSend,
         max_context_units: maxContextsToSend,
@@ -412,6 +456,7 @@ function App() {
         max_tokens: aiMaxTokens,
         temperature: aiTemperature,
       });
+      appendInteractionLog('Frontend ↔ Backend', `Received chat response from backend (provider: ${result.provider}, model: ${result.model}).`);
       
       // Track contexts used for this conversation (for display purposes)
       if (result.context_ids && result.context_ids.length > 0) {
@@ -450,6 +495,7 @@ function App() {
       await loadConversations();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
+      appendInteractionLog('Frontend ↔ Backend', `Chat request failed: ${err?.response?.data?.message || err?.response?.data?.detail || err?.message || 'unknown error'}`);
       const backendDetail = err?.response?.data?.message || err?.response?.data?.detail;
       const statusCode = err?.response?.status;
 
@@ -482,10 +528,13 @@ function App() {
   };
 
   const handleValidateProviderConnection = async () => {
+    appendInteractionLog('User ↔ Frontend', `User requested provider validation for '${settingsTab}'.`);
     try {
       setLoading(true);
       const modelToCheck = getValidationModel(settingsTab);
+      appendInteractionLog('Frontend ↔ Backend', `Sending provider validation request (${settingsTab}${modelToCheck ? `, model: ${modelToCheck}` : ''}).`);
       const result = await contextAPI.validateProviderConnection(settingsTab, modelToCheck);
+      appendInteractionLog('Frontend ↔ Backend', `Provider validation result for '${settingsTab}': ${result.valid ? 'valid' : 'invalid'}.`);
 
       if (result.valid) {
         setSuccess(result.message);
@@ -494,6 +543,7 @@ function App() {
         setError(result.message);
       }
     } catch (err: any) {
+      appendInteractionLog('Frontend ↔ Backend', `Provider validation failed for '${settingsTab}': ${err?.response?.data?.message || err?.response?.data?.detail || 'unknown error'}`);
       const message = err?.response?.data?.message || err?.response?.data?.detail || `Failed to validate provider '${settingsTab}'.`;
       setError(message);
     } finally {
@@ -502,9 +552,12 @@ function App() {
   };
 
   const handleViewConversation = async (id: string) => {
+    appendInteractionLog('User ↔ Frontend', `User opened conversation '${id}'.`);
     try {
       setLoading(true);
+      appendInteractionLog('Frontend ↔ Backend', `Requesting conversation '${id}' from backend.`);
       const conversation = await contextAPI.getConversation(id);
+      appendInteractionLog('Frontend ↔ Backend', `Loaded conversation '${id}' from backend.`);
       setSelectedConversation(conversation);
       // Set current chat messages for display
       if (conversation.messages) {
@@ -514,6 +567,7 @@ function App() {
       // Clear any pending response
       setAiTask('');
     } catch (err) {
+      appendInteractionLog('Frontend ↔ Backend', `Failed to load conversation '${id}' from backend.`);
       setError('Failed to load conversation');
       console.error(err);
     } finally {
@@ -545,7 +599,7 @@ function App() {
         console.log(`Message truncated: ${role} message was cut off (${tokens || 'unknown'} tokens used)`);
         return <span style={{ color: '#999', fontStyle: 'italic' }}>(Response was truncated due to length limit. Used {tokens} tokens.)</span>;
       }
-      
+
       // eslint-disable-next-line no-console
       console.log(`Empty content for ${role} message (finish_reason: ${finish_reason || 'none'})`);
       return <span style={{ color: '#999', fontStyle: 'italic' }}>(Empty response)</span>;
@@ -700,60 +754,95 @@ function App() {
               by <img src="b-logo.png" alt="B" className="b-logo" />
             </span>
           </div>
-          <button 
-            className="settings-button"
-            onClick={openSettingsModal}
-            title="Settings"
-          >
-            ⚙️
-          </button>
+          <div className="header-actions">
+            {(error || success) && (
+              <div className={`header-status ${error ? 'error' : 'success'}`} title={error || success || ''}>
+                {error || success}
+              </div>
+            )}
+            <button 
+              className="settings-button"
+              onClick={openSettingsModal}
+              title="Settings"
+            >
+              ⚙️
+            </button>
+          </div>
         </div>
       </header>
-
-      {error && <div className="error">{error}</div>}
-      {success && <div className="success">{success}</div>}
 
       <div className="workspace-layout">
         {activeTab === 'chat' && (
           <>
-            {/* Left Sidebar: Conversations */}
-            <div className={`sidebar sidebar-left ${showConversations ? 'visible' : 'collapsed'}`}>
-              <div className="sidebar-header">
-                <h3>💬 Conversations</h3>
-                <button 
-                  className="toggle-button"
-                  onClick={() => setShowConversations(!showConversations)}
-                  title={showConversations ? "Hide conversations" : "Show conversations"}
-                >
-                  {showConversations ? '◀' : '▶'}
-                </button>
-              </div>
-              {showConversations && (
-                <div className="sidebar-content">
-                  {conversations.length === 0 ? (
-                    <p className="help-text">No conversations yet</p>
-                  ) : (
-                    <div className="conversation-list">
-                      {conversations.map((conv) => (
-                        <div 
-                          key={conv.id} 
-                          className={`conversation-item ${selectedConversation?.id === conv.id ? 'active' : ''}`}
-                          onClick={() => handleViewConversation(conv.id)}
-                        >
-                          <div className="conversation-preview">
-                            <div className="conversation-task">{conv.task.substring(0, 60)}...</div>
-                            <div className="conversation-meta">
-                              <span className="conversation-model">{conv.model}</span>
-                              <span className="conversation-messages">{conv.message_count} msgs</span>
-                            </div>
-                            <div className="conversation-date">
-                              {new Date(conv.created_at).toLocaleDateString()}
+            <div className="left-sidebar-stack">
+              {/* Left Sidebar: Conversations */}
+              <div className={`sidebar sidebar-left sidebar-left-panel ${showConversations ? 'visible' : 'collapsed'}`}>
+                <div className="sidebar-header">
+                  <h3>💬 Conversations</h3>
+                  <button 
+                    className="toggle-button"
+                    onClick={() => setShowConversations(!showConversations)}
+                    title={showConversations ? "Hide conversations" : "Show conversations"}
+                  >
+                    {showConversations ? '◀' : '▶'}
+                  </button>
+                </div>
+                {showConversations && (
+                  <div className="sidebar-content conversation-pane">
+                    {conversations.length === 0 ? (
+                      <p className="help-text">No conversations yet</p>
+                    ) : (
+                      <div className="conversation-list">
+                        {conversations.map((conv) => (
+                          <div 
+                            key={conv.id} 
+                            className={`conversation-item ${selectedConversation?.id === conv.id ? 'active' : ''}`}
+                            onClick={() => handleViewConversation(conv.id)}
+                          >
+                            <div className="conversation-preview">
+                              <div className="conversation-task">{conv.task.substring(0, 60)}...</div>
+                              <div className="conversation-meta">
+                                <span className="conversation-model">{conv.model}</span>
+                                <span className="conversation-messages">{conv.message_count} msgs</span>
+                              </div>
+                              <div className="conversation-date">
+                                {new Date(conv.created_at).toLocaleDateString()}
+                              </div>
                             </div>
                           </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {showConversations && (
+                <div className="interaction-log-panel sidebar-log-panel interaction-log-panel-left">
+                  <div className="interaction-log-header sidebar-log-header">
+                    <h3>Interaction Log</h3>
+                    <button
+                      type="button"
+                      className="button button-small button-secondary"
+                      onClick={() => setInteractionLogs([])}
+                      disabled={interactionLogs.length === 0}
+                    >
+                      Clear Log
+                    </button>
+                  </div>
+                  <div className="interaction-log-list sidebar-log-list" role="log" aria-label="interaction log output">
+                    {interactionLogs.length === 0 ? (
+                      <div className="interaction-log-empty">No interactions recorded yet.</div>
+                    ) : (
+                      [...interactionLogs].reverse().map((entry) => (
+                        <div key={entry.id} className="interaction-log-entry">
+                          <span className="interaction-log-time">{new Date(entry.timestamp).toLocaleTimeString()}</span>
+                          <span className="interaction-log-channel">{entry.channel}</span>
+                          <span className="interaction-log-message">{entry.message}</span>
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      ))
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -1130,7 +1219,6 @@ function App() {
                 ))}
               </div>
             </div>
-
             <button type="submit" className="button" disabled={loading}>
               {loading ? 'Adding...' : 'Add Context'}
             </button>

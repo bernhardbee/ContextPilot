@@ -30,6 +30,8 @@ Most AI tools are stateless—they forget context between sessions. ContextPilot
 - ✅ **Chat-style interface** with message bubbles and timestamps
 - ✅ **Conversation history** with automatic persistence
 - ✅ **Smart context management** - sends contexts once per conversation
+- ✅ **Interaction log output** - Shows user↔frontend and frontend↔backend events in a dedicated panel
+- ✅ **Newest-first interaction timeline** - Latest log entries are displayed at the top
 - ✅ **Auto-scroll** to latest messages
 - ✅ **Typing indicators** for AI responses
 - ✅ **Context refresh control** for explicit context reloading
@@ -44,6 +46,7 @@ Most AI tools are stateless—they forget context between sessions. ContextPilot
 ### UI/UX
 - ✅ **Modern Interface Design** - Clean, professional layout with brand identity
 - ✅ **Simplified Navigation** - Streamlined interface with intuitive return navigation
+- ✅ **Inline status in header** - Success/error status appears beside the settings button
 - ✅ **2-Column Manage Layout** - Organized context management with responsive grid design
 - ✅ **Custom Branding** - Distinctive "by B" signature with custom fuzzy B logo
 - ✅ **Mobile Responsive** - Optimized for all screen sizes with proper breakpoints
@@ -316,11 +319,12 @@ The frontend will be available at **http://localhost:3000**
    - Follow-up messages continue the conversation without re-sending contexts
    - Click the "Refresh Contexts" toggle if you want to reload contexts in a follow-up
 6. **View History**: All conversations are saved and can be accessed from the left sidebar
-7. **Context Management**:
-   - View all your contexts in the right sidebar
-   - Use filters to find specific contexts
-   - Export/import contexts as JSON or CSV
-8. **Generate Standalone Prompts**: Use the middle column's "Generate Prompt" section to create prompts for use in other tools
+7. **Monitor Interactions**: Use the Interaction Log panel (below conversations) to inspect user actions, backend requests, and status outcomes in reverse-chronological order
+8. **Manage Contexts**:
+  - View all your contexts in the right sidebar
+  - Use filters to find specific contexts
+  - Export/import contexts as JSON or CSV
+9. **Generate Standalone Prompts**: Use the middle column's "Generate Prompt" section to create prompts for use in other tools
 
 ### 2. Using the API
 

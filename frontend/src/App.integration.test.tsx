@@ -226,7 +226,7 @@ describe('App integration', () => {
         expect.objectContaining({ content: 'New context content' })
       );
     });
-    expect(screen.getByText(/context created successfully!/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/context created successfully!/i).length).toBeGreaterThan(0);
   });
 
   it('deletes context when confirmed and skips when canceled', async () => {
@@ -249,7 +249,7 @@ describe('App integration', () => {
 
     await user.click(screen.getByRole('button', { name: /code preference/i }));
 
-    expect(screen.getByText(/template loaded!/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/template loaded!/i).length).toBeGreaterThan(0);
     expect(
       (
         screen.getByPlaceholderText(/describe your preference, decision, fact, or goal/i) as HTMLTextAreaElement
@@ -269,7 +269,7 @@ describe('App integration', () => {
     await waitFor(() => {
       expect(mockApi.updateSettings).toHaveBeenCalled();
     });
-    expect(screen.getByText(/settings updated successfully!/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/settings updated successfully!/i).length).toBeGreaterThan(0);
   });
 
   it('shows settings update error from backend detail', async () => {
@@ -297,7 +297,7 @@ describe('App integration', () => {
       expect(mockApi.validateProviderConnection).toHaveBeenCalledWith('openai', expect.any(String));
     });
 
-    expect(await screen.findByText(/openai connection and api key are valid/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/openai connection and api key are valid/i)).length).toBeGreaterThan(0);
   });
 
   it('shows anthropic and ollama provider panels in settings modal', async () => {
@@ -413,7 +413,7 @@ describe('App integration', () => {
     await user.type(input, 'Hello AI');
     await user.click(screen.getByRole('button', { name: /🚀/i }));
 
-    expect(await screen.findByText(/failed to generate ai response using provider 'openai' and model 'gpt-4o'/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/failed to generate ai response using provider 'openai' and model 'gpt-4o'/i)).length).toBeGreaterThan(0);
   });
 
   it('displays backend-attributed model even when requested model differs', async () => {
@@ -498,7 +498,12 @@ describe('App integration', () => {
     const { user } = render(<App />);
 
     await user.click(await screen.findByText(/first task/i));
-    expect(await screen.findByText(/failed to load conversation/i)).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(mockApi.getConversation).toHaveBeenCalledWith('conv-1');
+    });
+    const log = await screen.findByRole('log', { name: /interaction log output/i });
+    expect(log).toHaveTextContent(/failed to load conversation/i);
   });
 
   it('copies a message to clipboard', async () => {
@@ -514,6 +519,22 @@ describe('App integration', () => {
     const copyButtons = await screen.findAllByRole('button', { name: '📋' });
     await user.click(copyButtons[copyButtons.length - 1]);
     expect(writeTextSpy).toHaveBeenCalled();
-    expect(screen.getByText(/message copied to clipboard!/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/message copied to clipboard!/i).length).toBeGreaterThan(0);
+  });
+
+  it('shows bottom interaction log for user/frontend and frontend/backend events', async () => {
+    const { user } = render(<App />);
+
+    const input = await screen.findByPlaceholderText(/ask a question or describe a task/i);
+    await user.type(input, 'Log this interaction');
+    await user.click(screen.getByRole('button', { name: /🚀/i }));
+
+    const log = await screen.findByRole('log', { name: /interaction log output/i });
+    expect(log).toHaveTextContent(/User ↔ Frontend/i);
+    expect(log).toHaveTextContent(/Frontend ↔ Backend/i);
+    expect(log).toHaveTextContent(/chat message|chat request|chat response/i);
+
+    await user.click(screen.getByRole('button', { name: /clear log/i }));
+    expect(log).toHaveTextContent(/no interactions recorded yet/i);
   });
 });
