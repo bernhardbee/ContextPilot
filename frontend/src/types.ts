@@ -108,6 +108,9 @@ export interface Conversation {
   provider: string;
   model: string;
   created_at: string;
+  updated_at?: string;
+  last_message_at?: string;
+  last_entry_at?: string;
   message_count?: number;
   messages?: ConversationMessage[];
 }

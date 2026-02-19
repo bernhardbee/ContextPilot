@@ -213,6 +213,140 @@ describe('App integration', () => {
     expect(await screen.findByText(/first task/i)).toBeInTheDocument();
   });
 
+  it('orders conversations by latest entry time with newest at the top', async () => {
+    mockApi.listConversations.mockResolvedValueOnce([
+      {
+        id: 'conv-older',
+        task: 'Older conversation in payload',
+        provider: 'openai',
+        model: 'gpt-4o',
+        created_at: '2026-02-15T08:00:00Z',
+        last_message_at: '2026-02-15T09:00:00Z',
+        message_count: 2,
+      },
+      {
+        id: 'conv-newer',
+        task: 'Newest conversation in payload',
+        provider: 'openai',
+        model: 'gpt-4o',
+        created_at: '2026-02-15T07:00:00Z',
+        last_message_at: '2026-02-15T12:00:00Z',
+        message_count: 4,
+      },
+    ]);
+
+    const { container } = render(<App />);
+
+    expect(await screen.findByText(/older conversation in payload/i)).toBeInTheDocument();
+    expect(await screen.findByText(/newest conversation in payload/i)).toBeInTheDocument();
+
+    const orderedTasks = Array.from(
+      container.querySelectorAll('.conversation-item .conversation-task')
+    ).map((node) => node.textContent || '');
+
+    expect(orderedTasks[0]).toContain('Newest conversation in payload');
+    expect(orderedTasks[1]).toContain('Older conversation in payload');
+  });
+
+  it('moves an updated lower conversation to the top immediately after sending, before reply returns', async () => {
+    mockApi.listConversations
+      .mockResolvedValueOnce([
+        {
+          id: 'conv-top',
+          task: 'Top conversation before update',
+          provider: 'openai',
+          model: 'gpt-4o',
+          created_at: '2026-02-15T08:00:00Z',
+          last_message_at: '2026-02-15T12:00:00Z',
+          message_count: 5,
+        },
+        {
+          id: 'conv-bottom',
+          task: 'Bottom conversation before update',
+          provider: 'openai',
+          model: 'gpt-4o',
+          created_at: '2026-02-15T08:30:00Z',
+          last_message_at: '2026-02-15T09:00:00Z',
+          message_count: 2,
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 'conv-top',
+          task: 'Top conversation before update',
+          provider: 'openai',
+          model: 'gpt-4o',
+          created_at: '2026-02-15T08:00:00Z',
+          last_message_at: '2026-02-15T12:00:00Z',
+          message_count: 5,
+        },
+        {
+          id: 'conv-bottom',
+          task: 'Bottom conversation before update',
+          provider: 'openai',
+          model: 'gpt-4o',
+          created_at: '2026-02-15T08:30:00Z',
+          last_message_at: '2026-02-15T09:00:00Z',
+          message_count: 2,
+        },
+      ]);
+
+    mockApi.getConversation.mockResolvedValueOnce({
+      id: 'conv-bottom',
+      task: 'Bottom conversation before update',
+      provider: 'openai',
+      model: 'gpt-4o',
+      created_at: '2026-02-15T08:30:00Z',
+      messages: [
+        { role: 'system', content: 'sys', created_at: '2026-02-15T08:30:00Z' },
+        { role: 'user', content: 'older user', created_at: '2026-02-15T08:31:00Z' },
+        { role: 'assistant', content: 'older assistant', created_at: '2026-02-15T08:32:00Z' },
+      ],
+    });
+
+    const chatResponse = {
+      conversation_id: 'conv-bottom',
+      task: 'promote this conversation',
+      response: 'updated response',
+      provider: 'openai',
+      model: 'gpt-4o',
+      context_ids: ['ctx-1'],
+      prompt_used: 'p',
+      timestamp: '2026-02-15T13:00:00Z',
+    };
+
+    let resolveChatRequest!: (value: typeof chatResponse) => void;
+    const pendingChatRequest = new Promise<typeof chatResponse>((resolve) => {
+      resolveChatRequest = resolve;
+    });
+    mockApi.chatWithAI.mockReturnValueOnce(pendingChatRequest);
+
+    const { user, container } = render(<App />);
+
+    expect(await screen.findByText(/top conversation before update/i)).toBeInTheDocument();
+    expect(await screen.findByText(/bottom conversation before update/i)).toBeInTheDocument();
+
+    await user.click(screen.getByText(/bottom conversation before update/i));
+    await user.type(await screen.findByPlaceholderText(/continue the conversation/i), 'promote this conversation');
+    await user.click(screen.getByRole('button', { name: /🚀/i }));
+
+    await waitFor(() => {
+      expect(mockApi.chatWithAI).toHaveBeenCalledWith(
+        expect.objectContaining({ conversation_id: 'conv-bottom' })
+      );
+    });
+
+    await waitFor(() => {
+      const orderedTasks = Array.from(
+        container.querySelectorAll('.conversation-item .conversation-task')
+      ).map((node) => node.textContent || '');
+      expect(orderedTasks[0]).toContain('Bottom conversation before update');
+    });
+
+    resolveChatRequest(chatResponse);
+    expect(await screen.findByText('updated response')).toBeInTheDocument();
+  });
+
   it('shows context loading error when listContexts fails', async () => {
     mockApi.listContexts.mockRejectedValue(new Error('load fail'));
     render(<App />);
@@ -656,7 +790,7 @@ describe('App integration', () => {
     await user.type(input, 'copy target');
     await user.click(screen.getByRole('button', { name: /🚀/i }));
 
-    const copyButtons = await screen.findAllByRole('button', { name: '📋' });
+    const copyButtons = await screen.findAllByTitle(/copy message/i);
     await user.click(copyButtons[copyButtons.length - 1]);
     expect(writeTextSpy).toHaveBeenCalled();
     expect(screen.getAllByText(/message copied to clipboard!/i).length).toBeGreaterThan(0);

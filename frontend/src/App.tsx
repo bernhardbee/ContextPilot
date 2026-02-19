@@ -65,6 +65,7 @@ function App() {
   const [currentChatMessages, setCurrentChatMessages] = useState<ConversationMessage[]>([]);
   const [refreshContexts, setRefreshContexts] = useState(false);
   const messageListRef = useRef<HTMLDivElement>(null);
+  const conversationActivityOverridesRef = useRef<Record<string, number>>({});
 
   // Search and filter states
   const [filters, setFilters] = useState({
@@ -484,12 +485,84 @@ function App() {
     setTimeout(() => setSuccess(null), 3000);
   };
 
+  const parseTimestamp = (value?: string): number => {
+    if (!value) {
+      return Number.NaN;
+    }
+
+    const parsed = Date.parse(value);
+    return Number.isNaN(parsed) ? Number.NaN : parsed;
+  };
+
+  const trackConversationActivity = (conversationId: string, timestampValue?: string) => {
+    const parsedTimestamp = parseTimestamp(timestampValue);
+    if (Number.isNaN(parsedTimestamp)) {
+      return;
+    }
+
+    const existingTimestamp = conversationActivityOverridesRef.current[conversationId];
+    if (existingTimestamp === undefined || parsedTimestamp > existingTimestamp) {
+      conversationActivityOverridesRef.current[conversationId] = parsedTimestamp;
+    }
+  };
+
+  const getConversationLastEntryTimestamp = (conversation: Conversation): number => {
+    const directCandidates = [
+      conversation.last_entry_at,
+      conversation.last_message_at,
+      conversation.updated_at,
+      conversation.created_at,
+    ];
+
+    const overriddenTimestamp = conversationActivityOverridesRef.current[conversation.id];
+    let latestTimestamp =
+      overriddenTimestamp !== undefined ? overriddenTimestamp : Number.NEGATIVE_INFINITY;
+
+    for (const candidate of directCandidates) {
+      const parsedTimestamp = parseTimestamp(candidate);
+      if (!Number.isNaN(parsedTimestamp)) {
+        latestTimestamp = Math.max(latestTimestamp, parsedTimestamp);
+      }
+    }
+
+    if (conversation.messages?.length) {
+      for (const message of conversation.messages) {
+        const parsedTimestamp = parseTimestamp(message.created_at || message.timestamp);
+        if (!Number.isNaN(parsedTimestamp)) {
+          latestTimestamp = Math.max(latestTimestamp, parsedTimestamp);
+        }
+      }
+    }
+
+    return latestTimestamp === Number.NEGATIVE_INFINITY ? 0 : latestTimestamp;
+  };
+
+  const sortConversationsByLastEntry = (items: Conversation[]): Conversation[] => {
+    return [...items].sort((firstConversation, secondConversation) => {
+      const latestDifference =
+        getConversationLastEntryTimestamp(secondConversation) -
+        getConversationLastEntryTimestamp(firstConversation);
+
+      if (latestDifference !== 0) {
+        return latestDifference;
+      }
+
+      return secondConversation.id.localeCompare(firstConversation.id);
+    });
+  };
+
   // Legacy prompt generation functions removed - now using direct AI chat
 // AI Chat handlers
   const loadConversations = async () => {
     try {
       const data = await contextAPI.listConversations();
-      setConversations(data);
+      for (const conversation of data) {
+        trackConversationActivity(
+          conversation.id,
+          conversation.last_entry_at || conversation.last_message_at || conversation.updated_at || conversation.created_at
+        );
+      }
+      setConversations(sortConversationsByLastEntry(data));
     } catch (err) {
       console.error('Failed to load conversations:', err);
     }
@@ -536,6 +609,23 @@ function App() {
       if (refreshContexts) {
         setRefreshContexts(false);
       }
+
+      if (selectedConversation?.id) {
+        const sentTimestamp = new Date().toISOString();
+        trackConversationActivity(selectedConversation.id, sentTimestamp);
+        setConversations((previousConversations) =>
+          sortConversationsByLastEntry(
+            previousConversations.map((conversation) =>
+              conversation.id === selectedConversation.id
+                ? {
+                    ...conversation,
+                    last_entry_at: sentTimestamp,
+                  }
+                : conversation
+            )
+          )
+        );
+      }
       
       appendInteractionLog('Frontend ↔ Backend', `Sending chat request to backend (provider: ${aiProvider}, model: ${aiModel}).`);
       const result = await contextAPI.chatWithAI({
@@ -550,6 +640,7 @@ function App() {
       appendInteractionLog('Frontend ↔ Backend', `Received chat response from backend (provider: ${result.provider}, model: ${result.model}).`);
       setAiProvider(result.provider);
       setAiModel(result.model);
+      trackConversationActivity(result.conversation_id, result.timestamp || new Date().toISOString());
       
       // Track contexts used for this conversation (for display purposes)
       if (result.context_ids && result.context_ids.length > 0) {
@@ -579,6 +670,7 @@ function App() {
           provider: result.provider,
           model: result.model,
           created_at: result.timestamp,
+          last_entry_at: result.timestamp,
           messages: [userMessage, assistantMessage]
         };
         setSelectedConversation(newConversation);
@@ -593,6 +685,29 @@ function App() {
             : previousConversation
         ));
       }
+
+      setConversations((previousConversations) => {
+        const foundConversation = previousConversations.some(
+          (conversation) => conversation.id === result.conversation_id
+        );
+
+        if (!foundConversation) {
+          return previousConversations;
+        }
+
+        return sortConversationsByLastEntry(
+          previousConversations.map((conversation) =>
+            conversation.id === result.conversation_id
+              ? {
+                  ...conversation,
+                  provider: result.provider,
+                  model: result.model,
+                  last_entry_at: result.timestamp || conversation.last_entry_at,
+                }
+              : conversation
+          )
+        );
+      });
       
       setError(null);
       await loadConversations();
@@ -661,6 +776,10 @@ function App() {
       appendInteractionLog('Frontend ↔ Backend', `Requesting conversation '${id}' from backend.`);
       const conversation = await contextAPI.getConversation(id);
       appendInteractionLog('Frontend ↔ Backend', `Loaded conversation '${id}' from backend.`);
+      trackConversationActivity(
+        conversation.id,
+        conversation.last_entry_at || conversation.last_message_at || conversation.updated_at || conversation.created_at
+      );
       setSelectedConversation(conversation);
       const { provider, model } = resolveConversationChatSelection(conversation);
       setAiProvider(provider);
@@ -932,8 +1051,8 @@ function App() {
               </div>
 
               {showConversations && (
-                <div className="interaction-log-panel sidebar-log-panel interaction-log-panel-left">
-                  <div className="interaction-log-header sidebar-log-header">
+                <div className="interaction-log-panel sidebar sidebar-log-panel interaction-log-panel-left">
+                  <div className="interaction-log-header sidebar-header sidebar-log-header">
                     <h3>Interaction Log</h3>
                     <button
                       type="button"
@@ -944,15 +1063,21 @@ function App() {
                       Clear Log
                     </button>
                   </div>
-                  <div className="interaction-log-list sidebar-log-list" role="log" aria-label="interaction log output">
+                  <div className="interaction-log-list sidebar-content sidebar-log-list" role="log" aria-label="interaction log output">
                     {interactionLogs.length === 0 ? (
                       <div className="interaction-log-empty">No interactions recorded yet.</div>
                     ) : (
                       [...interactionLogs].reverse().map((entry) => (
                         <div key={entry.id} className="interaction-log-entry">
-                          <span className="interaction-log-time">{new Date(entry.timestamp).toLocaleTimeString()}</span>
-                          <span className="interaction-log-channel">{entry.channel}</span>
-                          <span className="interaction-log-message">{entry.message}</span>
+                          <div className="interaction-log-preview">
+                            <div className="interaction-log-message">{entry.message}</div>
+                            <div className="interaction-log-meta">
+                              <span className="interaction-log-channel">{entry.channel}</span>
+                            </div>
+                            <div className="interaction-log-meta-bottom">
+                              <span className="interaction-log-time">{new Date(entry.timestamp).toLocaleTimeString()}</span>
+                            </div>
+                          </div>
                         </div>
                       ))
                     )}
@@ -1007,20 +1132,35 @@ function App() {
                                 {renderMessageContent(msg)}
                               </div>
                               <div className="message-actions">
-                                <span className="message-time">
-                                  {new Date(msg.created_at || msg.timestamp || '').toLocaleTimeString()}
-                                </span>
-                                {msg.model && msg.role === 'assistant' && (
-                                  <span className="message-model" title={`Generated by ${msg.model}`}>
-                                    {msg.model}
+                                <div className="message-meta-group">
+                                  <span className="message-time">
+                                    {new Date(msg.created_at || msg.timestamp || '').toLocaleTimeString()}
                                   </span>
-                                )}
+                                  {msg.model && msg.role === 'assistant' && (
+                                    <span className="message-model" title={`Generated by ${msg.model}`}>
+                                      {msg.model}
+                                    </span>
+                                  )}
+                                </div>
                                 <button
+                                  type="button"
                                   className="copy-message-btn"
                                   onClick={() => handleCopyMessage(msg.content)}
                                   title="Copy message"
+                                  aria-label="Copy message"
                                 >
-                                  📋
+                                  <svg
+                                    className="copy-message-icon"
+                                    width="18"
+                                    height="18"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    aria-hidden="true"
+                                  >
+                                    <rect x="3" y="9" width="12" height="12" rx="3" stroke="currentColor" strokeWidth="2" />
+                                    <rect x="9" y="3" width="12" height="12" rx="3" fill="var(--copy-btn-bg)" stroke="none" />
+                                    <rect x="9" y="3" width="12" height="12" rx="3" stroke="currentColor" strokeWidth="2" />
+                                  </svg>
                                 </button>
                               </div>
                             </div>
