@@ -259,3 +259,79 @@ class TestModelSwitching:
         assert len(assistant_messages) == 2
         assert assistant_messages[0]['model'] == 'gpt-4'
         assert assistant_messages[1]['model'] == 'gpt-3.5-turbo'
+
+    def test_provider_switch_updates_conversation_provider_and_model(self, ai_service_instance, sample_prompt, monkeypatch):
+        """Switching providers in the same conversation must persist truthful provider/model metadata."""
+        class MockOpenAI:
+            class chat:
+                class completions:
+                    @staticmethod
+                    def create(**kwargs):
+                        class MockResponse:
+                            class MockChoice:
+                                class MockMessage:
+                                    content = "OpenAI response"
+                                message = MockMessage()
+                                finish_reason = "stop"
+                            choices = [MockChoice()]
+                            class MockUsage:
+                                completion_tokens = 10
+                                prompt_tokens = 5
+                                total_tokens = 15
+                            usage = MockUsage()
+                            model = kwargs.get('model', 'gpt-4o')
+                        return MockResponse()
+
+        class MockAnthropic:
+            class messages:
+                @staticmethod
+                def create(**kwargs):
+                    class MockResponse:
+                        class MockContent:
+                            text = "Anthropic response"
+                        content = [MockContent()]
+                        stop_reason = "end_turn"
+                        class MockUsage:
+                            input_tokens = 6
+                            output_tokens = 12
+                        usage = MockUsage()
+                        model = kwargs.get('model', 'claude-sonnet-4-5')
+                    return MockResponse()
+
+        monkeypatch.setattr(ai_service_instance, 'openai_client', MockOpenAI())
+        monkeypatch.setattr(ai_service_instance, 'anthropic_client', MockAnthropic())
+
+        # Start conversation on OpenAI
+        _, conversation1 = ai_service_instance._generate_openai(
+            task="first",
+            generated_prompt=sample_prompt,
+            context_ids=[],
+            model="gpt-4o",
+            temperature=0.7,
+            max_tokens=100,
+            conversation_id=None
+        )
+        conversation_id = conversation1.id
+        assert conversation1.provider == "openai"
+        assert conversation1.model == "gpt-4o"
+
+        # Continue same conversation with Anthropic
+        _, conversation2 = ai_service_instance._generate_anthropic(
+            task="second",
+            generated_prompt=sample_prompt,
+            context_ids=[],
+            model="claude-sonnet-4-5",
+            temperature=0.7,
+            max_tokens=100,
+            conversation_id=conversation_id
+        )
+
+        assert conversation2.id == conversation_id
+        assert conversation2.provider == "anthropic"
+        assert conversation2.model == "claude-sonnet-4-5"
+
+        # Verify persistence in stored conversation metadata
+        conversation_data = ai_service_instance.get_conversation(conversation_id)
+        assert conversation_data is not None
+        assert conversation_data["provider"] == "anthropic"
+        assert conversation_data["model"] == "claude-sonnet-4-5"

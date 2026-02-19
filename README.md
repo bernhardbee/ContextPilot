@@ -613,8 +613,9 @@ python -m pytest --ignore=test_integration.py  # Skip integration tests
 ```
 
 Backend status:
-- ✅ 205 tests passing (`python -m pytest -v`)
+- ✅ 207 collected (`206 passed, 1 skipped` in local run)
 - ✅ API, storage, validators, settings, providers, and migration coverage
+- ✅ Attribution integrity checks ensure `/ai/chat` returns executed provider/model metadata
 
 ### Run Frontend Checks and Tests
 ```bash
@@ -628,10 +629,11 @@ npm run e2e
 ```
 
 Frontend status:
-- ✅ 90 unit/integration tests passing
+- ✅ 91 unit/integration tests passing
 - ✅ 16 Playwright E2E tests passing
 - ✅ Coverage: 90.46% statements / 90.46% lines
 - ✅ App surface coverage: 86.54% statements/lines in `App.tsx`
+- ✅ Regression test prevents UI from showing requested model when backend reports a different executing model
 
 ### Run Demo Script
 ```bash

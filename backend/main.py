@@ -916,7 +916,7 @@ def ai_chat(
             task=sanitized_task,
             response=response_text,
             provider=conversation.provider,
-            model=ai_request.model or conversation.model,  # Use the actual model requested
+            model=conversation.model,
             context_ids=context_ids,
             prompt_used=generated.generated_prompt
         )

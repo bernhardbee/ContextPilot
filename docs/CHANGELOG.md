@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **Attribution Integrity Regression Coverage (February 19, 2026)**:
+  - Added backend API integrity test (`backend/test_ai_attribution_integrity.py`) ensuring `/ai/chat` response provider/model reflects executed provider/model, not merely requested inputs
+  - Added provider-switch metadata persistence test in `backend/test_model_switching.py`
+  - Added frontend integration regression test to verify UI displays backend-attributed model even when requested model differs
 - **Frontend Test Expansion & Coverage Hardening (February 19, 2026)**:
   - Added high-value API endpoint tests (`frontend/src/api.test.ts`)
   - Added App-level integration coverage for context management, settings, chat, clipboard, and provider switching
@@ -40,6 +44,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Added `test_settings_store.py` to validate SettingsStore CRUD against a temporary database
 
 ### Fixed  
+- **Trust-Critical Provider/Model Attribution (February 19, 2026)**:
+  - Fixed `/ai/chat` response attribution to return authoritative executed provider/model metadata
+  - Fixed conversation metadata persistence when provider/model changes within an existing conversation
+  - Hardened model attribution extraction to safely handle non-string SDK/mocked model values during persistence
 - **QA Stability Improvements (February 19, 2026)**:
   - Fixed flaky frontend integration selectors and form submission timing issues
   - Fixed ContextTools async import test warning by resolving with correct payload inside `act(...)`

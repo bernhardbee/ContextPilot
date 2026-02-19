@@ -51,6 +51,10 @@ class AIService:
                 api_key=settings.ollama_api_key  # Usually not required but needed for API compatibility
             )
             logger.info(f"Ollama client initialized at {settings.ollama_base_url}")
+
+    def _resolve_model_name(self, candidate: object, fallback: str) -> str:
+        """Return a safe, string model name for persistence and attribution."""
+        return candidate if isinstance(candidate, str) and candidate else fallback
     
     def generate_response(
         self,
@@ -174,8 +178,10 @@ class AIService:
                 current_conversation_id = existing_conversation['id']
                 # Create a temporary conversation object for return compatibility
                 conversation = self._get_conversation_object(current_conversation_id)
-                # Update conversation model if different from requested model
-                if conversation and conversation.model != model:
+                # Keep conversation metadata aligned with the provider/model in use
+                if conversation and (conversation.provider != "openai" or conversation.model != model):
+                    self._update_conversation_metadata(current_conversation_id, "openai", model)
+                    conversation.provider = "openai"
                     conversation.model = model
             else:
                 conversation = self._create_conversation(
@@ -224,6 +230,12 @@ class AIService:
             assistant_message = response.choices[0].message.content or ""
             finish_reason = response.choices[0].finish_reason
             tokens_used = response.usage.total_tokens
+            actual_model = self._resolve_model_name(getattr(response, "model", None), model)
+
+            # Persist the actual provider/model that generated this response
+            self._update_conversation_metadata(current_conversation_id, "openai", actual_model)
+            conversation.provider = "openai"
+            conversation.model = actual_model
             
             # Log warning if content is empty
             if not assistant_message:
@@ -239,7 +251,7 @@ class AIService:
             if not existing_conversation:
                 new_messages.insert(0, {"role": "system", "content": "You are a helpful AI assistant with access to personalized context."})
             
-            self._save_messages(current_conversation_id, new_messages, model)
+            self._save_messages(current_conversation_id, new_messages, actual_model)
             
             logger.info(f"OpenAI response generated: {model}, {tokens_used} tokens")
             return assistant_message, conversation
@@ -284,8 +296,10 @@ class AIService:
                 current_conversation_id = existing_conversation['id']
                 # Create a temporary conversation object for return compatibility
                 conversation = self._get_conversation_object(current_conversation_id)
-                # Update conversation model if different from requested model
-                if conversation and conversation.model != model:
+                # Keep conversation metadata aligned with the provider/model in use
+                if conversation and (conversation.provider != "anthropic" or conversation.model != model):
+                    self._update_conversation_metadata(current_conversation_id, "anthropic", model)
+                    conversation.provider = "anthropic"
                     conversation.model = model
             else:
                 conversation = self._create_conversation(
@@ -318,6 +332,12 @@ class AIService:
             assistant_message = response.content[0].text
             finish_reason = response.stop_reason
             tokens_used = response.usage.input_tokens + response.usage.output_tokens
+            actual_model = self._resolve_model_name(getattr(response, "model", None), model)
+
+            # Persist the actual provider/model that generated this response
+            self._update_conversation_metadata(current_conversation_id, "anthropic", actual_model)
+            conversation.provider = "anthropic"
+            conversation.model = actual_model
             
             # Save new messages (only the new user and assistant messages)
             new_messages = [
@@ -325,7 +345,7 @@ class AIService:
                 {"role": "assistant", "content": assistant_message, "tokens": tokens_used, "finish_reason": finish_reason}
             ]
             
-            self._save_messages(current_conversation_id, new_messages, model)
+            self._save_messages(current_conversation_id, new_messages, actual_model)
             
             logger.info(f"Anthropic response generated: {model}, {tokens_used} tokens")
             return assistant_message, conversation
@@ -416,8 +436,10 @@ class AIService:
             if existing_conversation:
                 current_conversation_id = existing_conversation['id']
                 conversation = self._get_conversation_object(current_conversation_id)
-                # Update conversation model if different from requested model
-                if conversation and conversation.model != model:
+                # Keep conversation metadata aligned with the provider/model in use
+                if conversation and (conversation.provider != "ollama" or conversation.model != model):
+                    self._update_conversation_metadata(current_conversation_id, "ollama", model)
+                    conversation.provider = "ollama"
                     conversation.model = model
             else:
                 conversation = self._create_conversation(
@@ -451,6 +473,12 @@ class AIService:
             assistant_message = response.choices[0].message.content or ""
             finish_reason = response.choices[0].finish_reason
             tokens_used = response.usage.total_tokens if hasattr(response, 'usage') and response.usage else 0
+            actual_model = self._resolve_model_name(getattr(response, "model", None), model)
+
+            # Persist the actual provider/model that generated this response
+            self._update_conversation_metadata(current_conversation_id, "ollama", actual_model)
+            conversation.provider = "ollama"
+            conversation.model = actual_model
             
             # Log warning if content is empty
             if not assistant_message:
@@ -466,7 +494,7 @@ class AIService:
             if not existing_conversation:
                 new_messages.insert(0, {"role": "system", "content": "You are a helpful AI assistant with access to personalized context."})
             
-            self._save_messages(current_conversation_id, new_messages, model)
+            self._save_messages(current_conversation_id, new_messages, actual_model)
             
             logger.info(f"Ollama response generated: {model}, {tokens_used} tokens")
             return assistant_message, conversation
@@ -506,6 +534,12 @@ class AIService:
                         assistant_message = response.choices[0].message.content or ""
                         finish_reason = response.choices[0].finish_reason
                         tokens_used = response.usage.total_tokens if hasattr(response, 'usage') and response.usage else 0
+                        actual_model = self._resolve_model_name(getattr(response, "model", None), model)
+
+                        # Persist the actual provider/model that generated this response
+                        self._update_conversation_metadata(current_conversation_id, "ollama", actual_model)
+                        conversation.provider = "ollama"
+                        conversation.model = actual_model
                         
                         if not assistant_message:
                             logger.warning(f"Empty response from Ollama. Finish reason: {finish_reason}, Tokens: {tokens_used}")
@@ -519,7 +553,7 @@ class AIService:
                         if not existing_conversation:
                             new_messages.insert(0, {"role": "system", "content": "You are a helpful AI assistant with access to personalized context."})
                         
-                        self._save_messages(current_conversation_id, new_messages, model)
+                        self._save_messages(current_conversation_id, new_messages, actual_model)
                         
                         logger.info(f"Ollama response generated after auto-pull: {model}, {tokens_used} tokens")
                         return assistant_message, conversation
@@ -593,6 +627,16 @@ class AIService:
                 )
                 db.add(db_message)
             # Commit handled by context manager
+
+    def _update_conversation_metadata(self, conversation_id: str, provider: str, model: str):
+        """Persist provider/model metadata for an existing conversation."""
+        with get_db_session() as db:
+            conversation = db.query(ConversationDB).filter(
+                ConversationDB.id == conversation_id
+            ).first()
+            if conversation:
+                conversation.provider = provider
+                conversation.model = model
     
     def _get_conversation_object(self, conversation_id: str) -> Optional[ConversationDB]:
         """Get a conversation object for return compatibility."""

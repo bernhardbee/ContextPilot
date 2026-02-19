@@ -173,9 +173,12 @@ class ModularAIService:
         if existing_conversation:
             current_conversation_id = existing_conversation['id']
             conversation = self._get_conversation_object(current_conversation_id)
-            # Update model if different
-            if conversation and model and conversation.model != model:
-                conversation.model = model
+            # Keep conversation metadata aligned with the provider/model in use
+            requested_model = model or provider_instance.config.default_model
+            if conversation and (conversation.provider != provider or conversation.model != requested_model):
+                self._update_conversation_metadata(current_conversation_id, provider, requested_model)
+                conversation.provider = provider
+                conversation.model = requested_model
         else:
             conversation = self._create_conversation(
                 task=task,
@@ -194,6 +197,12 @@ class ModularAIService:
                 temperature=temperature,
                 max_tokens=max_tokens
             )
+            actual_model = metadata.get("model_used") or model or provider_instance.config.default_model
+
+            # Persist the actual provider/model that generated this response
+            self._update_conversation_metadata(current_conversation_id, provider, actual_model)
+            conversation.provider = provider
+            conversation.model = actual_model
             
             # Save messages to database
             new_messages = [
@@ -206,7 +215,7 @@ class ModularAIService:
                     "content": response_text,
                     "tokens": metadata.get("tokens_used", 0),
                     "finish_reason": metadata.get("finish_reason", ""),
-                    "model": metadata.get("model_used", model)
+                    "model": actual_model
                 }
             ]
             
@@ -362,6 +371,16 @@ class ModularAIService:
                 )
                 return conv_copy
             return None
+
+    def _update_conversation_metadata(self, conversation_id: str, provider: str, model: str):
+        """Persist provider/model metadata for an existing conversation."""
+        with get_db_session() as db:
+            conversation = db.query(ConversationDB).filter(
+                ConversationDB.id == conversation_id
+            ).first()
+            if conversation:
+                conversation.provider = provider
+                conversation.model = model
     
     def get_conversation(self, conversation_id: str) -> Optional[Dict]:
         """Get a conversation with all its messages."""

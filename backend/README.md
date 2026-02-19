@@ -67,7 +67,9 @@ Backup and restore database:
 - **Provider-Specific Settings**: Temperature, top_p, max_tokens overrides per provider
 - **Model Synchronization**: Automatic frontend/backend sync with sync_models.py
 - **Security**: API key authentication, input validation, CORS, rate limiting
-- **Testing**: 205 comprehensive unit and integration tests
+- **Testing**: 207 collected backend tests (`206 passed, 1 skipped` in local run)
+- **Attribution Integrity**: `/ai/chat` returns authoritative executed provider/model metadata
+- **Provider Switch Safety**: Conversation provider/model metadata is updated on each generated response
 - **Ollama Auto-Pull Test**: Environment-aware integration test supports both
     - expected connection-error behavior when Ollama is offline, and
     - successful responses when Ollama is already running locally
