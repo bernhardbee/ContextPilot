@@ -110,6 +110,70 @@ class TestAIService:
         assert conversation.provider == 'openai'
         assert conversation.model == 'gpt-4'
         assert conversation.task == "What is Python?"
+
+    def test_generate_openai_gpt5_uses_max_completion_tokens(self, ai_service_instance, sample_prompt):
+        """GPT-5 family models should use max_completion_tokens instead of max_tokens."""
+        mock_response = Mock()
+        mock_choice = Mock()
+        mock_message = Mock()
+        mock_message.content = 'Answer from GPT-5'
+        mock_choice.message = mock_message
+        mock_choice.finish_reason = 'stop'
+        mock_response.choices = [mock_choice]
+        mock_response.usage = Mock()
+        mock_response.usage.total_tokens = 42
+
+        mock_client = Mock()
+        create_mock = Mock(return_value=mock_response)
+        mock_client.chat.completions.create = create_mock
+        ai_service_instance.openai_client = mock_client
+
+        ai_service_instance.generate_response(
+            task="What is Python?",
+            generated_prompt=sample_prompt,
+            context_ids=["ctx-1"],
+            provider="openai",
+            model="gpt-5.2",
+            temperature=0.7,
+            max_tokens=123,
+        )
+
+        kwargs = create_mock.call_args.kwargs
+        assert "max_completion_tokens" in kwargs
+        assert kwargs["max_completion_tokens"] == 123
+        assert "max_tokens" not in kwargs
+
+    def test_generate_openai_gpt4_uses_max_tokens(self, ai_service_instance, sample_prompt):
+        """Legacy GPT-4 models should continue to use max_tokens."""
+        mock_response = Mock()
+        mock_choice = Mock()
+        mock_message = Mock()
+        mock_message.content = 'Answer from GPT-4'
+        mock_choice.message = mock_message
+        mock_choice.finish_reason = 'stop'
+        mock_response.choices = [mock_choice]
+        mock_response.usage = Mock()
+        mock_response.usage.total_tokens = 24
+
+        mock_client = Mock()
+        create_mock = Mock(return_value=mock_response)
+        mock_client.chat.completions.create = create_mock
+        ai_service_instance.openai_client = mock_client
+
+        ai_service_instance.generate_response(
+            task="What is Python?",
+            generated_prompt=sample_prompt,
+            context_ids=["ctx-1"],
+            provider="openai",
+            model="gpt-4o",
+            temperature=0.7,
+            max_tokens=321,
+        )
+
+        kwargs = create_mock.call_args.kwargs
+        assert "max_tokens" in kwargs
+        assert kwargs["max_tokens"] == 321
+        assert "max_completion_tokens" not in kwargs
     
     @pytest.mark.asyncio
     async def test_generate_without_api_key_raises_error(self, ai_service_instance, sample_prompt):

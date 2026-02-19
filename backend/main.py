@@ -1031,6 +1031,36 @@ def get_providers(request: Request):
     }
 
 
+@app.post("/providers/{provider_name}/validate")
+@limiter.limit("20/minute")
+def validate_provider_connection(
+    request: Request,
+    provider_name: str,
+    model: Optional[str] = None,
+    api_key: str = Depends(verify_api_key)
+):
+    """Validate provider connectivity and configured credentials.
+
+    This endpoint checks whether the provider is reachable and whether the
+    configured credentials are accepted by that provider. It returns a
+    user-facing message suitable for Settings UI diagnostics.
+    """
+    try:
+        result = ai_service.validate_provider_connection(provider_name, model=model)
+        return result
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Provider validation failed for {provider_name}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to validate provider '{provider_name}'."
+        )
+
+
 @app.get("/settings", response_model=SettingsResponse)
 @limiter.limit("30/minute")  
 def get_settings(request: Request):

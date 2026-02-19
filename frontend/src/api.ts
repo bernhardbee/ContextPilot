@@ -11,6 +11,7 @@ import {
     Conversation,
     GeneratedPrompt,
     ProvidersResponse,
+      ProviderValidationResponse,
     Settings,
     SettingsUpdate,
     Stats,
@@ -154,4 +155,11 @@ export const contextAPI = {
     const response = await api.get<ProvidersResponse>('/providers');
     return response.data;
   },
+
+    validateProviderConnection: async (provider: string, model?: string): Promise<ProviderValidationResponse> => {
+      const response = await api.post<ProviderValidationResponse>(`/providers/${provider}/validate`, null, {
+        params: model ? { model } : undefined,
+      });
+      return response.data;
+    },
 };

@@ -7,7 +7,7 @@ import subprocess
 import time
 import openai
 from openai import OpenAI, APIConnectionError, APIStatusError
-from anthropic import Anthropic
+from anthropic import Anthropic, APIConnectionError as AnthropicAPIConnectionError, APIStatusError as AnthropicAPIStatusError
 
 from config import settings
 from logger import logger
@@ -55,6 +55,173 @@ class AIService:
     def _resolve_model_name(self, candidate: object, fallback: str) -> str:
         """Return a safe, string model name for persistence and attribution."""
         return candidate if isinstance(candidate, str) and candidate else fallback
+
+    def _format_openai_status_error(self, status_code: int, model: Optional[str], raw_message: str) -> str:
+        """Build user-facing OpenAI status error messages."""
+        if status_code in (401, 403):
+            return "OpenAI authentication failed. The configured API key was rejected. Please verify the key in Settings → OpenAI."
+        if status_code == 404:
+            if model:
+                return f"OpenAI model '{model}' was not found for this account or endpoint. Select a valid OpenAI model in Settings."
+            return "OpenAI resource was not found. Check your configured base URL and selected model."
+        if status_code == 429:
+            return "OpenAI rate limit or quota exceeded. Please check usage limits and billing on your OpenAI account."
+        return f"OpenAI request failed ({status_code}): {raw_message}"
+
+    def _format_anthropic_status_error(self, status_code: int, model: Optional[str], raw_message: str) -> str:
+        """Build user-facing Anthropic status error messages."""
+        if status_code in (401, 403):
+            return "Anthropic authentication failed. The configured API key was rejected. Please verify the key in Settings → Anthropic."
+        if status_code == 404:
+            if model:
+                return f"Anthropic model '{model}' was not found or is unavailable for this account. Select a valid Claude model in Settings."
+            return "Anthropic resource was not found. Check the selected model in Settings."
+        if status_code == 429:
+            return "Anthropic rate limit or quota exceeded. Please check your Anthropic usage limits and billing."
+        return f"Anthropic request failed ({status_code}): {raw_message}"
+
+    def _uses_openai_completion_tokens(self, model: str) -> bool:
+        """Return True when model expects `max_completion_tokens` instead of `max_tokens`.
+
+        OpenAI o-series and GPT-5 family models reject legacy `max_tokens`.
+        """
+        return model.startswith(("o1", "o3", "gpt-5"))
+
+    def _is_max_tokens_unsupported_error(self, status_code: int, message: str) -> bool:
+        """Detect OpenAI errors that indicate `max_tokens` is unsupported for selected model."""
+        text = (message or "").lower()
+        return (
+            status_code == 400
+            and "max_tokens" in text
+            and "max_completion_tokens" in text
+            and "unsupported" in text
+        )
+
+    def validate_provider_connection(self, provider: str, model: Optional[str] = None) -> Dict[str, object]:
+        """Validate that configured provider credentials and connectivity are usable."""
+        provider_name = (provider or "").strip().lower()
+        if provider_name not in {"openai", "anthropic", "ollama"}:
+            raise ValueError(f"Unsupported provider '{provider}'.")
+
+        if provider_name == "openai":
+            if not settings.openai_api_key or not self.openai_client:
+                return {
+                    "provider": "openai",
+                    "valid": False,
+                    "message": "OpenAI API key is not configured.",
+                    "checked_model": model or settings.openai_default_model or settings.default_ai_model,
+                }
+
+            try:
+                self.openai_client.models.list()
+                return {
+                    "provider": "openai",
+                    "valid": True,
+                    "message": "OpenAI connection and API key are valid.",
+                    "checked_model": model or settings.openai_default_model or settings.default_ai_model,
+                }
+            except APIConnectionError as e:
+                return {
+                    "provider": "openai",
+                    "valid": False,
+                    "message": f"Cannot connect to OpenAI API. Check network and base URL. Details: {e}",
+                    "checked_model": model or settings.openai_default_model or settings.default_ai_model,
+                }
+            except APIStatusError as e:
+                status_code = int(getattr(e, "status_code", 0) or 0)
+                message = getattr(e, "message", None) or str(e)
+                return {
+                    "provider": "openai",
+                    "valid": False,
+                    "message": self._format_openai_status_error(status_code, model, message),
+                    "checked_model": model or settings.openai_default_model or settings.default_ai_model,
+                }
+            except Exception as e:
+                return {
+                    "provider": "openai",
+                    "valid": False,
+                    "message": f"OpenAI validation failed: {e}",
+                    "checked_model": model or settings.openai_default_model or settings.default_ai_model,
+                }
+
+        if provider_name == "anthropic":
+            checked_model = model or settings.anthropic_default_model or settings.default_ai_model
+            if not settings.anthropic_api_key or not self.anthropic_client:
+                return {
+                    "provider": "anthropic",
+                    "valid": False,
+                    "message": "Anthropic API key is not configured.",
+                    "checked_model": checked_model,
+                }
+
+            try:
+                self.anthropic_client.messages.create(
+                    model=checked_model,
+                    max_tokens=1,
+                    temperature=0,
+                    messages=[{"role": "user", "content": "ping"}],
+                )
+                return {
+                    "provider": "anthropic",
+                    "valid": True,
+                    "message": "Anthropic connection and API key are valid.",
+                    "checked_model": checked_model,
+                }
+            except AnthropicAPIConnectionError as e:
+                return {
+                    "provider": "anthropic",
+                    "valid": False,
+                    "message": f"Cannot connect to Anthropic API. Check network connectivity. Details: {e}",
+                    "checked_model": checked_model,
+                }
+            except AnthropicAPIStatusError as e:
+                status_code = int(getattr(e, "status_code", 0) or 0)
+                message = str(e)
+                return {
+                    "provider": "anthropic",
+                    "valid": False,
+                    "message": self._format_anthropic_status_error(status_code, checked_model, message),
+                    "checked_model": checked_model,
+                }
+            except Exception as e:
+                return {
+                    "provider": "anthropic",
+                    "valid": False,
+                    "message": f"Anthropic validation failed: {e}",
+                    "checked_model": checked_model,
+                }
+
+        checked_model = model or settings.ollama_default_model or settings.default_ai_model
+        if not self.ollama_client:
+            return {
+                "provider": "ollama",
+                "valid": False,
+                "message": "Ollama is not configured. Set Ollama base URL in Settings.",
+                "checked_model": checked_model,
+            }
+
+        try:
+            self.ollama_client.models.list()
+            return {
+                "provider": "ollama",
+                "valid": True,
+                "message": "Ollama server is reachable.",
+                "checked_model": checked_model,
+            }
+        except APIConnectionError as e:
+            return {
+                "provider": "ollama",
+                "valid": False,
+                "message": f"Cannot connect to Ollama server. Ensure Ollama is running. Details: {e}",
+                "checked_model": checked_model,
+            }
+        except Exception as e:
+            return {
+                "provider": "ollama",
+                "valid": False,
+                "message": f"Ollama validation failed: {e}",
+                "checked_model": checked_model,
+            }
     
     def generate_response(
         self,
@@ -211,20 +378,34 @@ class AIService:
                 "messages": messages,
             }
             
-            # Handle token parameter based on model type
-            # O-series models (o1, o3, o1-mini, o3-mini) use max_completion_tokens
-            if model.startswith(('o1', 'o3')):
+            # Handle token parameter based on model family
+            # O-series and GPT-5 models use max_completion_tokens
+            if self._uses_openai_completion_tokens(model):
                 api_params["max_completion_tokens"] = max_tokens
             else:
                 api_params["max_tokens"] = max_tokens
             
             # O-series models don't support temperature parameter
-            if not model.startswith(('o1', 'o3')):
+            if not self._uses_openai_completion_tokens(model):
                 api_params["temperature"] = temperature
             if settings.openai_top_p is not None:
                 api_params["top_p"] = settings.openai_top_p
-                
-            response = self.openai_client.chat.completions.create(**api_params)
+
+            try:
+                response = self.openai_client.chat.completions.create(**api_params)
+            except APIStatusError as e:
+                status_code = int(getattr(e, "status_code", 0) or 0)
+                message = getattr(e, "message", None) or str(e)
+                if "max_tokens" in api_params and self._is_max_tokens_unsupported_error(status_code, message):
+                    logger.warning(
+                        f"OpenAI model '{model}' rejected max_tokens; retrying with max_completion_tokens"
+                    )
+                    retry_params = dict(api_params)
+                    retry_params.pop("max_tokens", None)
+                    retry_params["max_completion_tokens"] = max_tokens
+                    response = self.openai_client.chat.completions.create(**retry_params)
+                else:
+                    raise
             
             # Extract response
             assistant_message = response.choices[0].message.content or ""
@@ -256,6 +437,16 @@ class AIService:
             logger.info(f"OpenAI response generated: {model}, {tokens_used} tokens")
             return assistant_message, conversation
             
+        except APIConnectionError as e:
+            logger.error(f"OpenAI connection error: {e}")
+            raise ValueError(
+                "Cannot connect to OpenAI API. Check your network or OpenAI base URL configuration."
+            )
+        except APIStatusError as e:
+            status_code = int(getattr(e, "status_code", 0) or 0)
+            message = getattr(e, "message", None) or str(e)
+            logger.error(f"OpenAI API status error ({status_code}): {message}")
+            raise ValueError(self._format_openai_status_error(status_code, model, message))
         except Exception as e:
             logger.error(f"OpenAI API error: {e}")
             raise
@@ -350,6 +541,14 @@ class AIService:
             logger.info(f"Anthropic response generated: {model}, {tokens_used} tokens")
             return assistant_message, conversation
             
+        except AnthropicAPIConnectionError as e:
+            logger.error(f"Anthropic connection error: {e}")
+            raise ValueError("Cannot connect to Anthropic API. Check your network connectivity.")
+        except AnthropicAPIStatusError as e:
+            status_code = int(getattr(e, "status_code", 0) or 0)
+            message = str(e)
+            logger.error(f"Anthropic API status error ({status_code}): {message}")
+            raise ValueError(self._format_anthropic_status_error(status_code, model, message))
         except Exception as e:
             logger.error(f"Anthropic API error: {e}")
             raise

@@ -15,6 +15,7 @@ const { mockApi } = vi.hoisted(() => ({
     createContext: vi.fn(),
     deleteContext: vi.fn(),
     updateSettings: vi.fn(),
+    validateProviderConnection: vi.fn(),
     chatWithAI: vi.fn(),
     getConversation: vi.fn(),
   },
@@ -121,6 +122,12 @@ function setupDefaults() {
   mockApi.createContext.mockResolvedValue({ id: 'ctx-2' });
   mockApi.deleteContext.mockResolvedValue({});
   mockApi.updateSettings.mockResolvedValue({ ok: true });
+  mockApi.validateProviderConnection.mockResolvedValue({
+    provider: 'openai',
+    valid: true,
+    message: 'OpenAI connection and API key are valid.',
+    checked_model: 'gpt-4o',
+  });
   mockApi.chatWithAI.mockResolvedValue({
     conversation_id: 'conv-1',
     task: 'hello',
@@ -280,6 +287,19 @@ describe('App integration', () => {
     expect(await screen.findByText(/bad settings|failed to update settings/i)).toBeInTheDocument();
   });
 
+  it('validates provider connection from settings modal', async () => {
+    const { user } = render(<App />);
+    await user.click(await screen.findByTitle('Settings'));
+
+    await user.click(screen.getByRole('button', { name: /test openai connection/i }));
+
+    await waitFor(() => {
+      expect(mockApi.validateProviderConnection).toHaveBeenCalledWith('openai', expect.any(String));
+    });
+
+    expect(await screen.findByText(/openai connection and api key are valid/i)).toBeInTheDocument();
+  });
+
   it('shows anthropic and ollama provider panels in settings modal', async () => {
     mockApi.getSettings.mockResolvedValueOnce({
       ...defaultSettings,
@@ -330,6 +350,46 @@ describe('App integration', () => {
     });
   });
 
+  it('submits provider-compatible default model when default provider changes', async () => {
+    mockApi.getSettings.mockResolvedValueOnce({
+      ...defaultSettings,
+      default_ai_provider: 'ollama',
+      default_ai_model: 'llama3.2',
+    });
+
+    const { user, container } = render(<App />);
+    await user.click(await screen.findByTitle('Settings'));
+
+    const settingsForm = container.querySelector('.settings-form');
+    expect(settingsForm).not.toBeNull();
+
+    const defaultSettingsSection = settingsForm?.querySelector('.form-section');
+    const sectionSelects = defaultSettingsSection?.querySelectorAll('select');
+    expect(sectionSelects).toHaveLength(2);
+
+    const defaultProviderSelect = sectionSelects?.[0] as HTMLSelectElement;
+    const defaultModelSelect = sectionSelects?.[1] as HTMLSelectElement;
+
+    await user.selectOptions(defaultProviderSelect, 'openai');
+
+    let selectedModel = '';
+    await waitFor(() => {
+      expect(defaultModelSelect.value).not.toBe('llama3.2');
+      selectedModel = defaultModelSelect.value;
+    });
+
+    fireEvent.submit(settingsForm as HTMLFormElement);
+
+    await waitFor(() => {
+      expect(mockApi.updateSettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          default_ai_provider: 'openai',
+          default_ai_model: selectedModel,
+        })
+      );
+    });
+  });
+
   it('sends chat and renders assistant response', async () => {
     const { user } = render(<App />);
 
@@ -343,6 +403,17 @@ describe('App integration', () => {
       );
     });
     expect(await screen.findByText('assistant reply')).toBeInTheDocument();
+  });
+
+  it('shows provider/model-aware fallback chat error when backend detail is missing', async () => {
+    mockApi.chatWithAI.mockRejectedValueOnce({ response: { status: 500, data: {} } });
+    const { user } = render(<App />);
+
+    const input = await screen.findByPlaceholderText(/ask a question or describe a task/i);
+    await user.type(input, 'Hello AI');
+    await user.click(screen.getByRole('button', { name: /🚀/i }));
+
+    expect(await screen.findByText(/failed to generate ai response using provider 'openai' and model 'gpt-4o'/i)).toBeInTheDocument();
   });
 
   it('displays backend-attributed model even when requested model differs', async () => {

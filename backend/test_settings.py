@@ -4,6 +4,7 @@ Tests for settings management functionality.
 import pytest
 from fastapi.testclient import TestClient
 from main import app
+import main
 
 
 @pytest.fixture
@@ -119,3 +120,35 @@ class TestSettings:
         # Invalid max tokens (too high)
         response = client.post("/settings", json={"ai_max_tokens": 20000})
         assert response.status_code == 422
+
+    def test_validate_provider_connection_endpoint(self, client, monkeypatch):
+        """Validate provider endpoint returns provider validation result."""
+        def fake_validate(provider_name, model=None):
+            return {
+                "provider": provider_name,
+                "valid": True,
+                "message": "OpenAI connection and API key are valid.",
+                "checked_model": model or "gpt-4o"
+            }
+
+        monkeypatch.setattr(main.ai_service, "validate_provider_connection", fake_validate)
+
+        response = client.post("/providers/openai/validate", params={"model": "gpt-4o"})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["provider"] == "openai"
+        assert data["valid"] is True
+        assert "api key" in data["message"].lower()
+        assert data["checked_model"] == "gpt-4o"
+
+    def test_ai_chat_returns_actionable_client_error_detail(self, client, monkeypatch):
+        """AI chat should expose provider-specific client errors as 400 details."""
+        def fake_generate_response(**kwargs):
+            raise ValueError("OpenAI authentication failed. The configured API key was rejected.")
+
+        monkeypatch.setattr(main.ai_service, "generate_response", fake_generate_response)
+
+        response = client.post("/ai/chat", json={"task": "hello", "provider": "openai", "model": "gpt-4o"})
+        assert response.status_code == 400
+        message = response.json().get("message", "")
+        assert "authentication failed" in message.lower()

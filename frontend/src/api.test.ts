@@ -204,4 +204,16 @@ describe('contextAPI', () => {
     expect(mockGet).toHaveBeenCalledWith('/providers');
     expect(result.default_provider).toBe('openai');
   });
+
+  it('validateProviderConnection posts validation request with model', async () => {
+    mockPost.mockResolvedValue({ data: { provider: 'openai', valid: true, message: 'ok', checked_model: 'gpt-5.2' } });
+    const { contextAPI } = await import('./api');
+
+    const result = await contextAPI.validateProviderConnection('openai', 'gpt-5.2');
+
+    expect(mockPost).toHaveBeenCalledWith('/providers/openai/validate', null, {
+      params: { model: 'gpt-5.2' },
+    });
+    expect(result.valid).toBe(true);
+  });
 });

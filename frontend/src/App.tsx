@@ -246,7 +246,7 @@ function App() {
       loadProviders(); // Reload providers to update configuration status
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to update settings');
+      setError(err.response?.data?.message || err.response?.data?.detail || 'Failed to update settings');
       console.error(err);
     } finally {
       setLoading(false);
@@ -450,9 +450,52 @@ function App() {
       await loadConversations();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      const errorMessage = err.response?.data?.detail || 'Failed to generate AI response. Check that API keys are configured.';
+      const backendDetail = err?.response?.data?.message || err?.response?.data?.detail;
+      const statusCode = err?.response?.status;
+
+      let errorMessage = backendDetail;
+      if (!errorMessage && (statusCode === 401 || statusCode === 403)) {
+        errorMessage = `${aiProvider.toUpperCase()} authentication failed for model '${aiModel}'. Please verify the API key in Settings.`;
+      }
+      if (!errorMessage) {
+        errorMessage = `Failed to generate AI response using provider '${aiProvider}' and model '${aiModel}'. Please verify provider connection and credentials in Settings.`;
+      }
+
       setError(errorMessage);
       console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getValidationModel = (providerName: string): string | undefined => {
+    if (providerName === 'openai') {
+      return settingsForm.openai_default_model || settings?.openai_default_model || settingsForm.default_ai_model || settings?.default_ai_model;
+    }
+    if (providerName === 'anthropic') {
+      return settingsForm.anthropic_default_model || settings?.anthropic_default_model || settingsForm.default_ai_model || settings?.default_ai_model;
+    }
+    if (providerName === 'ollama') {
+      return settingsForm.ollama_default_model || settings?.ollama_default_model || settingsForm.default_ai_model || settings?.default_ai_model;
+    }
+    return settingsForm.default_ai_model || settings?.default_ai_model;
+  };
+
+  const handleValidateProviderConnection = async () => {
+    try {
+      setLoading(true);
+      const modelToCheck = getValidationModel(settingsTab);
+      const result = await contextAPI.validateProviderConnection(settingsTab, modelToCheck);
+
+      if (result.valid) {
+        setSuccess(result.message);
+        setError(null);
+      } else {
+        setError(result.message);
+      }
+    } catch (err: any) {
+      const message = err?.response?.data?.message || err?.response?.data?.detail || `Failed to validate provider '${settingsTab}'.`;
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -1504,7 +1547,18 @@ function App() {
                   <label>Default Provider:</label>
                   <select
                     value={settingsForm.default_ai_provider || settings?.default_ai_provider || 'openai'}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, default_ai_provider: e.target.value })}
+                    onChange={(e) => {
+                      const nextProvider = e.target.value;
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      const providerModels = (modelOptions as any)[nextProvider] || [];
+                      const nextModel = providerModels.length > 0 ? providerModels[0] : '';
+
+                      setSettingsForm({
+                        ...settingsForm,
+                        default_ai_provider: nextProvider,
+                        default_ai_model: nextModel,
+                      });
+                    }}
                   >
                     {providers.map((provider) => (
                       <option key={provider.name} value={provider.name}>
@@ -1565,6 +1619,14 @@ function App() {
               </div>
               
               <div className="modal-actions">
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  onClick={handleValidateProviderConnection}
+                  disabled={loading}
+                >
+                  {loading ? 'Checking...' : `Test ${settingsTab} Connection`}
+                </button>
                 <button
                   type="button"
                   className="button button-secondary"

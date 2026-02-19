@@ -159,15 +159,20 @@ class OpenAIProvider(BaseLLMProvider):
             api_params = {
                 "model": model,
                 "messages": messages,
-                "max_tokens": max_tokens,
             }
+
+            uses_completion_tokens = model.startswith(('o1', 'o3', 'gpt-5'))
+            if uses_completion_tokens:
+                api_params["max_completion_tokens"] = max_tokens
+            else:
+                api_params["max_tokens"] = max_tokens
             
             # Check if model supports temperature
             model_info = self.MODEL_INFO.get(model, {})
             supports_temp = model_info.get("supports_temperature", True)
             
             # O-series models (o1, o3) don't support custom temperature
-            if not model.startswith(('o1', 'o3')) and supports_temp:
+            if not uses_completion_tokens and supports_temp:
                 api_params["temperature"] = temperature
             
             # Add any extra parameters from config or kwargs

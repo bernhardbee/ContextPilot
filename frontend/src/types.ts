@@ -184,3 +184,10 @@ export interface ProvidersResponse {
   default_provider: string;
   default_model: string;
 }
+
+export interface ProviderValidationResponse {
+  provider: string;
+  valid: boolean;
+  message: string;
+  checked_model?: string;
+}
