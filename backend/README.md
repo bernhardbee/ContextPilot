@@ -33,7 +33,7 @@ Once the server is running, visit:
 Run all tests:
 ```bash
 python -m pytest  # All tests
-python -m pytest --ignore=test_integration.py  # Unit tests only (135 passing)
+python -m pytest --ignore=test_integration.py  # Unit-focused subset
 ```
 
 Run specific test suites:
@@ -67,7 +67,10 @@ Backup and restore database:
 - **Provider-Specific Settings**: Temperature, top_p, max_tokens overrides per provider
 - **Model Synchronization**: Automatic frontend/backend sync with sync_models.py
 - **Security**: API key authentication, input validation, CORS, rate limiting
-- **Testing**: 204 comprehensive unit and integration tests
+- **Testing**: 205 comprehensive unit and integration tests
+- **Ollama Auto-Pull Test**: Environment-aware integration test supports both
+    - expected connection-error behavior when Ollama is offline, and
+    - successful responses when Ollama is already running locally
 
 ## Model System
 

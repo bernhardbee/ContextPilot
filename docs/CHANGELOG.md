@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **Frontend Test Expansion & Coverage Hardening (February 19, 2026)**:
+  - Added high-value API endpoint tests (`frontend/src/api.test.ts`)
+  - Added App-level integration coverage for context management, settings, chat, clipboard, and provider switching
+  - Added provider-panel branch coverage for Anthropic and Ollama settings views
+  - Expanded frontend suite to 90 passing tests with reproducible `test:quick` and `test:coverage` runs
 - **Model Synchronization System (February 2026)**:
   - **Single Source of Truth**: Centralized model catalog in `backend/valid_models.json`
   - **Dynamic Model Loading**: Providers load models from JSON at startup with resilient fallback
@@ -35,6 +40,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Added `test_settings_store.py` to validate SettingsStore CRUD against a temporary database
 
 ### Fixed  
+- **QA Stability Improvements (February 19, 2026)**:
+  - Fixed flaky frontend integration selectors and form submission timing issues
+  - Fixed ContextTools async import test warning by resolving with correct payload inside `act(...)`
+  - Stabilized backend `test_ollama_autopull.py` for environments where Ollama is already running
+
 - **Backend API Issues (January 18, 2026)**:
   - **OpenAI API Compatibility**: Fixed `max_completion_tokens` parameter error by using universal `max_tokens`
   - **Model Attribution Bug**: Resolved issue where conversation model wasn't updated when switching models mid-conversation

@@ -39,9 +39,13 @@ def test_ollama_autopull():
             print(f"   Message: {error['message'][:80]}...\n")
         else:
             print(f"❌ Unexpected error: {error}\n")
+    elif response.status_code == 200:
+        data = response.json()
+        print("✅ Ollama appears to be running; request succeeded")
+        print(f"   Conversation: {data.get('conversation_id', 'unknown')}\n")
     else:
-        print(f"❌ Expected 400, got {response.status_code}\n")
-        assert response.status_code == 400
+        print(f"❌ Expected 400 or 200, got {response.status_code}\n")
+        assert response.status_code in (200, 400)
     
     # Test 2: Check if Ollama is actually running
     print("Test 2: Checking if Ollama is installed...")

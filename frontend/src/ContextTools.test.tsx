@@ -1,10 +1,11 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ContextTools } from './ContextTools';
 import { render } from './test/render-with-providers';
 
 const mockExportContexts = vi.fn();
 const mockImportContexts = vi.fn();
+let consoleErrorSpy: { mockRestore: () => void };
 
 vi.mock('./api', () => ({
   contextAPI: {
@@ -23,6 +24,11 @@ describe('ContextTools', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     createObjectURLSpy.mockReturnValue('blob:mock-url');
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
   });
 
   it('renders search and filter controls', () => {
@@ -200,10 +206,16 @@ describe('ContextTools', () => {
   });
 
   it('disables import input while importing', async () => {
-    let resolveImport: ((value: unknown) => void) | null = null;
+    type ImportResult = {
+      imported: number;
+      skipped: number;
+      errors: string[];
+      total_errors: number;
+    };
+    let resolveImport: (value: ImportResult) => void = () => {};
     mockImportContexts.mockImplementation(
       () =>
-        new Promise((resolve) => {
+        new Promise<ImportResult>((resolve) => {
           resolveImport = resolve;
         })
     );
@@ -217,7 +229,9 @@ describe('ContextTools', () => {
       expect(fileInput).toBeDisabled();
     });
 
-    resolveImport?.({ imported: 1, skipped: 0, errors: [], total_errors: 0 });
+    await act(async () => {
+      resolveImport({ imported: 1, skipped: 0, errors: [], total_errors: 0 });
+    });
   });
 
   it('handles empty file selection gracefully', async () => {

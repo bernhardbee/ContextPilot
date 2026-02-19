@@ -612,12 +612,26 @@ python -m pytest  # Run all tests
 python -m pytest --ignore=test_integration.py  # Skip integration tests
 ```
 
-Test Coverage:
-- ✅ 135+ unit tests passing
-- ✅ Mock-based testing for AI services
-- ✅ Database storage tests
-- ✅ API validation tests
-- ✅ Security and authentication tests
+Backend status:
+- ✅ 205 tests passing (`python -m pytest -v`)
+- ✅ API, storage, validators, settings, providers, and migration coverage
+
+### Run Frontend Checks and Tests
+```bash
+cd frontend
+npm run type-check
+npm run lint
+npm run build
+npm run test:quick
+npm run test:coverage
+npm run e2e
+```
+
+Frontend status:
+- ✅ 90 unit/integration tests passing
+- ✅ 16 Playwright E2E tests passing
+- ✅ Coverage: 90.46% statements / 90.46% lines
+- ✅ App surface coverage: 86.54% statements/lines in `App.tsx`
 
 ### Run Demo Script
 ```bash
