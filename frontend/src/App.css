@@ -1024,6 +1024,33 @@ select:focus {
   padding: 20px;
 }
 
+.settings-main-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.settings-main-tab {
+  border: 1px solid #d1d5db;
+  background: #eef2ff;
+  color: #3f51b5;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.settings-main-tab.active {
+  background: #667eea;
+  color: #ffffff;
+  border-color: #667eea;
+}
+
+.settings-content-panel {
+  min-width: 0;
+}
+
 .settings-layout {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
@@ -1044,15 +1071,41 @@ select:focus {
 }
 
 .dark-mode-toggle {
-  display: flex !important;
+  display: inline-flex !important;
   align-items: center;
+  justify-content: flex-start;
   gap: 10px;
   cursor: pointer;
+  color: inherit !important;
+  width: auto;
+  margin-bottom: 0;
 }
 
 .dark-mode-toggle input {
   width: auto;
   margin: 0;
+}
+
+.dark-mode-toggle-text {
+  font-weight: 600;
+  color: #374151;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.form-group label.dark-mode-toggle {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 10px;
+}
+
+.form-group label.dark-mode-toggle input[type="checkbox"] {
+  width: 18px !important;
+  min-width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  flex: 0 0 auto;
 }
 
 .form-section {
@@ -1256,6 +1309,22 @@ select:focus {
   background: #4b5563;
 }
 
+.app.dark-mode .settings-main-tab {
+  background: #111827;
+  color: #d1d5db;
+  border-color: #374151;
+}
+
+.app.dark-mode .settings-main-tab.active {
+  background: #4b5563;
+  color: #f9fafb;
+  border-color: #6b7280;
+}
+
+.app.dark-mode .dark-mode-toggle-text {
+  color: #e5e7eb;
+}
+
 .app.dark-mode .card,
 .app.dark-mode .sidebar,
 .app.dark-mode .interaction-log-panel,
@@ -1297,6 +1366,7 @@ select:focus {
 .app.dark-mode .help-text,
 .app.dark-mode .conversation-meta,
 .app.dark-mode .conversation-date,
+.app.dark-mode .conversation-message-count,
 .app.dark-mode .meta-item,
 .app.dark-mode .provider-description,
 .app.dark-mode .interaction-log-empty,
@@ -1748,13 +1818,21 @@ select:focus {
   border-radius: 3px;
 }
 
-.conversation-messages {
-  background: #6c757d;
+.conversation-meta-bottom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .conversation-date {
   font-size: 0.75rem;
   color: #999;
+}
+
+.conversation-message-count {
+  font-size: 0.75rem;
+  color: #7b8794;
+  background: transparent;
 }
 
 .conversation-details {
@@ -2358,9 +2436,9 @@ select:focus {
 }
 
 .refresh-contexts-btn {
-  border: 2px solid #ffc107;
-  background: white;
-  color: #666;
+  border: 1px solid #667eea;
+  background: #667eea;
+  color: #f9fafb;
   border-radius: 6px;
   padding: 6px 12px;
   font-size: 0.85rem;
@@ -2370,20 +2448,20 @@ select:focus {
 }
 
 .refresh-contexts-btn:hover {
-  background: #fff3cd;
-  border-color: #ffb300;
+  background: #5568d3;
+  border-color: #5568d3;
 }
 
 .refresh-contexts-btn.active {
-  background: #ffc107;
-  color: white;
-  border-color: #ffc107;
+  background: #5a67d8;
+  color: #ffffff;
+  border-color: #5a67d8;
   font-weight: 600;
 }
 
 .refresh-contexts-btn.active:hover {
-  background: #ffb300;
-  border-color: #ffb300;
+  background: #4c58c7;
+  border-color: #4c58c7;
 }
 
 /* Mobile responsiveness for chat */
@@ -2523,10 +2601,36 @@ select:focus {
 
 .chat-messages .message-user .message-bubble {
   max-width: 72%;
-  background: #3f3f46;
+  background: #7f8cff !important;
+  border: 1px solid #7f8cff;
   border-radius: 16px;
   padding: 12px 16px;
+  color: #f9fafb !important;
+}
+
+.chat-messages .message-user .message-content,
+.chat-messages .message-user .message-time,
+.chat-messages .message-user .message-model {
+  color: #f9fafb !important;
+}
+
+.chat-messages .message-user .copy-message-btn {
   color: #f9fafb;
+  opacity: 0.8;
+}
+
+.chat-messages .message-user .copy-message-btn:hover {
+  opacity: 1;
+}
+
+.button.button-secondary.button-full {
+  background: #667eea;
+  border: 1px solid #667eea;
+  color: #ffffff;
+}
+
+.button.button-secondary.button-full:hover {
+  background: #5568d3;
 }
 
 .chat-messages .message-actions,
@@ -2554,6 +2658,31 @@ select:focus {
 }
 
 .app.dark-mode .chat-messages .message-user .message-bubble {
-  background: #3f3f46;
+  background: #3f3f46 !important;
+  border: 1px solid #3f3f46 !important;
+  color: #f9fafb !important;
+}
+
+.app.dark-mode .button.button-secondary.button-full {
+  background: #6b7280;
+  border: 1px solid #6b7280;
   color: #f9fafb;
+}
+
+.app.dark-mode .button.button-secondary.button-full:hover {
+  background: #4b5563;
+  border-color: #4b5563;
+}
+
+.app.dark-mode .refresh-contexts-btn,
+.app.dark-mode .refresh-contexts-btn.active {
+  background: #6b7280;
+  border-color: #6b7280;
+  color: #f9fafb;
+}
+
+.app.dark-mode .refresh-contexts-btn:hover,
+.app.dark-mode .refresh-contexts-btn.active:hover {
+  background: #4b5563;
+  border-color: #4b5563;
 }

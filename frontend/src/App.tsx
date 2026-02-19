@@ -80,6 +80,7 @@ function App() {
   const [settingsModal, setSettingsModal] = useState(false);
   const [settingsForm, setSettingsForm] = useState<SettingsUpdate>({});
   const [settingsTab, setSettingsTab] = useState<string>('openai');
+  const [settingsSectionTab, setSettingsSectionTab] = useState<'provider' | 'general'>('general');
   const [interactionLogs, setInteractionLogs] = useState<InteractionLogEntry[]>([]);
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     try {
@@ -191,14 +192,83 @@ function App() {
     try {
       const data = await contextAPI.getSettings();
       setSettings(data);
-      // Apply settings to AI chat defaults
-      if (data.default_ai_provider) setAiProvider(data.default_ai_provider);
-      if (data.default_ai_model) setAiModel(data.default_ai_model);
+      const { provider, model } = resolveConversationChatSelection(selectedConversation, data);
+      setAiProvider(provider);
+      if (model) {
+        setAiModel(model);
+      }
       if (data.ai_max_tokens) setAiMaxTokens(data.ai_max_tokens);
       if (data.ai_temperature !== undefined) setAiTemperature(data.ai_temperature);
     } catch (err) {
       console.error('Failed to load settings:', err);
     }
+  };
+
+  const getProviderModelOptions = (providerName: string): string[] => {
+    const models = (modelOptions as Record<string, string[]>)[providerName];
+    return Array.isArray(models) ? models : [];
+  };
+
+  const getConfiguredDefaultModelForProvider = (
+    providerName: string,
+    settingsSnapshot: Settings | null = settings
+  ): string => {
+    const availableModels = getProviderModelOptions(providerName);
+    if (availableModels.length === 0) {
+      return '';
+    }
+
+    const providerSpecificDefault =
+      providerName === 'openai'
+        ? settingsSnapshot?.openai_default_model
+        : providerName === 'anthropic'
+          ? settingsSnapshot?.anthropic_default_model
+          : providerName === 'ollama'
+            ? settingsSnapshot?.ollama_default_model
+            : undefined;
+
+    if (providerSpecificDefault && availableModels.includes(providerSpecificDefault)) {
+      return providerSpecificDefault;
+    }
+
+    if (
+      settingsSnapshot?.default_ai_provider === providerName &&
+      settingsSnapshot.default_ai_model &&
+      availableModels.includes(settingsSnapshot.default_ai_model)
+    ) {
+      return settingsSnapshot.default_ai_model;
+    }
+
+    return availableModels[0];
+  };
+
+  const resolveConversationChatSelection = (
+    conversation: Conversation | null,
+    settingsSnapshot: Settings | null = settings
+  ): { provider: string; model: string } => {
+    const fallbackProvider = settingsSnapshot?.default_ai_provider || 'openai';
+
+    if (!conversation) {
+      return {
+        provider: fallbackProvider,
+        model: getConfiguredDefaultModelForProvider(fallbackProvider, settingsSnapshot),
+      };
+    }
+
+    const conversationProvider = conversation.provider || fallbackProvider;
+    const availableModels = getProviderModelOptions(conversationProvider);
+
+    if (conversation.model && availableModels.includes(conversation.model)) {
+      return {
+        provider: conversationProvider,
+        model: conversation.model,
+      };
+    }
+
+    return {
+      provider: conversationProvider,
+      model: getConfiguredDefaultModelForProvider(conversationProvider, settingsSnapshot),
+    };
   };
 
   const loadProviders = async () => {
@@ -338,6 +408,7 @@ function App() {
       ollama_num_ctx: settings?.ollama_num_ctx ?? undefined,
       ollama_keep_alive: settings?.ollama_keep_alive,
     });
+    setSettingsSectionTab('general');
     setSettingsModal(true);
   };
 
@@ -477,6 +548,8 @@ function App() {
         temperature: aiTemperature,
       });
       appendInteractionLog('Frontend ↔ Backend', `Received chat response from backend (provider: ${result.provider}, model: ${result.model}).`);
+      setAiProvider(result.provider);
+      setAiModel(result.model);
       
       // Track contexts used for this conversation (for display purposes)
       if (result.context_ids && result.context_ids.length > 0) {
@@ -509,6 +582,16 @@ function App() {
           messages: [userMessage, assistantMessage]
         };
         setSelectedConversation(newConversation);
+      } else {
+        setSelectedConversation((previousConversation) => (
+          previousConversation
+            ? {
+                ...previousConversation,
+                provider: result.provider,
+                model: result.model,
+              }
+            : previousConversation
+        ));
       }
       
       setError(null);
@@ -579,6 +662,11 @@ function App() {
       const conversation = await contextAPI.getConversation(id);
       appendInteractionLog('Frontend ↔ Backend', `Loaded conversation '${id}' from backend.`);
       setSelectedConversation(conversation);
+      const { provider, model } = resolveConversationChatSelection(conversation);
+      setAiProvider(provider);
+      if (model) {
+        setAiModel(model);
+      }
       // Set current chat messages for display
       if (conversation.messages) {
         const filteredMessages = conversation.messages.filter(msg => msg.role !== 'system');
@@ -600,6 +688,11 @@ function App() {
     setCurrentChatMessages([]);
     setAiTask('');
     setRefreshContexts(false);
+    const { provider, model } = resolveConversationChatSelection(null);
+    setAiProvider(provider);
+    if (model) {
+      setAiModel(model);
+    }
   };
 
   const handleCopyMessage = (content: string) => {
@@ -824,10 +917,10 @@ function App() {
                               <div className="conversation-task">{conv.task.substring(0, 60)}...</div>
                               <div className="conversation-meta">
                                 <span className="conversation-model">{conv.model}</span>
-                                <span className="conversation-messages">{conv.message_count} msgs</span>
                               </div>
-                              <div className="conversation-date">
-                                {new Date(conv.created_at).toLocaleDateString()}
+                              <div className="conversation-meta-bottom">
+                                <span className="conversation-date">{new Date(conv.created_at).toLocaleDateString()}</span>
+                                <span className="conversation-message-count">{conv.message_count} msgs</span>
                               </div>
                             </div>
                           </div>
@@ -980,11 +1073,11 @@ function App() {
                           <select
                             value={aiProvider}
                             onChange={(e) => {
-                              setAiProvider(e.target.value);
-                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                              const newProviderModels = (modelOptions as any)[e.target.value] || [];
-                              if (newProviderModels.length > 0) {
-                                setAiModel(newProviderModels[0]);
+                              const nextProvider = e.target.value;
+                              setAiProvider(nextProvider);
+                              const providerDefaultModel = getConfiguredDefaultModelForProvider(nextProvider);
+                              if (providerDefaultModel) {
+                                setAiModel(providerDefaultModel);
                               }
                             }}
                             className="setting-select"
@@ -1302,8 +1395,29 @@ function App() {
             </div>
             
             <form onSubmit={handleUpdateSettings} className="settings-form">
-              <div className="settings-layout">
-                <div className="settings-column settings-column-provider">
+              <div className="settings-main-tabs" role="tablist" aria-label="settings sections">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={settingsSectionTab === 'general'}
+                  className={`settings-main-tab ${settingsSectionTab === 'general' ? 'active' : ''}`}
+                  onClick={() => setSettingsSectionTab('general')}
+                >
+                  General Settings
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={settingsSectionTab === 'provider'}
+                  className={`settings-main-tab ${settingsSectionTab === 'provider' ? 'active' : ''}`}
+                  onClick={() => setSettingsSectionTab('provider')}
+                >
+                  Provider Settings
+                </button>
+              </div>
+
+              {settingsSectionTab === 'provider' && (
+                <div className="settings-content-panel settings-column-provider">
                   {/* Provider Tabs */}
                   <div className="provider-tabs">
                     {providers.map((provider) => (
@@ -1647,8 +1761,10 @@ function App() {
                     ))}
                   </div>
                 </div>
+              )}
 
-                <div className="settings-column settings-column-general">
+              {settingsSectionTab === 'general' && (
+                <div className="settings-content-panel settings-column-general">
                   <div className="form-section general-settings-section">
                     <h3>General Settings</h3>
                     <div className="form-group">
@@ -1737,23 +1853,25 @@ function App() {
                             appendInteractionLog('User ↔ Frontend', `Dark mode ${nextDarkMode ? 'enabled' : 'disabled'}.`);
                           }}
                         />
-                        <span>Enable dark mode</span>
+                        <span className="dark-mode-toggle-text">Dark mode: {darkMode ? 'On' : 'Off'}</span>
                       </label>
                       <small>Applies to the full interface immediately.</small>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
               
               <div className="modal-actions">
-                <button
-                  type="button"
-                  className="button button-secondary"
-                  onClick={handleValidateProviderConnection}
-                  disabled={loading}
-                >
-                  {loading ? 'Checking...' : `Test ${settingsTab} Connection`}
-                </button>
+                {settingsSectionTab === 'provider' && (
+                  <button
+                    type="button"
+                    className="button button-secondary"
+                    onClick={handleValidateProviderConnection}
+                    disabled={loading}
+                  >
+                    {loading ? 'Checking...' : `Test ${settingsTab} Connection`}
+                  </button>
+                )}
                 <button
                   type="button"
                   className="button button-secondary"
