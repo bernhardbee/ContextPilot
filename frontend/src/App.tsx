@@ -888,7 +888,7 @@ function App() {
       <div className="workspace-layout">
         {activeTab === 'chat' && (
           <>
-            <div className="left-sidebar-stack">
+            <div className={`left-sidebar-stack ${showConversations ? 'visible' : 'collapsed'}`}>
               {/* Left Sidebar: Conversations */}
               <div className={`sidebar sidebar-left sidebar-left-panel ${showConversations ? 'visible' : 'collapsed'}`}>
                 <div className="sidebar-header">
@@ -1160,7 +1160,6 @@ function App() {
             {/* Right Sidebar: Quick Context View */}
             <div className={`sidebar sidebar-right ${showContexts ? 'visible' : 'collapsed'}`}>
               <div className="sidebar-header">
-                <h3>📚 Your Contexts</h3>
                 <button 
                   className="toggle-button"
                   onClick={() => setShowContexts(!showContexts)}
@@ -1168,6 +1167,7 @@ function App() {
                 >
                   {showContexts ? '▶' : '◀'}
                 </button>
+                <h3>📚 Your Contexts</h3>
               </div>
               {showContexts && (
                 <div className="sidebar-content">

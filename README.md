@@ -47,8 +47,9 @@ Most AI tools are stateless—they forget context between sessions. ContextPilot
 - ✅ **Modern Interface Design** - Clean, professional layout with brand identity
 - ✅ **Simplified Navigation** - Streamlined interface with intuitive return navigation
 - ✅ **Inline status in header** - Success/error status appears beside the settings button
-- ✅ **Side-by-side settings layout** - Provider configuration and general defaults are shown together
+- ✅ **Tabbed settings layout** - General Settings opens first, with Provider Settings in a dedicated tab
 - ✅ **Dark mode support** - Full interface dark theme with persisted preference
+- ✅ **Collapsible side panels** - Left/right sidebars collapse to button-only rails for maximum chat space
 - ✅ **2-Column Manage Layout** - Organized context management with responsive grid design
 - ✅ **Custom Branding** - Distinctive "by B" signature with custom fuzzy B logo
 - ✅ **Mobile Responsive** - Optimized for all screen sizes with proper breakpoints

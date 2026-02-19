@@ -183,6 +183,36 @@ describe('App integration', () => {
     expect(await screen.findByText(/ready to chat!/i)).toBeInTheDocument();
   });
 
+  it('collapses the conversations sidebar to button-only mode and expands it again', async () => {
+    mockApi.listConversations.mockResolvedValueOnce([
+      {
+        id: 'conv-1',
+        task: 'first task',
+        provider: 'openai',
+        model: 'gpt-4o',
+        created_at: '2026-02-15T11:00:00Z',
+        message_count: 2,
+      },
+    ]);
+
+    const { user, container } = render(<App />);
+
+    expect(await screen.findByText(/first task/i)).toBeInTheDocument();
+    expect(await screen.findByRole('log', { name: /interaction log output/i })).toBeInTheDocument();
+
+    await user.click(screen.getByTitle(/hide conversations/i));
+
+    expect(container.querySelector('.left-sidebar-stack')).toHaveClass('collapsed');
+    expect(screen.queryByText(/first task/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('log', { name: /interaction log output/i })).not.toBeInTheDocument();
+    expect(screen.getByTitle(/show conversations/i)).toBeInTheDocument();
+
+    await user.click(screen.getByTitle(/show conversations/i));
+
+    expect(container.querySelector('.left-sidebar-stack')).toHaveClass('visible');
+    expect(await screen.findByText(/first task/i)).toBeInTheDocument();
+  });
+
   it('shows context loading error when listContexts fails', async () => {
     mockApi.listContexts.mockRejectedValue(new Error('load fail'));
     render(<App />);
