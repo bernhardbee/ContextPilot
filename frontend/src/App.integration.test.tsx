@@ -156,6 +156,7 @@ describe('App integration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setupDefaults();
+    window.localStorage.clear();
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     Object.defineProperty(navigator, 'clipboard', {
@@ -298,6 +299,20 @@ describe('App integration', () => {
     });
 
     expect((await screen.findAllByText(/openai connection and api key are valid/i)).length).toBeGreaterThan(0);
+  });
+
+  it('toggles dark mode from general settings and persists preference', async () => {
+    const { user, container } = render(<App />);
+    await user.click(await screen.findByTitle('Settings'));
+
+    const darkModeToggle = await screen.findByLabelText(/enable dark mode/i);
+    expect(darkModeToggle).not.toBeChecked();
+
+    await user.click(darkModeToggle);
+
+    const appRoot = container.querySelector('.app');
+    expect(appRoot).toHaveClass('dark-mode');
+    expect(window.localStorage.getItem('contextpilot-dark-mode')).toBe('true');
   });
 
   it('shows anthropic and ollama provider panels in settings modal', async () => {

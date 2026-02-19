@@ -8,6 +8,11 @@ body {
   background-color: #f5f5f5;
 }
 
+body.dark-mode {
+  background-color: #0f172a;
+  color: #e5e7eb;
+}
+
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
@@ -30,10 +35,11 @@ code {
   text-align: center;
   margin-bottom: 15px;
   padding: 6px 15px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: #f8fafc;
+  color: #1f2937;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
   flex-shrink: 0;
 }
 
@@ -903,9 +909,9 @@ select:focus {
 }
 
 .settings-button {
-  background: rgba(255, 255, 255, 0.2);
+  background: #e5e7eb;
   border: none;
-  color: white;
+  color: #374151;
   padding: 10px 12px;
   border-radius: 50%;
   font-size: 1.2rem;
@@ -914,7 +920,7 @@ select:focus {
 }
 
 .settings-button:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: #d1d5db;
 }
 
 .title-section {
@@ -924,7 +930,7 @@ select:focus {
 }
 
 .by-signature {
-  color: rgba(255, 255, 255, 0.8);
+  color: #6b7280;
   font-size: 0.9rem;
   display: flex;
   align-items: center;
@@ -1016,6 +1022,37 @@ select:focus {
 
 .settings-form {
   padding: 20px;
+}
+
+.settings-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.settings-column {
+  min-width: 0;
+}
+
+.general-settings-section {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 0;
+}
+
+.dark-mode-toggle {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.dark-mode-toggle input {
+  width: auto;
+  margin: 0;
 }
 
 .form-section {
@@ -1192,6 +1229,176 @@ select:focus {
 
 .button-secondary:hover {
   background: #5a6268;
+}
+
+.app.dark-mode {
+  background: #0f172a;
+  color: #e5e7eb;
+}
+
+.app.dark-mode .header {
+  background: #1f2937;
+  color: #f3f4f6;
+  border-color: #374151;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.app.dark-mode .by-signature {
+  color: #9ca3af;
+}
+
+.app.dark-mode .settings-button {
+  background: #374151;
+  color: #e5e7eb;
+}
+
+.app.dark-mode .settings-button:hover {
+  background: #4b5563;
+}
+
+.app.dark-mode .card,
+.app.dark-mode .sidebar,
+.app.dark-mode .interaction-log-panel,
+.app.dark-mode .modal,
+.app.dark-mode .stats-bar,
+.app.dark-mode .tabs,
+.app.dark-mode .general-settings-section {
+  background: #1f2937;
+  color: #e5e7eb;
+  border-color: #374151;
+}
+
+.app.dark-mode .sidebar-header,
+.app.dark-mode .interaction-log-header,
+.app.dark-mode .provider-tabs,
+.app.dark-mode .provider-tab.active,
+.app.dark-mode .context-item,
+.app.dark-mode .conversation-item,
+.app.dark-mode .ai-response,
+.app.dark-mode .prompt-display,
+.app.dark-mode .prompt-code,
+.app.dark-mode .response-content,
+.app.dark-mode .template-card,
+.app.dark-mode .modal-header {
+  background: #111827;
+  color: #e5e7eb;
+  border-color: #374151;
+}
+
+.app.dark-mode .provider-tab:hover,
+.app.dark-mode .context-item:hover,
+.app.dark-mode .conversation-item:hover,
+.app.dark-mode .tab:hover {
+  background: #1f2937;
+}
+
+.app.dark-mode .provider-tab,
+.app.dark-mode .stat-label,
+.app.dark-mode .help-text,
+.app.dark-mode .conversation-meta,
+.app.dark-mode .conversation-date,
+.app.dark-mode .meta-item,
+.app.dark-mode .provider-description,
+.app.dark-mode .interaction-log-empty,
+.app.dark-mode .interaction-log-time,
+.app.dark-mode .form-group small,
+.app.dark-mode .modal-close,
+.app.dark-mode .setting-label,
+.app.dark-mode .context-confidence {
+  color: #9ca3af;
+}
+
+.app.dark-mode h2,
+.app.dark-mode h3,
+.app.dark-mode .chat-header h2,
+.app.dark-mode .sidebar-header h3,
+.app.dark-mode .interaction-log-header h3,
+.app.dark-mode .provider-header h3,
+.app.dark-mode .form-section h3,
+.app.dark-mode .conversation-task,
+.app.dark-mode .context-content,
+.app.dark-mode .message-content,
+.app.dark-mode .response-header h3,
+.app.dark-mode .modal-header h2,
+.app.dark-mode .form-group label {
+  color: #f3f4f6;
+}
+
+.app.dark-mode .card h2,
+.app.dark-mode .form-section h3,
+.app.dark-mode .sidebar-header,
+.app.dark-mode .interaction-log-header,
+.app.dark-mode .provider-header,
+.app.dark-mode .modal-actions,
+.app.dark-mode .modal-header {
+  border-color: #374151;
+}
+
+.app.dark-mode .form-group input,
+.app.dark-mode .form-group select,
+.app.dark-mode .form-group textarea,
+.app.dark-mode .setting-select,
+.app.dark-mode .setting-input,
+.app.dark-mode .chat-input {
+  background: #111827;
+  color: #e5e7eb;
+  border-color: #4b5563;
+}
+
+.app.dark-mode .chat-input::placeholder {
+  color: #9ca3af;
+}
+
+.app.dark-mode .model-badge,
+.app.dark-mode .tag,
+.app.dark-mode .stat-badge {
+  background: #111827;
+  color: #d1d5db;
+  border-color: #4b5563;
+}
+
+.app.dark-mode .message-assistant {
+  background: #1f2937;
+  border-left-color: #6b7280;
+}
+
+.app.dark-mode .message-user {
+  background: #374151;
+  border-left-color: #9ca3af;
+}
+
+.app.dark-mode .interaction-log-entry {
+  border-bottom-color: #374151;
+}
+
+.app.dark-mode .interaction-log-channel,
+.app.dark-mode .provider-link,
+.app.dark-mode .form-group small a {
+  color: #cbd5e1;
+}
+
+.app.dark-mode .interaction-log-message,
+.app.dark-mode .quick-context-content,
+.app.dark-mode .context-preview,
+.app.dark-mode .welcome-message p,
+.app.dark-mode .welcome-message h3 {
+  color: #e5e7eb;
+}
+
+.app.dark-mode .header-status.error {
+  background: rgba(127, 29, 29, 0.9);
+  color: #fecaca;
+  border-color: rgba(153, 27, 27, 0.95);
+}
+
+.app.dark-mode .header-status.success {
+  background: rgba(20, 83, 45, 0.9);
+  color: #bbf7d0;
+  border-color: rgba(22, 101, 52, 0.95);
+}
+
+.app.dark-mode .button:disabled {
+  background: #4b5563;
 }
 
 /* New 3-column workspace layout */
@@ -1716,6 +1923,10 @@ select:focus {
 }
 
 @media (max-width: 1200px) {
+  .settings-layout {
+    grid-template-columns: 1fr;
+  }
+
   .workspace-layout {
     flex-direction: column;
   }
@@ -2199,4 +2410,150 @@ select:focus {
     width: 45px;
     height: 45px;
   }
+}
+
+/* Final dark-mode overrides for late chat-style rules */
+.app.dark-mode .chat-header {
+  background: #111827;
+  border-bottom-color: #374151;
+}
+
+.app.dark-mode .chat-messages {
+  background: #0b1220;
+}
+
+.app.dark-mode .chat-input-area {
+  background: #111827;
+  border-top-color: #374151;
+}
+
+.app.dark-mode .message-avatar {
+  background: #1f2937;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+.app.dark-mode .message-bubble {
+  background: #1f2937;
+  color: #e5e7eb;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+}
+
+.app.dark-mode .message-user .message-bubble {
+  background: #374151;
+  color: #ffffff;
+}
+
+.app.dark-mode .message-actions {
+  border-top-color: rgba(255, 255, 255, 0.14);
+}
+
+.app.dark-mode .message-model {
+  background: rgba(255, 255, 255, 0.14);
+  color: #d1d5db;
+}
+
+.app.dark-mode .typing {
+  background: #1f2937 !important;
+  color: #9ca3af !important;
+}
+
+.app.dark-mode .context-preview {
+  background: #1f2937;
+  color: #d1d5db;
+}
+
+.app.dark-mode .quick-context-item,
+.app.dark-mode .stat-mini {
+  background: #111827;
+}
+
+.app.dark-mode .setting-select,
+.app.dark-mode .setting-input,
+.app.dark-mode .refresh-contexts-btn {
+  background: #111827;
+  color: #e5e7eb;
+  border-color: #4b5563;
+}
+
+.app.dark-mode .refresh-contexts-btn:hover {
+  background: #1f2937;
+  border-color: #6b7280;
+}
+
+.app.dark-mode .conversation-model {
+  background: #4b5563;
+  color: #e5e7eb;
+}
+
+.app.dark-mode .toggle-button,
+.app.dark-mode .send-button {
+  background: #6b7280;
+}
+
+.app.dark-mode .toggle-button:hover,
+.app.dark-mode .send-button:hover:not(:disabled) {
+  background: #4b5563;
+}
+
+/* Minimal chat look: no avatars, no assistant panel backgrounds */
+.chat-messages .message-avatar {
+  display: none;
+}
+
+.chat-messages .message {
+  gap: 0;
+  background: transparent !important;
+  border-left: none !important;
+  padding: 0;
+  margin: 0;
+}
+
+.chat-messages .message-user {
+  flex-direction: row;
+  justify-content: flex-end;
+}
+
+.chat-messages .message-bubble {
+  max-width: 100%;
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+}
+
+.chat-messages .message-user .message-bubble {
+  max-width: 72%;
+  background: #3f3f46;
+  border-radius: 16px;
+  padding: 12px 16px;
+  color: #f9fafb;
+}
+
+.chat-messages .message-actions,
+.chat-messages .message-user .message-actions {
+  border-top: none;
+  padding-top: 6px;
+  margin-top: 6px;
+}
+
+.chat-messages .typing {
+  background: transparent !important;
+  color: #9ca3af !important;
+}
+
+.app.dark-mode .chat-messages .message,
+.app.dark-mode .chat-messages .message-assistant,
+.app.dark-mode .chat-messages .message-user {
+  background: transparent !important;
+  border-left: none !important;
+}
+
+.app.dark-mode .chat-messages .message-bubble {
+  background: transparent;
+  box-shadow: none;
+}
+
+.app.dark-mode .chat-messages .message-user .message-bubble {
+  background: #3f3f46;
+  color: #f9fafb;
 }

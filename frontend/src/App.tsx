@@ -81,6 +81,13 @@ function App() {
   const [settingsForm, setSettingsForm] = useState<SettingsUpdate>({});
   const [settingsTab, setSettingsTab] = useState<string>('openai');
   const [interactionLogs, setInteractionLogs] = useState<InteractionLogEntry[]>([]);
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    try {
+      return window.localStorage.getItem('contextpilot-dark-mode') === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   const appendInteractionLog = (channel: InteractionChannel, message: string) => {
     const entry: InteractionLogEntry = {
@@ -109,6 +116,19 @@ function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [success]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('contextpilot-dark-mode', String(darkMode));
+    } catch {
+      // no-op: storage can be unavailable in restricted environments
+    }
+
+    document.body.classList.toggle('dark-mode', darkMode);
+    return () => {
+      document.body.classList.remove('dark-mode');
+    };
+  }, [darkMode]);
 
   // Load contexts and stats on mount
   useEffect(() => {
@@ -641,10 +661,11 @@ function App() {
               return (
                 <code
                   style={{
-                    backgroundColor: '#f6f8fa',
+                    backgroundColor: darkMode ? '#1f2937' : '#f6f8fa',
                     padding: '2px 6px',
                     borderRadius: '3px',
                     fontSize: '0.9em',
+                    color: darkMode ? '#e5e7eb' : '#24292f',
                     fontFamily: 'Monaco, Consolas, monospace'
                   }}
                   {...props}
@@ -729,7 +750,7 @@ function App() {
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                color: '#0969da',
+                color: darkMode ? '#58a6ff' : '#0969da',
                 textDecoration: 'none'
               }}
             >
@@ -745,7 +766,7 @@ function App() {
 
   
   return (
-    <div className="app">
+    <div className={`app ${darkMode ? 'dark-mode' : ''}`}>
       <header className="header">
         <div className="header-content">
           <div className="title-section">
@@ -888,9 +909,6 @@ function App() {
                           const msgTime = msg.created_at || msg.timestamp || new Date().toISOString();
                           return (
                           <div key={`${msgTime}-${idx}`} className={`message message-${msg.role}`}>
-                            <div className="message-avatar">
-                              {msg.role === 'user' ? '👤' : '🤖'}
-                            </div>
                             <div className="message-bubble">
                               <div className="message-content">
                                 {renderMessageContent(msg)}
@@ -918,7 +936,6 @@ function App() {
                         })}
                         {loading && (
                           <div className="message message-assistant">
-                            <div className="message-avatar">🤖</div>
                             <div className="message-bubble typing">
                               <div className="typing-indicator">
                                 <span></span>
@@ -1275,7 +1292,7 @@ function App() {
         <div className="modal-overlay" onClick={() => setSettingsModal(false)}>
           <div className="modal modal-large" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>⚙️ Provider Settings</h2>
+              <h2>⚙️ Settings</h2>
               <button 
                 className="modal-close"
                 onClick={() => setSettingsModal(false)}
@@ -1285,42 +1302,44 @@ function App() {
             </div>
             
             <form onSubmit={handleUpdateSettings} className="settings-form">
-              {/* Provider Tabs */}
-              <div className="provider-tabs">
-                {providers.map((provider) => (
-                  <button
-                    key={provider.name}
-                    type="button"
-                    className={`provider-tab ${settingsTab === provider.name ? 'active' : ''}`}
-                    onClick={() => setSettingsTab(provider.name)}
-                  >
-                    {provider.display_name}
-                    {provider.configured && <span className="tab-indicator">●</span>}
-                  </button>
-                ))}
-              </div>
+              <div className="settings-layout">
+                <div className="settings-column settings-column-provider">
+                  {/* Provider Tabs */}
+                  <div className="provider-tabs">
+                    {providers.map((provider) => (
+                      <button
+                        key={provider.name}
+                        type="button"
+                        className={`provider-tab ${settingsTab === provider.name ? 'active' : ''}`}
+                        onClick={() => setSettingsTab(provider.name)}
+                      >
+                        {provider.display_name}
+                        {provider.configured && <span className="tab-indicator">●</span>}
+                      </button>
+                    ))}
+                  </div>
 
-              {/* Provider Settings Content */}
-              <div className="provider-settings-content">
-                {providers.map((provider) => (
-                  <div 
-                    key={provider.name}
-                    className={`provider-panel ${settingsTab === provider.name ? 'active' : ''}`}
-                  >
-                    <div className="provider-header">
-                      <h3>{provider.display_name}</h3>
-                      <p className="provider-description">{provider.description}</p>
-                      {provider.homepage_url && (
-                        <a 
-                          href={provider.homepage_url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="provider-link"
-                        >
-                          🔗 {provider.homepage_url}
-                        </a>
-                      )}
-                    </div>
+                  {/* Provider Settings Content */}
+                  <div className="provider-settings-content">
+                    {providers.map((provider) => (
+                      <div 
+                        key={provider.name}
+                        className={`provider-panel ${settingsTab === provider.name ? 'active' : ''}`}
+                      >
+                        <div className="provider-header">
+                          <h3>{provider.display_name}</h3>
+                          <p className="provider-description">{provider.description}</p>
+                          {provider.homepage_url && (
+                            <a 
+                              href={provider.homepage_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="provider-link"
+                            >
+                              🔗 {provider.homepage_url}
+                            </a>
+                          )}
+                        </div>
 
                     {/* OpenAI Settings */}
                     {provider.name === 'openai' && (
@@ -1624,85 +1643,105 @@ function App() {
                         </div>
                       </>
                     )}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
 
-              {/* Global AI Settings */}
-              <div className="form-section">
-                <h3>Default Settings</h3>
-                <div className="form-group">
-                  <label>Default Provider:</label>
-                  <select
-                    value={settingsForm.default_ai_provider || settings?.default_ai_provider || 'openai'}
-                    onChange={(e) => {
-                      const nextProvider = e.target.value;
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      const providerModels = (modelOptions as any)[nextProvider] || [];
-                      const nextModel = providerModels.length > 0 ? providerModels[0] : '';
+                <div className="settings-column settings-column-general">
+                  <div className="form-section general-settings-section">
+                    <h3>General Settings</h3>
+                    <div className="form-group">
+                      <label>Default Provider:</label>
+                      <select
+                        value={settingsForm.default_ai_provider || settings?.default_ai_provider || 'openai'}
+                        onChange={(e) => {
+                          const nextProvider = e.target.value;
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          const providerModels = (modelOptions as any)[nextProvider] || [];
+                          const nextModel = providerModels.length > 0 ? providerModels[0] : '';
 
-                      setSettingsForm({
-                        ...settingsForm,
-                        default_ai_provider: nextProvider,
-                        default_ai_model: nextModel,
-                      });
-                    }}
-                  >
-                    {providers.map((provider) => (
-                      <option key={provider.name} value={provider.name}>
-                        {provider.display_name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="form-group">
-                  <label>Default Model:</label>
-                  <select
-                    value={settingsForm.default_ai_model || settings?.default_ai_model || (modelOptions.openai[0] || 'gpt-4o')}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, default_ai_model: e.target.value })}
-                  >
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    {((modelOptions as any)[(settingsForm.default_ai_provider || settings?.default_ai_provider || 'openai')] || []).map((model: string) => (
-                      <option key={model} value={model}>
-                        {model.includes('gpt-4o') ? `${model} (Latest)` :
-                         model.includes('gpt-4-turbo') ? `${model.replace('gpt-4-turbo', 'GPT-4 Turbo')}` :
-                         model.includes('gpt-4') ? `${model.replace('gpt-4', 'GPT-4')}` :
-                         model.includes('gpt-3.5-turbo') ? `${model.replace('gpt-3.5-turbo', 'GPT-3.5 Turbo')}` :
-                         model.includes('claude-3-5-sonnet') ? 'Claude 3.5 Sonnet' :
-                         model.includes('claude-3-5-haiku') ? 'Claude 3.5 Haiku' :
-                         model.includes('claude-3-opus') ? 'Claude 3 Opus' :
-                         model.includes('claude-3-sonnet') ? 'Claude 3 Sonnet' :
-                         model.includes('claude-3-haiku') ? 'Claude 3 Haiku' :
-                         model}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="form-group">
-                  <label>Temperature:</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="2"
-                    step="0.1"
-                    value={settingsForm.ai_temperature ?? settings?.ai_temperature ?? 0.7}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, ai_temperature: parseFloat(e.target.value) })}
-                  />
-                  <small>Controls randomness (0 = focused, 2 = creative)</small>
-                </div>
-                
-                <div className="form-group">
-                  <label>Max Tokens:</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="16000"
-                    value={settingsForm.ai_max_tokens ?? settings?.ai_max_tokens ?? 4000}
-                    onChange={(e) => setSettingsForm({ ...settingsForm, ai_max_tokens: parseInt(e.target.value) })}
-                  />
-                  <small>Maximum length of AI response</small>
+                          setSettingsForm({
+                            ...settingsForm,
+                            default_ai_provider: nextProvider,
+                            default_ai_model: nextModel,
+                          });
+                        }}
+                      >
+                        {providers.map((provider) => (
+                          <option key={provider.name} value={provider.name}>
+                            {provider.display_name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Default Model:</label>
+                      <select
+                        value={settingsForm.default_ai_model || settings?.default_ai_model || (modelOptions.openai[0] || 'gpt-4o')}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, default_ai_model: e.target.value })}
+                      >
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        {((modelOptions as any)[(settingsForm.default_ai_provider || settings?.default_ai_provider || 'openai')] || []).map((model: string) => (
+                          <option key={model} value={model}>
+                            {model.includes('gpt-4o') ? `${model} (Latest)` :
+                             model.includes('gpt-4-turbo') ? `${model.replace('gpt-4-turbo', 'GPT-4 Turbo')}` :
+                             model.includes('gpt-4') ? `${model.replace('gpt-4', 'GPT-4')}` :
+                             model.includes('gpt-3.5-turbo') ? `${model.replace('gpt-3.5-turbo', 'GPT-3.5 Turbo')}` :
+                             model.includes('claude-3-5-sonnet') ? 'Claude 3.5 Sonnet' :
+                             model.includes('claude-3-5-haiku') ? 'Claude 3.5 Haiku' :
+                             model.includes('claude-3-opus') ? 'Claude 3 Opus' :
+                             model.includes('claude-3-sonnet') ? 'Claude 3 Sonnet' :
+                             model.includes('claude-3-haiku') ? 'Claude 3 Haiku' :
+                             model}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Temperature:</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="2"
+                        step="0.1"
+                        value={settingsForm.ai_temperature ?? settings?.ai_temperature ?? 0.7}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, ai_temperature: parseFloat(e.target.value) })}
+                      />
+                      <small>Controls randomness (0 = focused, 2 = creative)</small>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Max Tokens:</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="16000"
+                        value={settingsForm.ai_max_tokens ?? settings?.ai_max_tokens ?? 4000}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, ai_max_tokens: parseInt(e.target.value) })}
+                      />
+                      <small>Maximum length of AI response</small>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="dark-mode-toggle" htmlFor="dark-mode-toggle-input">
+                        <input
+                          id="dark-mode-toggle-input"
+                          type="checkbox"
+                          checked={darkMode}
+                          onChange={(e) => {
+                            const nextDarkMode = e.target.checked;
+                            setDarkMode(nextDarkMode);
+                            appendInteractionLog('User ↔ Frontend', `Dark mode ${nextDarkMode ? 'enabled' : 'disabled'}.`);
+                          }}
+                        />
+                        <span>Enable dark mode</span>
+                      </label>
+                      <small>Applies to the full interface immediately.</small>
+                    </div>
+                  </div>
                 </div>
               </div>
               

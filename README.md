@@ -27,7 +27,7 @@ Most AI tools are stateless—they forget context between sessions. ContextPilot
 - ✅ **Prompt composer** that generates LLM-ready prompts
 
 ### Chat & Conversations
-- ✅ **Chat-style interface** with message bubbles and timestamps
+- ✅ **Minimal chat-style interface** with right-aligned user messages and clean assistant rows
 - ✅ **Conversation history** with automatic persistence
 - ✅ **Smart context management** - sends contexts once per conversation
 - ✅ **Interaction log output** - Shows user↔frontend and frontend↔backend events in a dedicated panel
@@ -47,6 +47,8 @@ Most AI tools are stateless—they forget context between sessions. ContextPilot
 - ✅ **Modern Interface Design** - Clean, professional layout with brand identity
 - ✅ **Simplified Navigation** - Streamlined interface with intuitive return navigation
 - ✅ **Inline status in header** - Success/error status appears beside the settings button
+- ✅ **Side-by-side settings layout** - Provider configuration and general defaults are shown together
+- ✅ **Dark mode support** - Full interface dark theme with persisted preference
 - ✅ **2-Column Manage Layout** - Organized context management with responsive grid design
 - ✅ **Custom Branding** - Distinctive "by B" signature with custom fuzzy B logo
 - ✅ **Mobile Responsive** - Optimized for all screen sizes with proper breakpoints
