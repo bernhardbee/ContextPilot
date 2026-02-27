@@ -347,6 +347,50 @@ describe('App integration', () => {
     expect(await screen.findByText('updated response')).toBeInTheDocument();
   });
 
+  it('highlights the currently selected conversation in the list', async () => {
+    mockApi.listConversations.mockResolvedValueOnce([
+      {
+        id: 'conv-a',
+        task: 'First conversation',
+        provider: 'openai',
+        model: 'gpt-4o',
+        created_at: '2026-02-15T09:00:00Z',
+        message_count: 2,
+      },
+      {
+        id: 'conv-b',
+        task: 'Second conversation',
+        provider: 'openai',
+        model: 'gpt-4o',
+        created_at: '2026-02-15T09:30:00Z',
+        message_count: 3,
+      },
+    ]);
+
+    mockApi.getConversation.mockImplementation(async (id: string) => ({
+      id,
+      task: id === 'conv-a' ? 'First conversation' : 'Second conversation',
+      provider: 'openai',
+      model: 'gpt-4o',
+      created_at: '2026-02-15T10:00:00Z',
+      messages: [
+        { role: 'system', content: 'sys', created_at: '2026-02-15T10:00:00Z' },
+        { role: 'user', content: 'u1', created_at: '2026-02-15T10:00:01Z' },
+        { role: 'assistant', content: 'a1', created_at: '2026-02-15T10:00:02Z' },
+      ],
+    }));
+
+    const { user } = render(<App />);
+
+    await user.click(await screen.findByText(/second conversation/i));
+
+    await waitFor(() => {
+      const activeConversationItem = document.querySelector('.conversation-item.active');
+      expect(activeConversationItem).not.toBeNull();
+      expect(activeConversationItem).toHaveTextContent(/second conversation/i);
+    });
+  });
+
   it('shows context loading error when listContexts fails', async () => {
     mockApi.listContexts.mockRejectedValue(new Error('load fail'));
     render(<App />);

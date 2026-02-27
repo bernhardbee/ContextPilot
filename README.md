@@ -620,7 +620,7 @@ python -m pytest --ignore=test_integration.py  # Skip integration tests
 ```
 
 Backend status:
-- ✅ 207 collected (`206 passed, 1 skipped` in local run)
+- ✅ 211 passing tests in local run
 - ✅ API, storage, validators, settings, providers, and migration coverage
 - ✅ Attribution integrity checks ensure `/ai/chat` returns executed provider/model metadata
 
@@ -636,11 +636,23 @@ npm run e2e
 ```
 
 Frontend status:
-- ✅ 91 unit/integration tests passing
+- ✅ 104 unit/integration tests passing
 - ✅ 16 Playwright E2E tests passing
 - ✅ Coverage: 90.46% statements / 90.46% lines
 - ✅ App surface coverage: 86.54% statements/lines in `App.tsx`
 - ✅ Regression test prevents UI from showing requested model when backend reports a different executing model
+
+### CI/CD Pipeline (GitHub Actions)
+
+ContextPilot includes a strict full-stack CI/CD workflow in [.github/workflows/frontend-ci.yml](.github/workflows/frontend-ci.yml):
+
+- ✅ **Backend Tests**: Python 3.11 + dependency install + `pytest -v`
+- ✅ **Frontend Quality**: `type-check`, `lint`, `test:quick`, and `test:coverage`
+- ✅ **Frontend Build**: production build + artifact verification/upload
+- ✅ **E2E Tests**: Playwright browser install + `npm run e2e` + report upload
+- ✅ **CD Artifact Gate**: on pushes to `main`, uploads a versioned release bundle artifact
+
+The pipeline runs on `push`, `pull_request`, and manual `workflow_dispatch` and fails fast on test/lint/build errors (no `continue-on-error` bypasses).
 
 ### Run Demo Script
 ```bash

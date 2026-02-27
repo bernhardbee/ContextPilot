@@ -760,9 +760,17 @@ function App() {
       } else {
         setError(result.message);
       }
-    } catch (err: any) {
-      appendInteractionLog('Frontend ↔ Backend', `Provider validation failed for '${settingsTab}': ${err?.response?.data?.message || err?.response?.data?.detail || 'unknown error'}`);
-      const message = err?.response?.data?.message || err?.response?.data?.detail || `Failed to validate provider '${settingsTab}'.`;
+    } catch (err: unknown) {
+      const errorResponse = err as {
+        response?: {
+          data?: {
+            message?: string;
+            detail?: string;
+          };
+        };
+      };
+      appendInteractionLog('Frontend ↔ Backend', `Provider validation failed for '${settingsTab}': ${errorResponse.response?.data?.message || errorResponse.response?.data?.detail || 'unknown error'}`);
+      const message = errorResponse.response?.data?.message || errorResponse.response?.data?.detail || `Failed to validate provider '${settingsTab}'.`;
       setError(message);
     } finally {
       setLoading(false);
