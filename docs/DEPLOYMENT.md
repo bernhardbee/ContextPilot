@@ -51,6 +51,8 @@ nano .env
 CONTEXTPILOT_HOST=127.0.0.1  # Bind to localhost, use nginx as proxy
 CONTEXTPILOT_PORT=8000
 CONTEXTPILOT_LOG_LEVEL=WARNING
+CONTEXTPILOT_LOG_FORMAT=json
+CONTEXTPILOT_ENABLE_METRICS=true
 
 # CORS - Set your actual domain
 CONTEXTPILOT_CORS_ORIGINS=["https://yourdomain.com"]
@@ -189,12 +191,36 @@ sudo systemctl reload nginx
 Configure logging in `.env`:
 ```bash
 CONTEXTPILOT_LOG_LEVEL=WARNING
+CONTEXTPILOT_LOG_FORMAT=json
+CONTEXTPILOT_ENABLE_METRICS=true
 ```
 
 View logs:
 ```bash
 sudo journalctl -u contextpilot -f
 ```
+
+### Prometheus Metrics
+
+The backend exposes metrics at `/metrics` when enabled:
+
+```bash
+curl https://yourdomain.com/metrics
+```
+
+For local dashboarding and alert rule validation, use the built-in stack:
+
+```bash
+cd observability
+docker compose up -d
+```
+
+Then open:
+
+- Prometheus: `http://localhost:9090`
+- Grafana: `http://localhost:3001`
+
+Full guide: [OBSERVABILITY.md](OBSERVABILITY.md)
 
 ### Health Checks
 

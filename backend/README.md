@@ -92,6 +92,8 @@ Metrics exposed:
 - `contextpilot_ai_requests_total`
 - `contextpilot_ai_request_duration_seconds`
 
+See [OBSERVABILITY.md](../docs/OBSERVABILITY.md) for local Prometheus/Grafana setup, alert rules, and triage runbook.
+
 ## Model System
 
 ### Dynamic Model Loading

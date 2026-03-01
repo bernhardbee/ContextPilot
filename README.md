@@ -719,6 +719,7 @@ SQLAlchemy 2.0 (ORM and database toolkit)
 - **[Database Setup](backend/docs/DATABASE.md)**: SQLite and PostgreSQL configuration
 - **[AI Integration](backend/docs/AI_INTEGRATION.md)**: OpenAI and Anthropic setup
 - **[Model Discovery](docs/MODEL_DISCOVERY.md)**: Dynamic model discovery system
+- **[Observability Guide](docs/OBSERVABILITY.md)**: Metrics, dashboards, and alerting runbook
 - **[API Reference](http://localhost:8000/docs)**: Interactive API documentation (when server is running)
 
 ## 🔮 Future Enhancements

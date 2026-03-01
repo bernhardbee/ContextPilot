@@ -23,6 +23,13 @@ def test_normalize_path_replaces_dynamic_segments():
     assert normalized == "/ai/conversations/:id/messages"
 
 
+def test_normalize_path_keeps_static_segments():
+    """Static path segments should not be rewritten."""
+    path = "/providers/conversations/settings"
+    normalized = normalize_path(path)
+    assert normalized == "/providers/conversations/settings"
+
+
 def test_record_ai_request_exposes_prometheus_series():
     """Recording AI requests should appear in Prometheus payload."""
     record_ai_request(provider="openai", status="success", duration_seconds=0.12)
@@ -30,6 +37,14 @@ def test_record_ai_request_exposes_prometheus_series():
     payload = get_metrics_payload().decode("utf-8")
     assert 'contextpilot_ai_requests_total{provider="openai",status="success"}' in payload
     assert 'contextpilot_ai_request_duration_seconds_sum{provider="openai"}' in payload
+
+
+def test_record_ai_request_uses_unknown_provider_label():
+    """Missing provider names should be recorded as 'unknown'."""
+    record_ai_request(provider=None, status="server_error", duration_seconds=0.07)
+
+    payload = get_metrics_payload().decode("utf-8")
+    assert 'contextpilot_ai_requests_total{provider="unknown",status="server_error"}' in payload
 
 
 def test_metrics_endpoint_disabled_returns_404(monkeypatch):
