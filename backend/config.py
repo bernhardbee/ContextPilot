@@ -49,6 +49,8 @@ class Settings(BaseSettings):
     request_signing_secret: str = Field(default="", description="Shared secret for request signing")
     request_signing_max_age_seconds: int = Field(default=300, description="Max request signature age in seconds")
     request_signing_methods: List[str] = Field(default=["POST", "PUT", "DELETE"], description="HTTP methods requiring signatures")
+    enable_security_headers: bool = Field(default=True, description="Enable security headers middleware")
+    hsts_max_age_seconds: int = Field(default=31536000, description="HSTS max-age in seconds when request is HTTPS")
     
     # Storage Configuration
     use_database: bool = Field(default=True, description="Use database storage (vs in-memory)")

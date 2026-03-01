@@ -113,6 +113,21 @@ class TestAPISecurityIntegration:
         assert response.status_code == 200
         assert response.json()["status"] == "healthy"
 
+    def test_security_headers_present_on_responses(self, client):
+        """Security headers middleware should attach hardening headers."""
+        response = client.get("/health")
+        assert response.status_code == 200
+        assert response.headers.get("X-Content-Type-Options") == "nosniff"
+        assert response.headers.get("X-Frame-Options") == "DENY"
+        assert response.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
+        assert "Content-Security-Policy" in response.headers
+
+    def test_hsts_header_added_for_https_forwarded_requests(self, client):
+        """HSTS header should be set when request is forwarded as HTTPS."""
+        response = client.get("/health", headers={"X-Forwarded-Proto": "https"})
+        assert response.status_code == 200
+        assert "Strict-Transport-Security" in response.headers
+
 
 class TestAPIRateLimits:
     """Tests for API rate limiting (future implementation)."""

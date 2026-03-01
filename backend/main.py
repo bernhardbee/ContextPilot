@@ -41,6 +41,7 @@ from relevance import relevance_engine
 from composer import prompt_composer
 from ai_service import ai_service
 from request_tracking import RequestTrackingMiddleware
+from security_headers import SecurityHeadersMiddleware
 from response_cache import response_cache
 import settings_store as settings_store_module
 from monitoring import get_metrics_content_type, get_metrics_payload, record_ai_request
@@ -301,6 +302,9 @@ app.add_middleware(
 
 # Add request tracking middleware
 app.add_middleware(RequestTrackingMiddleware)
+
+# Add security headers middleware
+app.add_middleware(SecurityHeadersMiddleware)
 
 
 @app.get("/")

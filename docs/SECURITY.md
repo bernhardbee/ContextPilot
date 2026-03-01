@@ -94,6 +94,27 @@ CONTEXTPILOT_MAX_CONTENT_LENGTH=10000
 CONTEXTPILOT_MAX_TAG_COUNT=20
 ```
 
+### 7. Security Headers Middleware
+
+ContextPilot now attaches defensive HTTP response headers by default:
+
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Permissions-Policy: geolocation=(), microphone=(), camera=()`
+- `Content-Security-Policy` baseline
+
+For HTTPS requests (`X-Forwarded-Proto: https`), HSTS is added:
+
+- `Strict-Transport-Security: max-age=<configured>; includeSubDomains`
+
+Configuration:
+
+```bash
+CONTEXTPILOT_ENABLE_SECURITY_HEADERS=true
+CONTEXTPILOT_HSTS_MAX_AGE_SECONDS=31536000
+```
+
 ## Configuration
 
 ### Environment Variables
@@ -106,6 +127,8 @@ CONTEXTPILOT_ENABLE_AUTH=true
 CONTEXTPILOT_API_KEY=your-secure-key
 CONTEXTPILOT_ENABLE_REQUEST_SIGNING=true
 CONTEXTPILOT_REQUEST_SIGNING_SECRET=your-shared-signing-secret
+CONTEXTPILOT_ENABLE_SECURITY_HEADERS=true
+CONTEXTPILOT_HSTS_MAX_AGE_SECONDS=31536000
 
 # CORS Settings
 CONTEXTPILOT_CORS_ORIGINS=["https://yourdomain.com"]

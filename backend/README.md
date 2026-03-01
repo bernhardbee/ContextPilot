@@ -67,6 +67,7 @@ Backup and restore database:
 - **Provider-Specific Settings**: Temperature, top_p, max_tokens overrides per provider
 - **Model Synchronization**: Automatic frontend/backend sync with sync_models.py
 - **Security**: API key authentication, input validation, CORS, rate limiting
+- **Security Headers**: Defensive response headers with optional HSTS for HTTPS traffic
 - **Monitoring**: Prometheus metrics endpoint at `/metrics` with HTTP and AI request instrumentation
 - **Structured Logs**: Configurable JSON or text output via environment settings
 - **Testing**: 207 collected backend tests (`206 passed, 1 skipped` in local run)
