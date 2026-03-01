@@ -15,6 +15,8 @@ Implemented backend instrumentation includes:
 - AI metrics:
   - `contextpilot_ai_requests_total`
   - `contextpilot_ai_request_duration_seconds`
+- Security metrics:
+  - `contextpilot_security_events_total`
 
 ---
 
@@ -80,6 +82,7 @@ Current alerts:
 - `ContextPilotHigh5xxRate`
 - `ContextPilotHighP95Latency`
 - `ContextPilotAIErrorSpike`
+- `ContextPilotSecurityFailureSpike`
 
 ---
 

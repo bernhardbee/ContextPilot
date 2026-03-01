@@ -95,6 +95,7 @@ Metrics exposed:
 - `contextpilot_http_active_requests`
 - `contextpilot_ai_requests_total`
 - `contextpilot_ai_request_duration_seconds`
+- `contextpilot_security_events_total`
 
 See [OBSERVABILITY.md](../docs/OBSERVABILITY.md) for local Prometheus/Grafana setup, alert rules, and triage runbook.
 

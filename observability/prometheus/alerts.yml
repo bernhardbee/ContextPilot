@@ -45,3 +45,14 @@ groups:
         annotations:
           summary: "ContextPilot AI request error ratio is above 20%"
           description: "AI request errors (client/server) have exceeded 20% for 10 minutes."
+
+      - alert: ContextPilotSecurityFailureSpike
+        expr: |
+          sum(rate(contextpilot_security_events_total{outcome=~"missing_key|invalid_key|missing_headers|invalid_timestamp|invalid_signature|misconfigured"}[5m])) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+          service: contextpilot-backend
+        annotations:
+          summary: "ContextPilot security failures are spiking"
+          description: "Security-related failures (auth/signing) are elevated for 10 minutes."

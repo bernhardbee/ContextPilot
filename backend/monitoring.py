@@ -41,6 +41,12 @@ ai_request_duration_seconds = Histogram(
     buckets=(0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 20.0, 30.0),
 )
 
+security_events_total = Counter(
+    "contextpilot_security_events_total",
+    "Total number of security-relevant events",
+    ["event", "outcome"],
+)
+
 
 def normalize_path(path: str) -> str:
     """Normalize dynamic path segments to avoid high-cardinality metric labels."""
@@ -72,6 +78,11 @@ def record_ai_request(provider: Optional[str], status: str, duration_seconds: fl
     provider_label = provider or "unknown"
     ai_requests_total.labels(provider=provider_label, status=status).inc()
     ai_request_duration_seconds.labels(provider=provider_label).observe(duration_seconds)
+
+
+def record_security_event(event: str, outcome: str) -> None:
+    """Record security-relevant events (auth/signing failures, etc.)."""
+    security_events_total.labels(event=event, outcome=outcome).inc()
 
 
 def get_metrics_payload() -> bytes:

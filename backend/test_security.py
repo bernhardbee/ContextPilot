@@ -11,6 +11,7 @@ from security import (
     is_timestamp_fresh,
     verify_request_signature,
 )
+from monitoring import get_metrics_payload
 from config import Settings
 
 
@@ -165,3 +166,37 @@ class TestRequestSigning:
 
             assert exc_info.value.status_code == 401
             assert "expired" in str(exc_info.value.detail).lower()
+
+
+class TestSecurityMetrics:
+    """Tests for security observability metrics emission."""
+
+    @pytest.mark.asyncio
+    async def test_invalid_api_key_emits_security_metric(self):
+        with patch('security.settings') as mock_settings:
+            mock_settings.enable_auth = True
+            mock_settings.api_key = "correct-key"
+            with pytest.raises(HTTPException):
+                await verify_api_key("wrong-key")
+
+        payload = get_metrics_payload().decode("utf-8")
+        assert 'contextpilot_security_events_total{event="api_key_auth",outcome="invalid_key"}' in payload
+
+    @pytest.mark.asyncio
+    async def test_invalid_signature_emits_security_metric(self):
+        request = Mock()
+        request.method = "POST"
+        request.url = Mock(path="/contexts")
+        request.body = AsyncMock(return_value=b'{"content":"x"}')
+
+        with patch('security.settings') as mock_settings:
+            mock_settings.enable_request_signing = True
+            mock_settings.request_signing_methods = ["POST", "PUT", "DELETE"]
+            mock_settings.request_signing_secret = "test-signing-secret"
+            mock_settings.request_signing_max_age_seconds = 300
+
+            with pytest.raises(HTTPException):
+                await verify_request_signature(request, "bad-signature", str(int(time.time())))
+
+        payload = get_metrics_payload().decode("utf-8")
+        assert 'contextpilot_security_events_total{event="request_signing",outcome="invalid_signature"}' in payload

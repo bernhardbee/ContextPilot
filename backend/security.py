@@ -9,6 +9,7 @@ from fastapi import HTTPException, Security, status, Header, Request
 from fastapi.security import APIKeyHeader
 from config import settings
 from logger import logger
+from monitoring import record_security_event
 
 
 # API Key header authentication
@@ -56,6 +57,7 @@ async def verify_api_key(api_key: Optional[str] = Security(api_key_header)) -> s
     
     if not api_key:
         logger.warning("API request without API key")
+        record_security_event(event="api_key_auth", outcome="missing_key")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="API key required"
@@ -63,10 +65,13 @@ async def verify_api_key(api_key: Optional[str] = Security(api_key_header)) -> s
     
     if api_key != settings.api_key:
         logger.warning(f"Invalid API key attempt: {api_key[:8]}...")
+        record_security_event(event="api_key_auth", outcome="invalid_key")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid API key"
         )
+
+    record_security_event(event="api_key_auth", outcome="valid_key")
     
     return api_key
 
@@ -87,18 +92,21 @@ async def verify_request_signature(
     signing_secret = settings.request_signing_secret.strip()
     if not signing_secret:
         logger.error("Request signing is enabled but CONTEXTPILOT_REQUEST_SIGNING_SECRET is not configured")
+        record_security_event(event="request_signing", outcome="misconfigured")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Request signing is misconfigured"
         )
 
     if not x_request_signature or not x_request_timestamp:
+        record_security_event(event="request_signing", outcome="missing_headers")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing request signature headers"
         )
 
     if not is_timestamp_fresh(x_request_timestamp, settings.request_signing_max_age_seconds):
+        record_security_event(event="request_signing", outcome="invalid_timestamp")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Request signature timestamp is invalid or expired"
@@ -113,9 +121,12 @@ async def verify_request_signature(
         secret=signing_secret,
     )
     if not hmac.compare_digest(x_request_signature, expected_signature):
+        record_security_event(event="request_signing", outcome="invalid_signature")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid request signature"
         )
+
+    record_security_event(event="request_signing", outcome="valid_signature")
 
     return "request_signature_valid"
