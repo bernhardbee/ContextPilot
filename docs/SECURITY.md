@@ -52,7 +52,35 @@ X-API-Key: your-secure-random-key-here
 python -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
 
-### 5. Rate Limiting
+### 5. Request Signing (Optional, recommended for production)
+
+ContextPilot supports optional HMAC request signing for mutating methods (`POST`, `PUT`, `DELETE` by default).
+
+Enable request signing:
+
+```bash
+CONTEXTPILOT_ENABLE_REQUEST_SIGNING=true
+CONTEXTPILOT_REQUEST_SIGNING_SECRET=your-shared-signing-secret
+CONTEXTPILOT_REQUEST_SIGNING_MAX_AGE_SECONDS=300
+CONTEXTPILOT_REQUEST_SIGNING_METHODS=["POST","PUT","DELETE"]
+```
+
+When enabled, signed requests must include:
+
+```text
+X-Request-Signature: <hex hmac sha256>
+X-Request-Timestamp: <unix epoch seconds>
+```
+
+Signing payload format:
+
+```text
+METHOD\nPATH\nTIMESTAMP\nSHA256(BODY)
+```
+
+If signing is enabled but the signing secret is missing, mutating endpoints return `503` until configuration is fixed.
+
+### 6. Rate Limiting
 
 Built-in limits prevent abuse:
 - Maximum contexts per request: 20 (configurable)
@@ -76,6 +104,8 @@ Copy `.env.example` to `.env` and configure:
 # Security Settings
 CONTEXTPILOT_ENABLE_AUTH=true
 CONTEXTPILOT_API_KEY=your-secure-key
+CONTEXTPILOT_ENABLE_REQUEST_SIGNING=true
+CONTEXTPILOT_REQUEST_SIGNING_SECRET=your-shared-signing-secret
 
 # CORS Settings
 CONTEXTPILOT_CORS_ORIGINS=["https://yourdomain.com"]
@@ -141,6 +171,8 @@ See [MODEL_SYNCHRONIZATION.md](./MODEL_SYNCHRONIZATION.md) for details.
 
 - [ ] Enable authentication (`ENABLE_AUTH=true`)
 - [ ] Generate and set a secure API key
+- [ ] Enable request signing for mutating endpoints
+- [ ] Configure signing secret and timestamp window
 - [ ] Configure specific CORS origins (no wildcards)
 - [ ] Set appropriate rate limits
 - [ ] Use HTTPS/TLS in production

@@ -60,6 +60,9 @@ CONTEXTPILOT_CORS_ORIGINS=["https://yourdomain.com"]
 # Security
 CONTEXTPILOT_ENABLE_AUTH=true
 CONTEXTPILOT_API_KEY=<generate-secure-key>
+CONTEXTPILOT_ENABLE_REQUEST_SIGNING=true
+CONTEXTPILOT_REQUEST_SIGNING_SECRET=<generate-signing-secret>
+CONTEXTPILOT_REQUEST_SIGNING_MAX_AGE_SECONDS=300
 
 # Limits
 CONTEXTPILOT_MAX_CONTENT_LENGTH=10000
@@ -236,6 +239,15 @@ Expected response:
   "timestamp": "2026-01-07T12:00:00.000000"
 }
 ```
+
+### Request Signing Validation
+
+When `CONTEXTPILOT_ENABLE_REQUEST_SIGNING=true`, mutating API calls (`POST`, `PUT`, `DELETE` by default) require:
+
+- `X-Request-Signature`
+- `X-Request-Timestamp`
+
+If omitted or invalid, the API returns `401`.
 
 ### Resource Monitoring
 

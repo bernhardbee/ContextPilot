@@ -83,6 +83,10 @@ Configure logging and metrics with environment variables:
 - `CONTEXTPILOT_LOG_LEVEL` (default: `INFO`)
 - `CONTEXTPILOT_LOG_FORMAT` (default: `json`, options: `json`, `text`)
 - `CONTEXTPILOT_ENABLE_METRICS` (default: `true`) enables `/metrics`
+- `CONTEXTPILOT_ENABLE_REQUEST_SIGNING` (default: `false`)
+- `CONTEXTPILOT_REQUEST_SIGNING_SECRET` (required when signing is enabled)
+- `CONTEXTPILOT_REQUEST_SIGNING_MAX_AGE_SECONDS` (default: `300`)
+- `CONTEXTPILOT_REQUEST_SIGNING_METHODS` (default: `["POST","PUT","DELETE"]`)
 
 Metrics exposed:
 

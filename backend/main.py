@@ -26,7 +26,7 @@ from exceptions import (
 )
 from config import settings
 from logger import logger
-from security import verify_api_key
+from security import verify_api_key, verify_request_signature
 from validators import validate_content_length, validate_tags, sanitize_string
 
 # Import storage based on configuration
@@ -384,6 +384,7 @@ def metrics():
 def create_context(
     request: Request,
     context_create: ContextUnitCreate,
+    request_signature: str = Depends(verify_request_signature),
     api_key: str = Depends(verify_api_key)
 ):
     """
@@ -589,6 +590,7 @@ def export_contexts(
 async def import_contexts(
     file: UploadFile = File(...),
     replace_existing: bool = False,
+    request_signature: str = Depends(verify_request_signature),
     api_key: str = Depends(verify_api_key)
 ):
     """
@@ -690,6 +692,7 @@ def get_context(context_id: str, api_key: str = Depends(verify_api_key)):
 def update_context(
     context_id: str,
     context_update: ContextUnitUpdate,
+    request_signature: str = Depends(verify_request_signature),
     api_key: str = Depends(verify_api_key)
 ):
     """Update a context unit."""
@@ -727,7 +730,11 @@ def update_context(
 
 
 @app.delete("/contexts/{context_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_context(context_id: str, api_key: str = Depends(verify_api_key)):
+def delete_context(
+    context_id: str,
+    request_signature: str = Depends(verify_request_signature),
+    api_key: str = Depends(verify_api_key)
+):
     """Delete a context unit."""
     success = context_store.delete(context_id)
     if not success:
@@ -747,6 +754,7 @@ def delete_context(context_id: str, api_key: str = Depends(verify_api_key)):
 def generate_prompt(
     request: Request,
     task_request: TaskRequest,
+    request_signature: str = Depends(verify_request_signature),
     api_key: str = Depends(verify_api_key)
 ):
     """Generate a contextualized prompt for a task."""
@@ -790,6 +798,7 @@ def generate_prompt(
 def generate_prompt_compact(
     request: Request,
     task_request: TaskRequest,
+    request_signature: str = Depends(verify_request_signature),
     api_key: str = Depends(verify_api_key)
 ):
     """Generate a compact contextualized prompt for a task."""
@@ -864,6 +873,7 @@ def get_stats(api_key: str = Depends(verify_api_key)):
 def ai_chat(
     request: Request,
     ai_request: AIRequest,
+    request_signature: str = Depends(verify_request_signature),
     api_key: str = Depends(verify_api_key)
 ):
     """
@@ -1062,6 +1072,7 @@ def validate_provider_connection(
     request: Request,
     provider_name: str,
     model: Optional[str] = None,
+    request_signature: str = Depends(verify_request_signature),
     api_key: str = Depends(verify_api_key)
 ):
     """Validate provider connectivity and configured credentials.
@@ -1125,7 +1136,11 @@ def get_settings(request: Request):
 
 @app.post("/settings")
 @limiter.limit("10/minute")
-def update_settings(request: Request, settings_update: SettingsUpdate):
+def update_settings(
+    request: Request,
+    settings_update: SettingsUpdate,
+    request_signature: str = Depends(verify_request_signature),
+):
     """
     Update application settings including API keys.
     

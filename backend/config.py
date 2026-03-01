@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     # Security
     enable_auth: bool = Field(default=False, description="Enable authentication")
     api_key: str = Field(default="", description="API key for authentication")
+    enable_request_signing: bool = Field(default=False, description="Require signed mutating API requests")
+    request_signing_secret: str = Field(default="", description="Shared secret for request signing")
+    request_signing_max_age_seconds: int = Field(default=300, description="Max request signature age in seconds")
+    request_signing_methods: List[str] = Field(default=["POST", "PUT", "DELETE"], description="HTTP methods requiring signatures")
     
     # Storage Configuration
     use_database: bool = Field(default=True, description="Use database storage (vs in-memory)")
