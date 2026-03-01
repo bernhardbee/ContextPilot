@@ -67,12 +67,30 @@ Backup and restore database:
 - **Provider-Specific Settings**: Temperature, top_p, max_tokens overrides per provider
 - **Model Synchronization**: Automatic frontend/backend sync with sync_models.py
 - **Security**: API key authentication, input validation, CORS, rate limiting
+- **Monitoring**: Prometheus metrics endpoint at `/metrics` with HTTP and AI request instrumentation
+- **Structured Logs**: Configurable JSON or text output via environment settings
 - **Testing**: 207 collected backend tests (`206 passed, 1 skipped` in local run)
 - **Attribution Integrity**: `/ai/chat` returns authoritative executed provider/model metadata
 - **Provider Switch Safety**: Conversation provider/model metadata is updated on each generated response
 - **Ollama Auto-Pull Test**: Environment-aware integration test supports both
     - expected connection-error behavior when Ollama is offline, and
     - successful responses when Ollama is already running locally
+
+## Observability Configuration
+
+Configure logging and metrics with environment variables:
+
+- `CONTEXTPILOT_LOG_LEVEL` (default: `INFO`)
+- `CONTEXTPILOT_LOG_FORMAT` (default: `json`, options: `json`, `text`)
+- `CONTEXTPILOT_ENABLE_METRICS` (default: `true`) enables `/metrics`
+
+Metrics exposed:
+
+- `contextpilot_http_requests_total`
+- `contextpilot_http_request_duration_seconds`
+- `contextpilot_http_active_requests`
+- `contextpilot_ai_requests_total`
+- `contextpilot_ai_request_duration_seconds`
 
 ## Model System
 

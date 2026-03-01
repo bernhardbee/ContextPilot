@@ -68,6 +68,7 @@ Most AI tools are stateless—they forget context between sessions. ContextPilot
 - ✅ **Security features** - API key auth, input validation, CORS, rate limiting
 - ✅ **Request tracking** with unique IDs and timing
 - ✅ **Structured logging** with JSON output option
+- ✅ **Prometheus monitoring** via `/metrics` endpoint (HTTP + AI request metrics)
 - ✅ **Database migrations** with Alembic
 - ✅ **No external dependencies** for embeddings (uses local models)
 - ✅ **Provider-specific settings** - Override temperature, context window, and API params per provider

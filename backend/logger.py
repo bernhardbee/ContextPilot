@@ -43,7 +43,7 @@ class StructuredFormatter(logging.Formatter):
                           "levelname", "lineno", "module", "msecs", "message", 
                           "pathname", "process", "processName", "relativeCreated",
                           "thread", "threadName", "exc_info", "exc_text", "stack_info",
-                          "request_id", "user_id"]:
+                          "request_id", "user_id", "asctime", "taskName"]:
                 log_data[key] = value
         
         return json.dumps(log_data)
@@ -87,5 +87,5 @@ def setup_logger(name: str = "contextpilot", structured: bool = False) -> loggin
 
 
 # Global logger instance
-logger = setup_logger()
+logger = setup_logger(structured=settings.log_format.lower() == "json")
 

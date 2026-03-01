@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     
     # Logging
     log_level: str = Field(default="INFO", description="Logging level")
+    log_format: str = Field(default="json", description="Log format (json or text)")
+
+    # Monitoring
+    enable_metrics: bool = Field(default=True, description="Enable Prometheus metrics endpoint and instrumentation")
     
     # API Limits
     max_content_length: int = Field(default=10000, description="Max characters in content")

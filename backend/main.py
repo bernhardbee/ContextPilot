@@ -3,7 +3,7 @@ FastAPI application for ContextPilot.
 """
 from fastapi import FastAPI, HTTPException, status, Depends, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse, Response
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -43,6 +43,7 @@ from ai_service import ai_service
 from request_tracking import RequestTrackingMiddleware
 from response_cache import response_cache
 import settings_store as settings_store_module
+from monitoring import get_metrics_content_type, get_metrics_payload, record_ai_request
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -363,6 +364,17 @@ def health_check():
         }
     
     return health_status
+
+
+@app.get("/metrics")
+def metrics():
+    """Prometheus metrics endpoint."""
+    if not settings.enable_metrics:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Metrics are disabled"
+        )
+    return Response(content=get_metrics_payload(), media_type=get_metrics_content_type())
 
 
 # Context CRUD endpoints
@@ -896,6 +908,9 @@ def ai_chat(
     # Extract context IDs
     context_ids = [rc.context_unit.id for rc in ranked_contexts]
     
+    provider_label = ai_request.provider or settings.default_ai_provider
+    ai_start_time = datetime.utcnow()
+
     try:
         # Generate AI response (synchronous call)
         response_text, conversation = ai_service.generate_response(
@@ -910,6 +925,10 @@ def ai_chat(
         )
         
         logger.info(f"AI response generated for conversation {conversation.id}")
+
+        if settings.enable_metrics:
+            duration_seconds = (datetime.utcnow() - ai_start_time).total_seconds()
+            record_ai_request(provider=conversation.provider, status="success", duration_seconds=duration_seconds)
         
         return AIResponse(
             conversation_id=conversation.id,
@@ -925,6 +944,9 @@ def ai_chat(
         # Client errors (bad configuration, missing models, etc.)
         error_detail = str(e)
         logger.warning(f"AI generation client error: {error_detail}")
+        if settings.enable_metrics:
+            duration_seconds = (datetime.utcnow() - ai_start_time).total_seconds()
+            record_ai_request(provider=provider_label, status="client_error", duration_seconds=duration_seconds)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=error_detail
@@ -933,6 +955,9 @@ def ai_chat(
         # Server errors (unexpected failures)
         error_detail = str(e)
         logger.error(f"AI generation error: {error_detail}")
+        if settings.enable_metrics:
+            duration_seconds = (datetime.utcnow() - ai_start_time).total_seconds()
+            record_ai_request(provider=provider_label, status="server_error", duration_seconds=duration_seconds)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate AI response: {error_detail}"

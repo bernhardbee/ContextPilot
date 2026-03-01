@@ -7,6 +7,8 @@ from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 from logger import logger
+from config import settings
+from monitoring import end_http_request, start_http_request
 
 
 class RequestTrackingMiddleware(BaseHTTPMiddleware):
@@ -31,6 +33,8 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
         
         # Start timing
         start_time = time.time()
+        if settings.enable_metrics:
+            start_http_request()
         
         # Log request
         logger.info(
@@ -65,6 +69,14 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
                     "duration_ms": duration_ms
                 }
             )
+
+            if settings.enable_metrics:
+                end_http_request(
+                    method=request.method,
+                    path=request.url.path,
+                    status_code=response.status_code,
+                    duration_seconds=duration_ms / 1000,
+                )
             
             return response
             
@@ -81,4 +93,11 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
                 },
                 exc_info=True
             )
+            if settings.enable_metrics:
+                end_http_request(
+                    method=request.method,
+                    path=request.url.path,
+                    status_code=500,
+                    duration_seconds=duration_ms / 1000,
+                )
             raise
