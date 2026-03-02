@@ -72,6 +72,29 @@ CONTEXTPILOT_MAX_CONTENT_LENGTH=10000
 CONTEXTPILOT_MAX_CONTEXTS_PER_REQUEST=20
 ```
 
+#### Environment Variable Matrix (Dev / Staging / Prod)
+
+Use this matrix to keep environment values intentional and consistent.
+
+| Variable | Development | Staging | Production |
+|---|---|---|---|
+| `CONTEXTPILOT_HOST` | `0.0.0.0` | `127.0.0.1` | `127.0.0.1` |
+| `CONTEXTPILOT_PORT` | `8000` | `8000` | `8000` |
+| `CONTEXTPILOT_LOG_LEVEL` | `INFO` | `INFO` | `WARNING` |
+| `CONTEXTPILOT_LOG_FORMAT` | `text` or `json` | `json` | `json` |
+| `CONTEXTPILOT_ENABLE_METRICS` | `true` | `true` | `true` |
+| `CONTEXTPILOT_CORS_ORIGINS` | local frontend origin(s) | staging domain only | production domain only |
+| `CONTEXTPILOT_ENABLE_AUTH` | `false` (optional) | `true` | `true` |
+| `CONTEXTPILOT_API_KEY` | optional | required | required |
+| `CONTEXTPILOT_API_KEY_HASH` | optional | recommended | recommended |
+| `CONTEXTPILOT_ENABLE_REQUEST_SIGNING` | `false` (optional) | `true` | `true` |
+| `CONTEXTPILOT_REQUEST_SIGNING_SECRET` | optional | required if signing enabled | required if signing enabled |
+| `CONTEXTPILOT_REQUEST_SIGNING_MAX_AGE_SECONDS` | `300` | `300` | `300` |
+| `CONTEXTPILOT_ENABLE_SECURITY_HEADERS` | `true` | `true` | `true` |
+| `CONTEXTPILOT_HSTS_MAX_AGE_SECONDS` | `0` or `31536000` (HTTPS only) | `31536000` | `31536000` |
+| `CONTEXTPILOT_MAX_CONTENT_LENGTH` | `10000` | `10000` | `10000` |
+| `CONTEXTPILOT_MAX_CONTEXTS_PER_REQUEST` | `20` | `20` | `20` |
+
 For ongoing secret hygiene, rotate the runtime API key periodically with:
 
 ```bash
@@ -285,6 +308,34 @@ htop
 
 ## Backup and Recovery
 
+### Rollback Runbook
+
+Use this when a deployment causes errors, elevated latency, or failed health checks.
+
+1. **Declare rollback**
+  - Capture incident timestamp, deploy SHA/tag, and current symptom.
+2. **Freeze changes**
+  - Pause additional deployments until rollback is complete.
+3. **Switch to last-known-good revision**
+  - `git fetch --all --tags`
+  - `git checkout <last-known-good-sha-or-tag>`
+4. **Recreate backend environment if dependencies changed**
+  - `cd backend`
+  - `source venv/bin/activate`
+  - `pip install -r requirements.txt`
+5. **Restart services**
+  - Systemd: `sudo systemctl restart contextpilot`
+  - Gunicorn: restart the gunicorn process/supervisor unit
+  - Reverse proxy (if changed): `sudo systemctl reload nginx`
+6. **Verify rollback success**
+  - Health: `curl https://yourdomain.com/health`
+  - Metrics: `curl https://yourdomain.com/metrics`
+  - Security events: `curl "https://yourdomain.com/security/events?limit=20" -H "X-API-Key: <current-api-key>"`
+7. **Close incident with evidence**
+  - Record before/after status, restored version, and follow-up remediation actions.
+
+If rollback fails, use your infrastructure snapshot/backup restore procedure and keep the deployment frozen.
+
 ### Data Persistence
 
 By default, ContextPilot stores data in-memory. For production:
@@ -439,6 +490,18 @@ Add to your GitHub Actions, GitLab CI, or similar:
 - [PROVIDER_INTEGRATION.md](./PROVIDER_INTEGRATION.md) - Provider-specific settings
 
 ## Production Checklist
+
+### Post-Deploy Verification Checklist
+
+- [ ] `GET /health` returns `healthy`
+- [ ] `GET /metrics` is reachable and emits Prometheus series
+- [ ] Frontend loads and core user flow (`create context` -> `chat`) succeeds
+- [ ] Authenticated call with `X-API-Key` succeeds on protected endpoint
+- [ ] Signed mutating request validation behaves as expected (`401` on invalid/missing signature when enabled)
+- [ ] `GET /security/events` returns recent entries
+- [ ] Logs show no unexpected startup or runtime exceptions
+
+Run this checklist on staging and production after each deployment.
 
 - [ ] Environment variables configured
 - [ ] Authentication enabled
