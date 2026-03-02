@@ -6,25 +6,48 @@ import pytest
 from ai_service import AIService
 from composer import GeneratedPrompt
 from db_models import ConversationDB, MessageDB
-from database import get_db_session, Base, engine
+from database import Base
 
 
 class TestModelSwitching:
     """Test model switching functionality in conversations."""
     
     @pytest.fixture(scope="function")
-    def setup_db(self):
+    def setup_db(self, monkeypatch):
         """Create database tables for tests in a temporary database."""
         import tempfile
         import os
+        from contextlib import contextmanager
         from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+        import database
+        import ai_service
         
         # Create temporary database
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.db')
         temp_file.close()
         test_engine = create_engine(f"sqlite:///{temp_file.name}")
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
         
         Base.metadata.create_all(bind=test_engine)
+
+        @contextmanager
+        def test_db_session():
+            db = SessionLocal()
+            try:
+                yield db
+                db.commit()
+            except Exception:
+                db.rollback()
+                raise
+            finally:
+                db.close()
+
+        monkeypatch.setattr(database, "engine", test_engine)
+        monkeypatch.setattr(database, "SessionLocal", SessionLocal)
+        monkeypatch.setattr(database, "get_db_session", test_db_session)
+        monkeypatch.setattr(ai_service, "get_db_session", test_db_session)
+
         yield test_engine
         
         test_engine.dispose()
