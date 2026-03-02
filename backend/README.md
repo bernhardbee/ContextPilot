@@ -67,6 +67,7 @@ Backup and restore database:
 - **Provider-Specific Settings**: Temperature, top_p, max_tokens overrides per provider
 - **Model Synchronization**: Automatic frontend/backend sync with sync_models.py
 - **Security**: API key authentication, input validation, CORS, rate limiting
+- **API Key Lifecycle**: `/security/api-key/rotate` endpoint with hashed key persistence metadata
 - **Security Headers**: Defensive response headers with optional HSTS for HTTPS traffic
 - **Monitoring**: Prometheus metrics endpoint at `/metrics` with HTTP and AI request instrumentation
 - **Structured Logs**: Configurable JSON or text output via environment settings
@@ -88,6 +89,7 @@ Configure logging and metrics with environment variables:
 - `CONTEXTPILOT_REQUEST_SIGNING_SECRET` (required when signing is enabled)
 - `CONTEXTPILOT_REQUEST_SIGNING_MAX_AGE_SECONDS` (default: `300`)
 - `CONTEXTPILOT_REQUEST_SIGNING_METHODS` (default: `["POST","PUT","DELETE"]`)
+- `CONTEXTPILOT_API_KEY_HASH` (optional SHA256 hash fallback for API key verification)
 
 Metrics exposed:
 

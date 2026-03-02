@@ -29,6 +29,17 @@ def generate_request_signature(method: str, path: str, timestamp: str, body: byt
     return hmac.new(secret.encode("utf-8"), payload, hashlib.sha256).hexdigest()
 
 
+def hash_api_key(api_key: str) -> str:
+    """Return SHA256 hash for API key values."""
+    return hashlib.sha256(api_key.encode("utf-8")).hexdigest()
+
+
+def verify_api_key_against_hash(api_key: str, expected_hash: str) -> bool:
+    """Constant-time comparison between API key and expected SHA256 hash."""
+    computed_hash = hash_api_key(api_key)
+    return hmac.compare_digest(computed_hash, expected_hash)
+
+
 def is_timestamp_fresh(timestamp: str, max_age_seconds: int) -> bool:
     """Validate signature timestamp age to reduce replay risk."""
     try:
@@ -62,8 +73,25 @@ async def verify_api_key(api_key: Optional[str] = Security(api_key_header)) -> s
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="API key required"
         )
-    
-    if api_key != settings.api_key:
+
+    expected_plain = settings.api_key.strip() if isinstance(settings.api_key, str) else ""
+    expected_hash = settings.api_key_hash.strip() if isinstance(settings.api_key_hash, str) else ""
+
+    if not expected_hash:
+        try:
+            import settings_store as settings_store_module
+            if settings_store_module.settings_store:
+                persisted_hash = settings_store_module.settings_store.get("api_key_hash")
+                if persisted_hash:
+                    expected_hash = persisted_hash.strip()
+                    settings.api_key_hash = expected_hash
+        except Exception:
+            pass
+
+    plain_match = bool(expected_plain) and hmac.compare_digest(api_key, expected_plain)
+    hash_match = bool(expected_hash) and verify_api_key_against_hash(api_key, expected_hash)
+
+    if not plain_match and not hash_match:
         logger.warning(f"Invalid API key attempt: {api_key[:8]}...")
         record_security_event(event="api_key_auth", outcome="invalid_key")
         raise HTTPException(
@@ -72,6 +100,16 @@ async def verify_api_key(api_key: Optional[str] = Security(api_key_header)) -> s
         )
 
     record_security_event(event="api_key_auth", outcome="valid_key")
+
+    try:
+        import settings_store as settings_store_module
+        if settings_store_module.settings_store:
+            now_ts = str(int(time.time()))
+            settings_store_module.settings_store.set("api_key_last_used_at", now_ts)
+            if not settings_store_module.settings_store.get("api_key_created_at"):
+                settings_store_module.settings_store.set("api_key_created_at", now_ts)
+    except Exception:
+        pass
     
     return api_key
 

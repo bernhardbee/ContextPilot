@@ -60,6 +60,7 @@ CONTEXTPILOT_CORS_ORIGINS=["https://yourdomain.com"]
 # Security
 CONTEXTPILOT_ENABLE_AUTH=true
 CONTEXTPILOT_API_KEY=<generate-secure-key>
+CONTEXTPILOT_API_KEY_HASH=
 CONTEXTPILOT_ENABLE_REQUEST_SIGNING=true
 CONTEXTPILOT_REQUEST_SIGNING_SECRET=<generate-signing-secret>
 CONTEXTPILOT_REQUEST_SIGNING_MAX_AGE_SECONDS=300
@@ -70,6 +71,15 @@ CONTEXTPILOT_HSTS_MAX_AGE_SECONDS=31536000
 CONTEXTPILOT_MAX_CONTENT_LENGTH=10000
 CONTEXTPILOT_MAX_CONTEXTS_PER_REQUEST=20
 ```
+
+For ongoing secret hygiene, rotate the runtime API key periodically with:
+
+```bash
+curl -X POST http://127.0.0.1:8000/security/api-key/rotate \
+  -H "X-API-Key: <current-api-key>"
+```
+
+Store the returned key securely. ContextPilot persists the API key hash (`api_key_hash`) plus lifecycle timestamps instead of plaintext in settings storage after rotation.
 
 #### Step 3: Run as System Service
 

@@ -10,6 +10,8 @@ from security import (
     generate_request_signature,
     is_timestamp_fresh,
     verify_request_signature,
+    hash_api_key,
+    verify_api_key_against_hash,
 )
 from monitoring import get_metrics_payload
 from config import Settings
@@ -32,14 +34,34 @@ class TestAPIKeyAuthentication:
         with patch('security.settings') as mock_settings:
             mock_settings.enable_auth = True
             mock_settings.api_key = "test-key-123"
+            mock_settings.api_key_hash = ""
             result = await verify_api_key("test-key-123")
             assert result == "test-key-123"
+
+    @pytest.mark.asyncio
+    async def test_verify_api_key_valid_with_hash_only(self):
+        """Hashed API key should validate without plaintext key in config."""
+        hashed = hash_api_key("rotated-secret")
+        with patch('security.settings') as mock_settings:
+            mock_settings.enable_auth = True
+            mock_settings.api_key = ""
+            mock_settings.api_key_hash = hashed
+            result = await verify_api_key("rotated-secret")
+            assert result == "rotated-secret"
+
+    def test_verify_api_key_against_hash(self):
+        """Helper should compare API key against stored hash."""
+        hashed = hash_api_key("my-secret")
+        assert verify_api_key_against_hash("my-secret", hashed)
+        assert not verify_api_key_against_hash("wrong-secret", hashed)
     
     @pytest.mark.asyncio
     async def test_verify_api_key_missing(self):
         """Test that missing API key raises 401."""
         with patch('security.settings') as mock_settings:
             mock_settings.enable_auth = True
+            mock_settings.api_key = ""
+            mock_settings.api_key_hash = ""
             with pytest.raises(HTTPException) as exc_info:
                 await verify_api_key(None)
             assert exc_info.value.status_code == 401
@@ -51,6 +73,7 @@ class TestAPIKeyAuthentication:
         with patch('security.settings') as mock_settings:
             mock_settings.enable_auth = True
             mock_settings.api_key = "correct-key"
+            mock_settings.api_key_hash = ""
             with pytest.raises(HTTPException) as exc_info:
                 await verify_api_key("wrong-key")
             assert exc_info.value.status_code == 401

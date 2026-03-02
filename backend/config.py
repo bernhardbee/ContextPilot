@@ -45,6 +45,8 @@ class Settings(BaseSettings):
     # Security
     enable_auth: bool = Field(default=False, description="Enable authentication")
     api_key: str = Field(default="", description="API key for authentication")
+    api_key_hash: str = Field(default="", description="SHA256 hash of API key for secure auth storage")
+    api_key_rotation_bytes: int = Field(default=32, description="Byte length used when generating rotated API keys")
     enable_request_signing: bool = Field(default=False, description="Require signed mutating API requests")
     request_signing_secret: str = Field(default="", description="Shared secret for request signing")
     request_signing_max_age_seconds: int = Field(default=300, description="Max request signature age in seconds")

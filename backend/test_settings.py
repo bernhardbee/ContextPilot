@@ -152,3 +152,52 @@ class TestSettings:
         assert response.status_code == 400
         message = response.json().get("message", "")
         assert "authentication failed" in message.lower()
+
+    def test_rotate_api_key_requires_auth_enabled(self, client, monkeypatch):
+        """Rotation endpoint should reject when auth is disabled."""
+        monkeypatch.setattr(main.settings, "enable_auth", False)
+        monkeypatch.setattr(main.settings, "enable_request_signing", False)
+
+        response = client.post("/security/api-key/rotate")
+        assert response.status_code == 400
+        assert "enable authentication" in response.json().get("message", "").lower()
+
+    def test_rotate_api_key_success_persists_hash_and_metadata(self, client, monkeypatch):
+        """Rotation endpoint should return new key and persist only hashed value/metadata."""
+
+        class FakeStore:
+            def __init__(self):
+                self.values = {}
+
+            def get(self, key):
+                return self.values.get(key)
+
+            def set(self, key, value):
+                self.values[key] = value
+
+            def delete(self, key):
+                self.values.pop(key, None)
+
+        fake_store = FakeStore()
+        fake_store.set("api_key", "legacy-plain")
+
+        monkeypatch.setattr(main.settings, "enable_auth", True)
+        monkeypatch.setattr(main.settings, "enable_request_signing", False)
+        monkeypatch.setattr(main.settings, "api_key", "current-api-key")
+        monkeypatch.setattr(main.settings, "api_key_hash", "")
+        monkeypatch.setattr(main.settings_store_module, "settings_store", fake_store)
+        monkeypatch.setattr(main.secrets, "token_urlsafe", lambda _: "rotated-api-key")
+
+        response = client.post("/security/api-key/rotate", headers={"X-API-Key": "current-api-key"})
+        assert response.status_code == 200
+        data = response.json()
+
+        assert data["message"] == "API key rotated successfully"
+        assert data["api_key"] == "rotated-api-key"
+        assert "rotated_at" in data
+
+        assert fake_store.get("api_key") is None
+        assert fake_store.get("api_key_hash") == main.hash_api_key("rotated-api-key")
+        assert fake_store.get("api_key_last_rotated_at") == data["rotated_at"]
+        assert fake_store.get("api_key_last_used_at") == data["rotated_at"]
+        assert fake_store.get("api_key_created_at") is not None

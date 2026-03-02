@@ -40,6 +40,7 @@ Enable API key authentication for production deployments:
 ```bash
 CONTEXTPILOT_ENABLE_AUTH=true
 CONTEXTPILOT_API_KEY=your-secure-random-key-here
+CONTEXTPILOT_API_KEY_HASH=
 ```
 
 When enabled, all API requests must include the header:
@@ -51,6 +52,21 @@ X-API-Key: your-secure-random-key-here
 ```bash
 python -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
+
+**Rotating API Keys (recommended)**:
+
+- Endpoint: `POST /security/api-key/rotate`
+- Auth: current `X-API-Key` is required when auth is enabled
+- Optional signing: respects request-signing enforcement when enabled
+- Response: returns a new plaintext key exactly once
+
+Rotation persists only the SHA256 hash in settings storage (`api_key_hash`) and records lifecycle metadata:
+
+- `api_key_created_at`
+- `api_key_last_rotated_at`
+- `api_key_last_used_at`
+
+After rotation, clients must switch to the returned key immediately.
 
 ### 5. Request Signing (Optional, recommended for production)
 

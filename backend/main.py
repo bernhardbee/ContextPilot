@@ -13,6 +13,8 @@ from contextlib import asynccontextmanager
 import json
 import csv
 import io
+import secrets
+import time
 
 from models import (
     ContextUnit, ContextUnitCreate, ContextUnitUpdate,
@@ -26,7 +28,7 @@ from exceptions import (
 )
 from config import settings
 from logger import logger
-from security import verify_api_key, verify_request_signature
+from security import verify_api_key, verify_request_signature, hash_api_key
 from validators import validate_content_length, validate_tags, sanitize_string
 
 # Import storage based on configuration
@@ -90,9 +92,14 @@ async def lifespan(app: FastAPI):
     # Initialize settings store
     settings_store_module.init_settings_store(settings.database_url)
     logger.info("Settings store initialized")
+
+    stored_openai_key = ""
+    stored_anthropic_key = ""
     
     # Load persisted API keys from database
     if settings_store_module.settings_store:
+        stored_api_key_hash = settings_store_module.settings_store.get("api_key_hash")
+        stored_api_key_plain = settings_store_module.settings_store.get("api_key")
         stored_openai_key = settings_store_module.settings_store.get("openai_api_key")
         stored_openai_base_url = settings_store_module.settings_store.get("openai_base_url")
         stored_openai_default_model = settings_store_module.settings_store.get("openai_default_model")
@@ -116,6 +123,11 @@ async def lifespan(app: FastAPI):
         stored_model = settings_store_module.settings_store.get("default_ai_model")
         stored_temperature = settings_store_module.settings_store.get("ai_temperature")
         stored_max_tokens = settings_store_module.settings_store.get("ai_max_tokens")
+
+        if stored_api_key_hash:
+            settings.api_key_hash = stored_api_key_hash
+        if stored_api_key_plain and not settings.api_key:
+            settings.api_key = stored_api_key_plain
         
         if stored_openai_key:
             settings.openai_api_key = stored_openai_key
@@ -1322,6 +1334,46 @@ def update_settings(
             ai_temperature=settings.ai_temperature,
             ai_max_tokens=settings.ai_max_tokens
         )
+    }
+
+
+@app.post("/security/api-key/rotate")
+@limiter.limit("5/minute")
+def rotate_api_key(
+    request: Request,
+    request_signature: str = Depends(verify_request_signature),
+    api_key: str = Depends(verify_api_key)
+):
+    """Rotate API key and return newly generated value once."""
+    if not settings.enable_auth:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Enable authentication before rotating API keys"
+        )
+
+    generated_key = secrets.token_urlsafe(settings.api_key_rotation_bytes)
+    generated_key_hash = hash_api_key(generated_key)
+    now_ts = str(int(time.time()))
+
+    settings.api_key = generated_key
+    settings.api_key_hash = generated_key_hash
+
+    if settings_store_module.settings_store:
+        settings_store_module.settings_store.set("api_key_hash", generated_key_hash)
+        settings_store_module.settings_store.set("api_key_last_rotated_at", now_ts)
+        settings_store_module.settings_store.set("api_key_last_used_at", now_ts)
+        existing_created_at = settings_store_module.settings_store.get("api_key_created_at")
+        if not existing_created_at:
+            settings_store_module.settings_store.set("api_key_created_at", now_ts)
+        settings_store_module.settings_store.delete("api_key")
+
+    logger.warning("API key rotated via /security/api-key/rotate")
+
+    return {
+        "message": "API key rotated successfully",
+        "api_key": generated_key,
+        "rotated_at": now_ts,
+        "note": "Store this key securely now; it will not be shown again"
     }
 
 if __name__ == "__main__":
