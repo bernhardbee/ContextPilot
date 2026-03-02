@@ -91,3 +91,22 @@ class MessageDB(Base):
     
     def __repr__(self):
         return f"<MessageDB(id={self.id}, role={self.role}, content={self.content[:50]}...)>"
+
+
+class SecurityEventDB(Base):
+    """Database model for persisted security audit events."""
+    __tablename__ = "security_events"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    event = Column(String, nullable=False)
+    outcome = Column(String, nullable=False)
+    request_id = Column(String, nullable=True)
+    method = Column(String, nullable=True)
+    path = Column(String, nullable=True)
+    client_ip = Column(String, nullable=True)
+    actor = Column(String, nullable=True)
+    details = Column(JSON, nullable=False, default=dict)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<SecurityEventDB(id={self.id}, event={self.event}, outcome={self.outcome})>"

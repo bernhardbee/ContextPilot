@@ -261,6 +261,17 @@ When `CONTEXTPILOT_ENABLE_REQUEST_SIGNING=true`, mutating API calls (`POST`, `PU
 
 If omitted or invalid, the API returns `401`.
 
+### Security Audit Validation
+
+Security events are persisted in the backend database and queryable via:
+
+```bash
+curl "https://yourdomain.com/security/events?limit=20" \
+  -H "X-API-Key: <current-api-key>"
+```
+
+Use `event`, `outcome`, and `request_id` query params to filter incident reviews.
+
 ### Resource Monitoring
 
 Monitor CPU, memory, and disk:

@@ -210,3 +210,29 @@ class SettingsUpdate(BaseModel):
     default_ai_model: Optional[str] = Field(None, description="Default AI model")
     ai_temperature: Optional[float] = Field(None, ge=0.0, le=2.0, description="AI temperature")
     ai_max_tokens: Optional[int] = Field(None, ge=1, le=16000, description="AI max tokens")
+
+
+class SecurityEvent(BaseModel):
+    """Persisted security audit event entry."""
+    model_config = ConfigDict(
+        json_encoders={datetime: lambda v: v.isoformat()}
+    )
+
+    id: str
+    event: str
+    outcome: str
+    request_id: Optional[str] = None
+    method: Optional[str] = None
+    path: Optional[str] = None
+    client_ip: Optional[str] = None
+    actor: Optional[str] = None
+    details: dict = Field(default_factory=dict)
+    created_at: datetime
+
+
+class SecurityEventListResponse(BaseModel):
+    """Paginated security audit event list response."""
+    events: List[SecurityEvent]
+    count: int
+    limit: int
+    offset: int

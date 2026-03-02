@@ -74,7 +74,7 @@ def init_db() -> None:
         Exception: If table creation fails
     """
     try:
-        from db_models import ContextUnitDB, ConversationDB, MessageDB
+        from db_models import ContextUnitDB, ConversationDB, MessageDB, SecurityEventDB
         logger.info("Creating database tables...")
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables created successfully")

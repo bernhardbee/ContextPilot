@@ -131,6 +131,24 @@ CONTEXTPILOT_ENABLE_SECURITY_HEADERS=true
 CONTEXTPILOT_HSTS_MAX_AGE_SECONDS=31536000
 ```
 
+### 8. Security Audit Events (Persistent)
+
+ContextPilot persists security outcomes to the `security_events` database table for auditability.
+
+Recorded categories include:
+
+- API key auth outcomes (`missing_key`, `invalid_key`, `valid_key`)
+- Request-signing outcomes (`missing_headers`, `invalid_timestamp`, `invalid_signature`, `valid_signature`, `misconfigured`)
+- API key rotation outcomes (`success`, `auth_disabled`)
+
+Query recent events via:
+
+```text
+GET /security/events?limit=50&offset=0&event=api_key_auth&outcome=invalid_key
+```
+
+The endpoint supports filters for `event`, `outcome`, and `request_id`.
+
 ## Configuration
 
 ### Environment Variables

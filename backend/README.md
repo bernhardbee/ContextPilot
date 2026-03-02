@@ -68,6 +68,7 @@ Backup and restore database:
 - **Model Synchronization**: Automatic frontend/backend sync with sync_models.py
 - **Security**: API key authentication, input validation, CORS, rate limiting
 - **API Key Lifecycle**: `/security/api-key/rotate` endpoint with hashed key persistence metadata
+- **Security Audit Trail**: persisted `security_events` records with `/security/events` query endpoint
 - **Security Headers**: Defensive response headers with optional HSTS for HTTPS traffic
 - **Monitoring**: Prometheus metrics endpoint at `/metrics` with HTTP and AI request instrumentation
 - **Structured Logs**: Configurable JSON or text output via environment settings

@@ -2,9 +2,11 @@
 Tests for settings management functionality.
 """
 import pytest
+from datetime import datetime
 from fastapi.testclient import TestClient
 from main import app
 import main
+from models import SecurityEvent
 
 
 @pytest.fixture
@@ -201,3 +203,47 @@ class TestSettings:
         assert fake_store.get("api_key_last_rotated_at") == data["rotated_at"]
         assert fake_store.get("api_key_last_used_at") == data["rotated_at"]
         assert fake_store.get("api_key_created_at") is not None
+
+    def test_get_security_events_endpoint(self, client, monkeypatch):
+        """Security events endpoint should return persisted event payloads."""
+        monkeypatch.setattr(main.settings, "enable_auth", False)
+
+        sample_event = SecurityEvent(
+            id="evt-1",
+            event="api_key_auth",
+            outcome="valid_key",
+            request_id="req-1",
+            method="GET",
+            path="/stats",
+            client_ip="127.0.0.1",
+            actor="api_key:test***",
+            details={"source": "test"},
+            created_at=datetime.utcnow(),
+        )
+
+        monkeypatch.setattr(main, "list_security_events", lambda **kwargs: [sample_event])
+
+        response = client.get("/security/events")
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["count"] == 1
+        assert payload["events"][0]["event"] == "api_key_auth"
+        assert payload["events"][0]["request_id"] == "req-1"
+
+    def test_get_security_events_bounds_limit_and_offset(self, client, monkeypatch):
+        """Security events endpoint should clamp pagination inputs to safe bounds."""
+        monkeypatch.setattr(main.settings, "enable_auth", False)
+
+        captured = {}
+
+        def fake_list_security_events(limit, offset, event=None, outcome=None, request_id=None):
+            captured["limit"] = limit
+            captured["offset"] = offset
+            return []
+
+        monkeypatch.setattr(main, "list_security_events", fake_list_security_events)
+
+        response = client.get("/security/events", params={"limit": 500, "offset": -7})
+        assert response.status_code == 200
+        assert captured["limit"] == 200
+        assert captured["offset"] == 0

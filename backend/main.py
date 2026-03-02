@@ -19,7 +19,8 @@ import time
 from models import (
     ContextUnit, ContextUnitCreate, ContextUnitUpdate,
     TaskRequest, GeneratedPrompt, ContextStatus, ContextType,
-    AIRequest, AIResponse, SettingsResponse, SettingsUpdate
+    AIRequest, AIResponse, SettingsResponse, SettingsUpdate,
+    SecurityEventListResponse
 )
 from error_models import ErrorResponse
 from exceptions import (
@@ -47,6 +48,7 @@ from security_headers import SecurityHeadersMiddleware
 from response_cache import response_cache
 import settings_store as settings_store_module
 from monitoring import get_metrics_content_type, get_metrics_payload, record_ai_request
+from security_audit import persist_security_event, list_security_events
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -65,7 +67,7 @@ async def lifespan(app: FastAPI):
     
     # Initialize database tables if they don't exist
     try:
-        from db_models import Base, ContextUnitDB, ConversationDB, MessageDB
+        from db_models import Base, ContextUnitDB, ConversationDB, MessageDB, SecurityEventDB
         from settings_store import SettingsModel
         from database import engine
         Base.metadata.create_all(bind=engine)
@@ -1346,6 +1348,7 @@ def rotate_api_key(
 ):
     """Rotate API key and return newly generated value once."""
     if not settings.enable_auth:
+        persist_security_event(event="api_key_rotation", outcome="auth_disabled", request=request)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Enable authentication before rotating API keys"
@@ -1367,6 +1370,14 @@ def rotate_api_key(
             settings_store_module.settings_store.set("api_key_created_at", now_ts)
         settings_store_module.settings_store.delete("api_key")
 
+    persist_security_event(
+        event="api_key_rotation",
+        outcome="success",
+        request=request,
+        actor=f"api_key:{api_key[:8]}***",
+        details={"rotated_at": now_ts}
+    )
+
     logger.warning("API key rotated via /security/api-key/rotate")
 
     return {
@@ -1375,6 +1386,37 @@ def rotate_api_key(
         "rotated_at": now_ts,
         "note": "Store this key securely now; it will not be shown again"
     }
+
+
+@app.get("/security/events", response_model=SecurityEventListResponse)
+@limiter.limit("30/minute")
+def get_security_events(
+    request: Request,
+    limit: int = 50,
+    offset: int = 0,
+    event: Optional[str] = None,
+    outcome: Optional[str] = None,
+    request_id: Optional[str] = None,
+    api_key: str = Depends(verify_api_key),
+):
+    """Get persisted security audit events with optional filtering."""
+    bounded_limit = max(1, min(limit, 200))
+    bounded_offset = max(0, offset)
+
+    events = list_security_events(
+        limit=bounded_limit,
+        offset=bounded_offset,
+        event=event,
+        outcome=outcome,
+        request_id=request_id,
+    )
+
+    return SecurityEventListResponse(
+        events=events,
+        count=len(events),
+        limit=bounded_limit,
+        offset=bounded_offset,
+    )
 
 if __name__ == "__main__":
     import uvicorn

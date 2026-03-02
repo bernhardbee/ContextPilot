@@ -10,6 +10,7 @@ from fastapi.security import APIKeyHeader
 from config import settings
 from logger import logger
 from monitoring import record_security_event
+from security_audit import persist_security_event
 
 
 # API Key header authentication
@@ -50,7 +51,7 @@ def is_timestamp_fresh(timestamp: str, max_age_seconds: int) -> bool:
     return abs(current_time - timestamp_value) <= max_age_seconds
 
 
-async def verify_api_key(api_key: Optional[str] = Security(api_key_header)) -> str:
+async def verify_api_key(api_key: Optional[str] = Security(api_key_header), request: Request = None) -> str:
     """
     Verify API key if authentication is enabled.
     
@@ -69,6 +70,7 @@ async def verify_api_key(api_key: Optional[str] = Security(api_key_header)) -> s
     if not api_key:
         logger.warning("API request without API key")
         record_security_event(event="api_key_auth", outcome="missing_key")
+        persist_security_event(event="api_key_auth", outcome="missing_key", request=request)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="API key required"
@@ -94,12 +96,24 @@ async def verify_api_key(api_key: Optional[str] = Security(api_key_header)) -> s
     if not plain_match and not hash_match:
         logger.warning(f"Invalid API key attempt: {api_key[:8]}...")
         record_security_event(event="api_key_auth", outcome="invalid_key")
+        persist_security_event(
+            event="api_key_auth",
+            outcome="invalid_key",
+            request=request,
+            actor=f"api_key:{api_key[:8]}***"
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid API key"
         )
 
     record_security_event(event="api_key_auth", outcome="valid_key")
+    persist_security_event(
+        event="api_key_auth",
+        outcome="valid_key",
+        request=request,
+        actor=f"api_key:{api_key[:8]}***"
+    )
 
     try:
         import settings_store as settings_store_module
@@ -131,6 +145,7 @@ async def verify_request_signature(
     if not signing_secret:
         logger.error("Request signing is enabled but CONTEXTPILOT_REQUEST_SIGNING_SECRET is not configured")
         record_security_event(event="request_signing", outcome="misconfigured")
+        persist_security_event(event="request_signing", outcome="misconfigured", request=request)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Request signing is misconfigured"
@@ -138,6 +153,7 @@ async def verify_request_signature(
 
     if not x_request_signature or not x_request_timestamp:
         record_security_event(event="request_signing", outcome="missing_headers")
+        persist_security_event(event="request_signing", outcome="missing_headers", request=request)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing request signature headers"
@@ -145,6 +161,7 @@ async def verify_request_signature(
 
     if not is_timestamp_fresh(x_request_timestamp, settings.request_signing_max_age_seconds):
         record_security_event(event="request_signing", outcome="invalid_timestamp")
+        persist_security_event(event="request_signing", outcome="invalid_timestamp", request=request)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Request signature timestamp is invalid or expired"
@@ -160,11 +177,13 @@ async def verify_request_signature(
     )
     if not hmac.compare_digest(x_request_signature, expected_signature):
         record_security_event(event="request_signing", outcome="invalid_signature")
+        persist_security_event(event="request_signing", outcome="invalid_signature", request=request)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid request signature"
         )
 
     record_security_event(event="request_signing", outcome="valid_signature")
+    persist_security_event(event="request_signing", outcome="valid_signature", request=request)
 
     return "request_signature_valid"
