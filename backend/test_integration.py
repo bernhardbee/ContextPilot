@@ -36,7 +36,8 @@ def api_client():
             response = self.client.delete(endpoint, **kwargs)
             response.raise_for_status()
     
-    return APIClient(TestClient(app))
+    with TestClient(app) as client:
+        yield APIClient(client)
 
 class TestHealthAndStats:
     """Test basic health and statistics endpoints."""

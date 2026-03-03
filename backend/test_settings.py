@@ -18,8 +18,13 @@ def client():
 class TestSettings:
     """Test settings management endpoints."""
     
-    def test_get_settings(self, client):
+    def test_get_settings(self, client, monkeypatch):
         """Test getting current settings."""
+        monkeypatch.setattr(main.settings, "default_ai_provider", "openai")
+        monkeypatch.setattr(main.settings, "default_ai_model", "gpt-4o")
+        monkeypatch.setattr(main.settings, "ai_temperature", 0.7)
+        monkeypatch.setattr(main.settings, "ai_max_tokens", 2000)
+
         response = client.get("/settings")
         assert response.status_code == 200
         
